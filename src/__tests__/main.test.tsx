@@ -6,8 +6,8 @@ describe('main bootstrap', () => {
     const rootEl = document.createElement('div');
     rootEl.id = 'root';
     document.body.appendChild(rootEl);
-  await import('../main');
-  const heading = await screen.findByRole('heading', { name: /hola, soy/i });
-  expect(heading).toBeInTheDocument();
+    await import('../main');
+    const heading = await screen.findByRole('heading', { name: /hola, soy/i });
+    expect(heading).toBeInTheDocument();
   });
 });
