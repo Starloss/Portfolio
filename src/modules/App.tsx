@@ -8,8 +8,13 @@ export interface Project {
 }
 
 const projects: Project[] = [
-  { title: 'Proyecto 1', url: '#', description: 'Descripción corta', tech: ['React', 'TypeScript'] },
-  { title: 'Proyecto 2', url: '#', description: 'Descripción corta', tech: ['Node', 'Express'] }
+  {
+    title: 'Proyecto 1',
+    url: '#',
+    description: 'Descripción corta',
+    tech: ['React', 'TypeScript'],
+  },
+  { title: 'Proyecto 2', url: '#', description: 'Descripción corta', tech: ['Node', 'Express'] },
 ];
 
 export const App: React.FC = () => {
@@ -20,7 +25,9 @@ export const App: React.FC = () => {
         <h1 className="text-4xl md:text-6xl font-bold tracking-tight">
           Hola, soy <span className="text-brand-400">Tu Nombre</span>
         </h1>
-        <p className="mt-4 text-lg text-slate-300 max-w-xl mx-auto">Desarrollador Web / Software Engineer</p>
+        <p className="mt-4 text-lg text-slate-300 max-w-xl mx-auto">
+          Desarrollador Web / Software Engineer
+        </p>
       </header>
 
       <main className="px-6 max-w-5xl mx-auto space-y-24 pb-24">
@@ -30,7 +37,8 @@ export const App: React.FC = () => {
           </h2>
           <p className="leading-relaxed text-slate-300">
             Breve descripción. Edita{' '}
-            <code className="px-1.5 py-0.5 bg-slate-800 rounded">src/modules/App.tsx</code> para comenzar.
+            <code className="px-1.5 py-0.5 bg-slate-800 rounded">src/modules/App.tsx</code> para
+            comenzar.
           </p>
         </section>
 
