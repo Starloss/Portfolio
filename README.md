@@ -17,6 +17,7 @@ Stack: React + TypeScript + Vite + TailwindCSS + ESLint (flat) + Prettier + Vite
 - `pnpm coverage` - Cobertura
 
 ## Estructura
+
 ```
 portfolio/
   index.html
@@ -33,6 +34,7 @@ portfolio/
 ```
 
 ## Próximos pasos sugeridos
+
 1. Ejecutar `pnpm install` para instalar dependencias.
 2. Personalizar contenido en `src/modules/App.tsx`.
 3. Ajustar colores/branding en `tailwind.config.cjs`.
@@ -42,6 +44,7 @@ portfolio/
 7. Integración continua ya configurada (GitHub Actions + Codecov).
 
 ## Cobertura y calidad
+
 - Umbrales mínimos configurados en `vitest.config.ts` (lines/statements 60%, functions 15%, branches 35%).
 - Reporte HTML local: `pnpm coverage` y abrir `coverage/index.html`.
 - Reporte remoto: Codecov (badge arriba). Ajusta thresholds gradualmente al aumentar cobertura real.
