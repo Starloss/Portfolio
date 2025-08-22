@@ -1,6 +1,9 @@
 # Portfolio
 
-Stack: React + TypeScript + Vite + TailwindCSS + ESLint + Prettier.
+[![CI](https://github.com/Starloss/Portfolio/actions/workflows/ci.yml/badge.svg)](https://github.com/Starloss/Portfolio/actions/workflows/ci.yml)
+[![Coverage](https://codecov.io/gh/Starloss/Portfolio/branch/main/graph/badge.svg)](https://codecov.io/gh/Starloss/Portfolio)
+
+Stack: React + TypeScript + Vite + TailwindCSS + ESLint (flat) + Prettier + Vitest.
 
 ## Scripts
 
@@ -25,7 +28,7 @@ portfolio/
   tsconfig.json
   tailwind.config.cjs
   postcss.config.cjs
-  .eslintrc.cjs
+  eslint.config.js
   .prettierrc
 ```
 
@@ -36,6 +39,11 @@ portfolio/
 4. Añadir datos reales (nombre, email, redes, proyectos reales).
 5. Configurar deployment: (GitHub Pages, Vercel, Netlify, Cloudflare Pages...).
 6. Agregar meta tags / OpenGraph / favicon.
-7. (Opcional) Añadir testing (Vitest + Testing Library) e integración continua.
+7. Integración continua ya configurada (GitHub Actions + Codecov).
+
+## Cobertura y calidad
+- Umbrales mínimos configurados en `vitest.config.ts` (lines/statements 60%, functions 15%, branches 35%).
+- Reporte HTML local: `pnpm coverage` y abrir `coverage/index.html`.
+- Reporte remoto: Codecov (badge arriba). Ajusta thresholds gradualmente al aumentar cobertura real.
 
 ¡Listo para construir! ✨

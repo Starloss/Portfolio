@@ -6,10 +6,16 @@ export default defineConfig({
   test: {
     environment: 'jsdom',
     setupFiles: ['./vitest.setup.ts'],
-    coverage: {
+  coverage: {
       provider: 'v8',
-      reporter: ['text', 'html'],
-      reportsDirectory: './coverage'
-    }
+      reporter: ['text', 'html', 'lcov'],
+      reportsDirectory: './coverage',
+      thresholds: {
+  lines: 60,
+  statements: 60,
+  functions: 15,
+  branches: 35
+      },
+    },
   }
 });
