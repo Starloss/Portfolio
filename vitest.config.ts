@@ -11,11 +11,22 @@ export default defineConfig({
       reporter: ['text', 'html', 'lcov'],
       reportsDirectory: './coverage',
       thresholds: {
-  lines: 60,
-  statements: 60,
-  functions: 15,
-  branches: 35
+        lines: 80,
+        statements: 80,
+        functions: 80,
+        branches: 80,
       },
+      exclude: [
+        '.eslintrc.*',
+        'postcss.config.*',
+        'tailwind.config.*',
+        'vite.config.*',
+        'vitest.config.*',
+        'eslint.config.*',
+        '**/node_modules/**',
+        '**/dist/**',
+        '**/__tests__/**',
+      ],
     },
-  }
+  },
 });
