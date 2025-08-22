@@ -1,0 +1,20 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    color-scheme: dark;
+  }
+  body {
+    @apply antialiased bg-slate-950 text-slate-100 font-sans;
+  }
+}
+
+@layer components {
+  .container-section { @apply space-y-4; }
+}
+
+@layer utilities {
+  .text-balance { text-wrap: balance; }
+}
