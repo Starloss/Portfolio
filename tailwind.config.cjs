@@ -1,10 +1,8 @@
 /**** Tailwind Config ****/
 /** @type {import('tailwindcss').Config} */
 module.exports = {
-  content: [
-    './index.html',
-    './src/**/*.{js,ts,jsx,tsx}'
-  ],
+  darkMode: 'class',
+  content: ['./index.html', './src/**/*.{js,ts,jsx,tsx}'],
   theme: {
     extend: {
       colors: {
@@ -18,10 +16,10 @@ module.exports = {
           600: '#2563eb',
           700: '#1d4ed8',
           800: '#1e40af',
-          900: '#1e3a8a'
-        }
-      }
-    }
+          900: '#1e3a8a',
+        },
+      },
+    },
   },
-  plugins: []
+  plugins: [],
 };

@@ -4,17 +4,21 @@
 
 @layer base {
   :root {
-    color-scheme: dark;
+    color-scheme: light dark;
   }
   body {
-    @apply antialiased bg-slate-950 text-slate-100 font-sans;
+    @apply antialiased font-sans bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100 transition-colors duration-300;
   }
 }
 
 @layer components {
-  .container-section { @apply space-y-4; }
+  .container-section {
+    @apply space-y-4;
+  }
 }
 
 @layer utilities {
-  .text-balance { text-wrap: balance; }
+  .text-balance {
+    text-wrap: balance;
+  }
 }

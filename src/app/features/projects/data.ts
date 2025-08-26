@@ -3,12 +3,23 @@ import type { Project } from '@lib/types';
 // Fuente de datos (mock). En un futuro puede migrarse a fetch hacia una API.
 const PROJECTS: Project[] = [
   {
-    title: 'Proyecto 1',
+    title: 'Healthcare Platform',
     url: '#',
-    description: 'Descripción corta',
-    tech: ['React', 'TypeScript'],
+    description: 'project_healthcare_desc',
+    tech: ['React', 'Node.js', 'TypeScript'],
   },
-  { title: 'Proyecto 2', url: '#', description: 'Descripción corta', tech: ['Node', 'Express'] },
+  {
+    title: 'Hybrid Mobile App',
+    url: '#',
+    description: 'project_hybrid_desc',
+    tech: ['Ionic', 'Angular', 'Firebase'],
+  },
+  {
+    title: 'Full-Stack Solutions',
+    url: '#',
+    description: 'project_fullstack_desc',
+    tech: ['Node.js', 'React', 'Angular'],
+  },
 ];
 
 export function getProjects(): Promise<Project[]> {
