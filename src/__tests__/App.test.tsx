@@ -1,9 +1,8 @@
 import { describe, it, expect } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import { within } from '@testing-library/react';
 import React from 'react';
-
-import { App } from '../modules/App';
+import { App } from '@app/App';
 
 describe('App', () => {
   it('renderiza el heading principal', () => {
@@ -11,17 +10,16 @@ describe('App', () => {
     expect(screen.getByRole('heading', { name: /hola, soy/i })).toBeInTheDocument();
   });
 
-  it('muestra los proyectos con sus tecnologías', () => {
+  it('muestra los proyectos con sus tecnologías', async () => {
     render(<App />);
-    // Lista principal: contiene ambos títulos de proyecto
-    const projectList = screen
-      .getAllByRole('list')
-      .find((ul) => within(ul).queryByText('Proyecto 1') && within(ul).queryByText('Proyecto 2'));
-    expect(projectList).toBeTruthy();
-    const items = within(projectList as HTMLElement).getAllByRole('listitem');
+    const projectList = await screen.findByRole('list', { name: /lista de proyectos/i });
+    const items = within(projectList).getAllByRole('listitem');
     expect(items.length).toBeGreaterThanOrEqual(2);
-    expect(screen.getByText(/React/)).toBeInTheDocument();
-    expect(screen.getByText(/TypeScript/)).toBeInTheDocument();
+    // Esperar a que aparezcan tecnologías (en caso de microtask)
+    await waitFor(() => {
+      expect(screen.getByText(/React/)).toBeInTheDocument();
+      expect(screen.getByText(/TypeScript/)).toBeInTheDocument();
+    });
   });
 
   it('muestra el footer con el año actual', () => {

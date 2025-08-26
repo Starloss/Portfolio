@@ -14,8 +14,14 @@
     "resolveJsonModule": true,
     "isolatedModules": true,
     "noEmit": true,
-  "jsx": "react-jsx",
-  "types": ["node", "vitest", "@testing-library/jest-dom"]
+    "jsx": "react-jsx",
+    "types": ["node", "vitest", "@testing-library/jest-dom"],
+    "baseUrl": "./src",
+    "paths": {
+      "@/*": ["*"],
+      "@lib/*": ["lib/*"],
+      "@app/*": ["app/*"]
+    }
   },
   "include": ["src"],
   "references": []
