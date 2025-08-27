@@ -32,6 +32,8 @@ const translations: Record<Locale, Record<string, string>> = {
     contact_github_label: 'GitHub',
     theme_toggle_dark: 'Oscuro',
     theme_toggle_light: 'Claro',
+    nav_menu_open: 'Abrir menú',
+    nav_menu_close: 'Cerrar menú',
     professional_summary:
       'Full-Stack Developer con más de 7 años construyendo soluciones web y móviles, liderando equipos y optimizando productividad.',
     cv_button: 'Descargar CV',
@@ -65,6 +67,8 @@ const translations: Record<Locale, Record<string, string>> = {
     contact_github_label: 'GitHub',
     theme_toggle_dark: 'Dark',
     theme_toggle_light: 'Light',
+    nav_menu_open: 'Open menu',
+    nav_menu_close: 'Close menu',
     professional_summary:
       'Full-Stack Developer with 7+ years building web & mobile solutions, leading teams and boosting productivity.',
     cv_button: 'Download CV',

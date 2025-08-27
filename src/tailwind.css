@@ -8,6 +8,21 @@
   }
   body {
     @apply antialiased font-sans bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100 transition-colors duration-300;
+    position: relative;
+    min-height: 100vh;
+  }
+  /* Patrón decorativo: nubes (claro) / estrellas (oscuro) */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background: linear-gradient(to bottom, #f1f8ff 0%, #e6f3ff 55%, #dcebff 100%);
+    transition: background 0.8s ease;
+  }
+  .dark body::before {
+    background: linear-gradient(to bottom, #0f172a 0%, #0b1221 50%, #020617 100%);
   }
 }
 
@@ -20,5 +35,68 @@
 @layer utilities {
   .text-balance {
     text-wrap: balance;
+  }
+  @keyframes twinkle {
+    0%,
+    100% {
+      opacity: 0.9;
+      filter: drop-shadow(0 0 2px rgba(255, 255, 255, 0.8));
+    }
+    50% {
+      opacity: 0.2;
+      filter: drop-shadow(0 0 1px rgba(255, 255, 255, 0.3));
+    }
+  }
+  /* Movimiento horizontal continuo de nubes */
+  @keyframes cloud-move-fade {
+    0% {
+      transform: translateX(-15vw);
+      opacity: 0;
+    }
+    4% {
+      opacity: 1;
+    }
+    96% {
+      opacity: 1;
+    }
+    100% {
+      transform: translateX(110vw);
+      opacity: 0;
+    }
+  }
+  .animate-cloud-slow {
+    animation: cloud-move-fade 85s linear infinite;
+  }
+  .animate-cloud-medium {
+    animation: cloud-move-fade 58s linear infinite;
+  }
+  .animate-cloud-fast {
+    animation: cloud-move-fade 38s linear infinite;
+  }
+  @keyframes cloud-bob {
+    0%,
+    100% {
+      transform: translateY(0);
+    }
+    50% {
+      transform: translateY(-8px);
+    }
+  }
+  .cloud-bob-slow {
+    animation: cloud-bob 18s ease-in-out infinite;
+  }
+  .cloud-bob-fast {
+    animation: cloud-bob 12s ease-in-out infinite;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .animate-cloud-slow,
+    .animate-cloud-medium,
+    .animate-cloud-fast {
+      animation: none;
+    }
+    .cloud-bob-slow,
+    .cloud-bob-fast {
+      animation: none;
+    }
   }
 }

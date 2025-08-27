@@ -1,4 +1,5 @@
 import React from 'react';
+import 'flag-icons/css/flag-icons.min.css';
 import { createRoot } from 'react-dom/client';
 import { App } from '@app/App';
 import { I18nProvider } from '@lib/i18n';

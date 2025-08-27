@@ -23,13 +23,16 @@ export const ContactSection: React.FC = () => {
 
   return (
     <section id="contact" className="space-y-6" aria-label={t('contact_title')}>
-      <h2 className="text-2xl font-semibold flex items-center gap-3">
-        {t('contact_title')} <span className="h-px grow bg-slate-700" />
+      <h2 className="text-2xl font-semibold flex items-center gap-3 text-slate-800 dark:text-white">
+        {t('contact_title')} <span className="h-px grow bg-slate-300 dark:bg-slate-700" />
       </h2>
       <div className="flex flex-col md:flex-row gap-10">
         <form onSubmit={handleSubmit} className="space-y-4 flex-1" aria-label="contact form">
           <div className="flex flex-col gap-1">
-            <label htmlFor="contact-name" className="text-xs font-medium text-slate-300">
+            <label
+              htmlFor="contact-name"
+              className="text-xs font-medium text-slate-600 dark:text-slate-300"
+            >
               {t('contact_name')}
             </label>
             <input
@@ -37,13 +40,16 @@ export const ContactSection: React.FC = () => {
               name="name"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="bg-slate-800 border border-slate-700 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
+              className="bg-transparent border border-slate-300 text-slate-700 placeholder-slate-400 dark:border-slate-700 dark:text-slate-200 dark:placeholder-slate-500 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
               placeholder={t('contact_name')}
               autoComplete="name"
             />
           </div>
           <div className="flex flex-col gap-1">
-            <label htmlFor="contact-email" className="text-xs font-medium text-slate-300">
+            <label
+              htmlFor="contact-email"
+              className="text-xs font-medium text-slate-600 dark:text-slate-300"
+            >
               {t('contact_email')}
             </label>
             <input
@@ -52,13 +58,16 @@ export const ContactSection: React.FC = () => {
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="bg-slate-800 border border-slate-700 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
+              className="bg-transparent border border-slate-300 text-slate-700 placeholder-slate-400 dark:border-slate-700 dark:text-slate-200 dark:placeholder-slate-500 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
               placeholder={t('contact_email')}
               autoComplete="email"
             />
           </div>
           <div className="flex flex-col gap-1">
-            <label htmlFor="contact-message" className="text-xs font-medium text-slate-300">
+            <label
+              htmlFor="contact-message"
+              className="text-xs font-medium text-slate-600 dark:text-slate-300"
+            >
               {t('contact_message')}
             </label>
             <textarea
@@ -67,7 +76,7 @@ export const ContactSection: React.FC = () => {
               value={message}
               onChange={(e) => setMessage(e.target.value)}
               rows={5}
-              className="bg-slate-800 border border-slate-700 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 resize-y"
+              className="bg-transparent border border-slate-300 text-slate-700 placeholder-slate-400 dark:border-slate-700 dark:text-slate-200 dark:placeholder-slate-500 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 resize-y"
               placeholder={t('contact_message')}
             />
           </div>
@@ -86,7 +95,7 @@ export const ContactSection: React.FC = () => {
                 aria-label={t('contact_linkedin_label')}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="p-2 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition"
+                className="p-2 rounded text-slate-600 hover:text-brand-500 dark:text-slate-300 dark:hover:text-brand-400 transition"
               >
                 <svg viewBox="0 0 24 24" className="w-5 h-5" fill="currentColor" aria-hidden="true">
                   <path d="M4.98 3.5C4.98 4.88 3.87 6 2.5 6S0 4.88 0 3.5 1.12 1 2.5 1s2.48 1.12 2.48 2.5zM.5 8h4V23h-4V8zm7.5 0h3.8v2.2h.1c.5-.9 1.8-2.2 3.7-2.2 4 0 4.7 2.6 4.7 6V23h-4v-6.5c0-1.6 0-3.7-2.3-3.7-2.3 0-2.7 1.8-2.7 3.6V23h-4V8z" />
@@ -96,7 +105,7 @@ export const ContactSection: React.FC = () => {
             <a
               href={`mailto:${CONTACT_EMAIL}`}
               aria-label={t('contact_email_label')}
-              className="p-2 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition"
+              className="p-2 rounded text-slate-600 hover:text-brand-500 dark:text-slate-300 dark:hover:text-brand-400 transition"
             >
               <svg viewBox="0 0 24 24" className="w-5 h-5" fill="currentColor" aria-hidden="true">
                 <path d="M2 4h20c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H2c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2zm0 2v.01L12 13 22 6.01V6H2zm0 12h20V8l-10 7L2 8v10z" />
@@ -108,7 +117,7 @@ export const ContactSection: React.FC = () => {
                 aria-label={t('contact_github_label')}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="p-2 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition"
+                className="p-2 rounded text-slate-600 hover:text-brand-500 dark:text-slate-300 dark:hover:text-brand-400 transition"
               >
                 <svg viewBox="0 0 24 24" className="w-5 h-5" fill="currentColor" aria-hidden="true">
                   <path

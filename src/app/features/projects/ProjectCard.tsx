@@ -10,19 +10,19 @@ interface Props {
 export const ProjectCard: React.FC<Props> = ({ project }) => {
   const { t } = useI18n();
   return (
-    <li className="group rounded-xl border border-slate-800 bg-slate-900/60 backdrop-blur p-5 hover:border-brand-500 transition-colors">
+    <li className="group rounded-xl border border-slate-300 bg-white/70 dark:border-slate-800 dark:bg-slate-900/60 backdrop-blur p-5 hover:border-brand-500 transition-colors">
       <a href={project.url} target="_blank" rel="noopener noreferrer" className="inline-block">
         <h3 className="text-lg font-semibold text-brand-400 group-hover:underline underline-offset-4">
           {project.title}
         </h3>
       </a>
-      <p className="mt-2 text-sm text-slate-400">{t(project.description)}</p>
+      <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">{t(project.description)}</p>
       {project.tech && (
         <ul className="mt-3 flex flex-wrap gap-1.5" aria-label={t('tech_aria')}>
           {project.tech.map((tch) => (
             <li
               key={tch}
-              className="text-[10px] uppercase tracking-wide bg-slate-800/80 px-2 py-1 rounded-full text-slate-300"
+              className="text-[10px] uppercase tracking-wide bg-slate-200 text-slate-700 dark:bg-slate-800/80 dark:text-slate-300 px-2 py-1 rounded-full"
             >
               {tch}
             </li>

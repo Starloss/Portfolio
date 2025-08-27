@@ -29,6 +29,9 @@ export default [
         requestAnimationFrame: 'readonly',
         cancelAnimationFrame: 'readonly',
         HTMLElement: 'readonly',
+        HTMLDivElement: 'readonly',
+        Node: 'readonly',
+        MouseEvent: 'readonly',
         // ES2021 globals (subset)
         Promise: 'readonly',
         Symbol: 'readonly',
@@ -41,8 +44,8 @@ export default [
         beforeAll: 'readonly',
         afterAll: 'readonly',
         beforeEach: 'readonly',
-        afterEach: 'readonly'
-      }
+        afterEach: 'readonly',
+      },
     },
     plugins: {
       react: pluginReact,
@@ -50,7 +53,7 @@ export default [
       '@typescript-eslint': ts,
       prettier: prettierPlugin,
       import: importPlugin,
-      'jsx-a11y': jsxA11y
+      'jsx-a11y': jsxA11y,
     },
     settings: { react: { version: 'detect' } },
     rules: {
@@ -63,8 +66,11 @@ export default [
       'prettier/prettier': ['error', { endOfLine: 'auto' }],
       'import/order': [
         'warn',
-        { groups: ['builtin', 'external', 'internal', 'parent', 'sibling', 'index'], 'newlines-between': 'always' }
-      ]
-    }
-  }
+        {
+          groups: ['builtin', 'external', 'internal', 'parent', 'sibling', 'index'],
+          'newlines-between': 'always',
+        },
+      ],
+    },
+  },
 ];
