@@ -143,7 +143,7 @@ export const BackgroundScene: React.FC = () => {
                             />
                         </div>
                     </div>
-                    {/* Ciudad + Ávila progresiva */}
+
                     <div
                         className="absolute inset-x-0 bottom-0"
                         style={{
@@ -152,16 +152,10 @@ export const BackgroundScene: React.FC = () => {
                             transition: 'opacity 0.12s linear, transform 0.12s linear',
                         }}
                     >
-                        {/* Montaña */}
                         <div
                             className="absolute inset-x-0 bottom-0"
                             style={{
-                                height: '32vh',
-                                background:
-                                    'linear-gradient(to top, #0a1523 0%, #0f2235 38%, #163043 62%, rgba(12,26,40,0.85) 78%, rgba(10,24,38,0) 100%)',
-                                maskImage:
-                                    'radial-gradient(circle at 55% 40%, black 0%, black 55%, transparent 70%), linear-gradient(to top, black 60%, transparent 100%)',
-                                WebkitMaskComposite: 'destination-over',
+                                height: '68vh',
                                 mixBlendMode: 'normal',
                             }}
                         >
@@ -170,22 +164,28 @@ export const BackgroundScene: React.FC = () => {
                                 width="100%"
                                 height="100%"
                                 preserveAspectRatio="none"
-                                viewBox="0 0 1000 400"
+                                viewBox="0 0 2000 400"
                                 className="absolute inset-0"
-                                style={{ opacity: 0.8 }}
+                                style={{ opacity: 0.82 }}
                             >
                                 <path
-                                    d="M0 320 L120 300 L180 310 L260 280 L340 305 L430 250 L520 270 L600 240 L690 265 L760 250 L820 260 L900 240 L1000 255 L1000 400 L0 400 Z"
-                                    fill="url(#avilaGradient)"
+                                    d="M0 320 L150 300 L260 310 L360 280 L480 305 L600 250 L760 270 L900 240 L1080 265 L1220 250 L1360 260 L1520 240 L1700 255 L2000 245 L2000 400 L0 400 Z"
+                                    fill="url(#mountainGradient)"
                                 />
                                 <defs>
-                                    <linearGradient id="avilaGradient" x1="0" y1="0" x2="0" y2="1">
+                                    <linearGradient
+                                        id="mountainGradient"
+                                        x1="0"
+                                        y1="0"
+                                        x2="0"
+                                        y2="1"
+                                    >
                                         <stop offset="0%" stopColor="#1e3a5f" stopOpacity="0.55" />
                                         <stop offset="55%" stopColor="#0f2235" stopOpacity="0.85" />
                                         <stop
                                             offset="100%"
                                             stopColor="#091726"
-                                            stopOpacity="0.95"
+                                            stopOpacity="0.97"
                                         />
                                     </linearGradient>
                                 </defs>
@@ -193,94 +193,123 @@ export const BackgroundScene: React.FC = () => {
                         </div>
                         {/* Edificios */}
                         <div
-                            className="absolute inset-x-0 bottom-0 flex justify-center"
+                            className="absolute inset-x-0 bottom-0"
                             style={{
-                                height: '20vh',
-                                filter: 'drop-shadow(0 -2px 4px rgba(0,0,0,0.6))',
+                                height: '26vh',
+                                filter: 'drop-shadow(0 -2px 4px rgba(0,0,0,0.55))',
                             }}
                         >
-                            <div className="relative w-full max-w-7xl mx-auto h-full opacity-90">
-                                {[
-                                    { w: 72, h: 140, x: 40 },
-                                    { w: 54, h: 110, x: 120 },
-                                    { w: 92, h: 170, x: 190 },
-                                    { w: 64, h: 130, x: 300 },
-                                    { w: 84, h: 150, x: 370 },
-                                    { w: 58, h: 120, x: 460 },
-                                    { w: 68, h: 135, x: 530 },
-                                    { w: 80, h: 155, x: 610 },
-                                    { w: 56, h: 118, x: 710 },
-                                    { w: 72, h: 145, x: 780 },
-                                ].map((b, i) => (
-                                    <div
-                                        key={i}
-                                        className="absolute overflow-hidden"
-                                        style={{
-                                            left: `calc(${b.x}px + 5%)`,
-                                            bottom: 0,
-                                            width: b.w,
-                                            height: b.h,
-                                            background:
-                                                'linear-gradient(to top,#07101b,#0d1b29 55%, #14283a)',
-                                            border: '1px solid rgba(255,255,255,0.03)',
-                                            boxShadow: 'inset 0 0 10px -4px rgba(255,255,255,0.05)',
-                                        }}
-                                    >
-                                        {(() => {
-                                            const size = 4;
-                                            const gapX = 6;
-                                            const gapY = 7;
-                                            const paddingX = 6;
-                                            const paddingTop = 8;
-                                            const usableWidth = b.w - paddingX * 2;
-                                            const cols = Math.max(
-                                                1,
-                                                Math.floor((usableWidth + gapX) / (size + gapX)),
-                                            );
-                                            const totalWidthUsed = cols * size + (cols - 1) * gapX;
-                                            const offsetX =
-                                                paddingX +
-                                                Math.floor((usableWidth - totalWidthUsed) / 2);
-                                            const windows: React.ReactElement[] = [];
-                                            let wi = 0;
-                                            for (let y = 0; ; y++) {
-                                                const top = paddingTop + y * (size + gapY);
-                                                if (top + size > b.h - 10) break;
-                                                for (let x = 0; x < cols; x++) {
-                                                    const left = offsetX + x * (size + gapX);
-                                                    const seed = (i * 997 + wi * 37) % 211;
-                                                    wi++;
-                                                    if (seed % 4 === 0) continue;
-                                                    const flicker = seed % 9 === 0;
-                                                    windows.push(
-                                                        <span
-                                                            key={wi}
-                                                            className={
-                                                                flicker
-                                                                    ? 'absolute rounded-sm animate-light-flicker'
-                                                                    : 'absolute rounded-sm'
-                                                            }
-                                                            style={{
-                                                                top,
-                                                                left,
-                                                                width: size,
-                                                                height: size + 1,
-                                                                background:
-                                                                    'linear-gradient(to bottom, hsl(45 100% 86%), hsl(42 100% 68%))',
-                                                                filter: 'drop-shadow(0 0 2px hsl(45 100% 75% / 0.55))',
-                                                                opacity: 0.9,
-                                                                mixBlendMode: 'screen',
-                                                            }}
-                                                        />,
-                                                    );
+                            <div className="relative w-full h-full opacity-95">
+                                {(() => {
+                                    // Distribución pseudo-aleatoria estable (seeded)
+                                    const total = 22;
+                                    const seedRandom = (seed: number) => {
+                                        let s = seed % 2147483647;
+                                        if (s <= 0) s += 2147483646;
+                                        return () => {
+                                            s = (s * 16807) % 2147483647;
+                                            return (s - 1) / 2147483646;
+                                        };
+                                    };
+                                    const rng = seedRandom(20240827);
+                                    const basePositions = Array.from(
+                                        { length: total },
+                                        (_, i) => (i / (total - 1)) * 100,
+                                    );
+                                    const buildings = basePositions.map((baseX, i) => {
+                                        const jitter = (rng() - 0.5) * (100 / total) * 0.6;
+                                        const xPct = Math.min(100, Math.max(0, baseX + jitter));
+                                        const w = 50 + Math.round(rng() * 55); // 50 - 105
+                                        const h = 110 + Math.round(rng() * 105); // 110 - 215
+                                        return { w, h, xPct, i };
+                                    });
+                                    buildings.sort((a, b) => a.xPct - b.xPct);
+                                    return buildings.map((b) => (
+                                        <div
+                                            key={b.i}
+                                            className="absolute overflow-hidden"
+                                            style={{
+                                                left: `${b.xPct}%`,
+                                                transform: 'translateX(-50%)',
+                                                bottom: 0,
+                                                width: b.w,
+                                                height: b.h,
+                                                background:
+                                                    'linear-gradient(to top,#060e17,#0c1a28 55%, #153248)',
+                                                border: '1px solid rgba(255,255,255,0.025)',
+                                                boxShadow:
+                                                    'inset 0 0 10px -4px rgba(255,255,255,0.05)',
+                                            }}
+                                        >
+                                            {(() => {
+                                                const size = 4;
+                                                const gapX = 6;
+                                                const gapY = 7;
+                                                const paddingX = 6;
+                                                const paddingTop = 8;
+                                                const usableWidth = b.w - paddingX * 2;
+                                                const cols = Math.max(
+                                                    1,
+                                                    Math.floor(
+                                                        (usableWidth + gapX) / (size + gapX),
+                                                    ),
+                                                );
+                                                const totalWidthUsed =
+                                                    cols * size + (cols - 1) * gapX;
+                                                const offsetX =
+                                                    paddingX +
+                                                    Math.floor((usableWidth - totalWidthUsed) / 2);
+                                                const windows: React.ReactElement[] = [];
+                                                let wi = 0;
+                                                for (let y = 0; ; y++) {
+                                                    const top = paddingTop + y * (size + gapY);
+                                                    if (top + size > b.h - 10) break;
+                                                    for (let x = 0; x < cols; x++) {
+                                                        const left = offsetX + x * (size + gapX);
+                                                        const seed = (b.i * 997 + wi * 37) % 211;
+                                                        wi++;
+                                                        if (seed % 5 === 0) continue;
+                                                        const flicker = seed % 11 === 0;
+                                                        windows.push(
+                                                            <span
+                                                                key={wi}
+                                                                className={
+                                                                    flicker
+                                                                        ? 'absolute rounded-sm animate-light-flicker'
+                                                                        : 'absolute rounded-sm'
+                                                                }
+                                                                style={{
+                                                                    top,
+                                                                    left,
+                                                                    width: size,
+                                                                    height: size + 1,
+                                                                    background:
+                                                                        'linear-gradient(to bottom, hsl(45 100% 86%), hsl(42 100% 68%))',
+                                                                    filter: 'drop-shadow(0 0 2px hsl(45 100% 75% / 0.5))',
+                                                                    opacity: 0.9,
+                                                                    mixBlendMode: 'screen',
+                                                                }}
+                                                            />,
+                                                        );
+                                                    }
                                                 }
-                                            }
-                                            return windows;
-                                        })()}
-                                    </div>
-                                ))}
-                                <div className="absolute inset-x-0 bottom-0 h-full bg-gradient-to-t from-[#060e17] via-[#060e17]/95 to-transparent pointer-events-none" />
-                                {/* Glow eliminado para quitar franja amarilla */}
+                                                return windows;
+                                            })()}
+                                        </div>
+                                    ));
+                                })()}
+                                {/* Gradiente base suelo + leve luz central para evitar sombra oscura */}
+                                <div className="absolute inset-x-0 bottom-0 h-full pointer-events-none">
+                                    <div className="absolute inset-0 bg-gradient-to-t from-[#050d16] via-[#050d16]/90 to-transparent" />
+                                    <div
+                                        className="absolute inset-x-[15%] bottom-0 h-2/3 opacity-[0.25]"
+                                        style={{
+                                            background:
+                                                'radial-gradient(circle at 50% 85%, rgba(90,130,200,0.18) 0%, rgba(40,70,110,0.08) 40%, rgba(10,25,40,0) 70%)',
+                                            mixBlendMode: 'screen',
+                                        }}
+                                    />
+                                </div>
                             </div>
                         </div>
                     </div>
