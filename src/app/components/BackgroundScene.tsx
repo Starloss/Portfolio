@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useTheme } from '@lib/theme';
 
-// Genera y cachea estrellas
+// Estrellas cacheadas
 function generateStars(count: number) {
     return Array.from({ length: count }, (_, i) => ({
         id: i,
@@ -14,10 +14,201 @@ function generateStars(count: number) {
 }
 const starsCache = generateStars(90);
 
+// ---- Nubes ----
+interface Cloud {
+    id: number;
+    top: number;
+    scale: number;
+    duration: number;
+    delay: number;
+    opacity: number;
+    drift: number;
+    bob: number;
+    bobDur: number;
+    bobDelay: number;
+}
+
+function buildCloudCache(cfg: {
+    count: number;
+    seed: number;
+    topMin: number;
+    topRange: number;
+    scaleMin: number;
+    scaleRange: number;
+    durationMin: number;
+    durationRange: number;
+    opacityMin: number;
+    opacityRange: number;
+    driftRange: number;
+}): Cloud[] {
+    const {
+        count,
+        seed,
+        topMin,
+        topRange,
+        scaleMin,
+        scaleRange,
+        durationMin,
+        durationRange,
+        opacityMin,
+        opacityRange,
+        driftRange,
+    } = cfg;
+    let s = seed % 2147483647;
+    if (s <= 0) s += 2147483646;
+    const rng = () => {
+        s = (s * 16807) % 2147483647;
+        return (s - 1) / 2147483646;
+    };
+    return Array.from({ length: count }, (_, i) => {
+        const top = topMin + rng() * topRange;
+        const scale = scaleMin + rng() * scaleRange;
+        const duration = durationMin + rng() * durationRange;
+        const delay = -rng() * duration;
+        const opacity = opacityMin + rng() * opacityRange;
+        const drift = (rng() - 0.5) * driftRange;
+        const bob = 4 + rng() * 12;
+        const bobDur = 6 + rng() * 10;
+        const bobDelay = -rng() * bobDur;
+        return { id: i, top, scale, duration, delay, opacity, drift, bob, bobDur, bobDelay };
+    });
+}
+
+// Ajuste: más nubes pero un poco menos opacas para no saturar.
+const cloudCacheFar = buildCloudCache({
+    count: 8,
+    seed: 2024082901,
+    topMin: 6,
+    topRange: 30,
+    scaleMin: 0.34, // aumenta tamaño base
+    scaleRange: 0.54, // permite algo más grande
+    durationMin: 140,
+    durationRange: 120,
+    opacityMin: 0.08, // más opacas
+    opacityRange: 0.1,
+    driftRange: 4,
+});
+const cloudCacheNear = buildCloudCache({
+    count: 11,
+    seed: 2024082902,
+    topMin: 12,
+    topRange: 36,
+    scaleMin: 0.55, // ligeramente más grande
+    scaleRange: 0.85,
+    durationMin: 78,
+    durationRange: 70,
+    opacityMin: 0.14,
+    opacityRange: 0.2,
+    driftRange: 9,
+});
+
+const CloudLayer: React.FC<{
+    scrollFactor: number;
+    scrollY: number;
+    variant: 'near' | 'far';
+}> = ({ scrollFactor, scrollY, variant }) => {
+    const clouds = variant === 'far' ? cloudCacheFar : cloudCacheNear;
+    return (
+        <div
+            className="absolute inset-0"
+            style={{ pointerEvents: 'none', transform: `translateY(${scrollY * scrollFactor}px)` }}
+        >
+            <style>{`@keyframes cloud-horizontal {0% {transform: translateX(-35vw) translateY(var(--drift)) scale(var(--scale));}100% {transform: translateX(135vw) translateY(var(--drift)) scale(var(--scale));}}`}</style>
+            <style>{`@keyframes cloud-bob {0%,100% {transform: translateY(calc(var(--bobOffset) * -1));}50% {transform: translateY(var(--bobOffset));}}`}</style>
+            {clouds.map((c) => (
+                <div
+                    key={c.id}
+                    className="absolute will-change-transform"
+                    style={(() => {
+                        const style: React.CSSProperties & Record<string, string | number> = {
+                            top: `${c.top}%`,
+                            left: '-30vw',
+                            width: `${variant === 'far' ? 14 + c.scale * 8 : 19 + c.scale * 10}vw`,
+                            height: `${variant === 'far' ? 4.8 + c.scale * 3 : 6.5 + c.scale * 4}vw`,
+                            minWidth: variant === 'far' ? 260 : 320,
+                            minHeight: variant === 'far' ? 110 : 140,
+                            opacity: c.opacity * (variant === 'far' ? 0.8 : 1.15), // near más densas
+                            animation: `cloud-horizontal ${c.duration}s linear ${c.delay}s infinite`,
+                            filter:
+                                variant === 'far'
+                                    ? 'blur(0.5px) drop-shadow(0 0 4px rgba(200,215,235,0.04))'
+                                    : 'blur(0.4px) drop-shadow(0 0 6px rgba(200,215,235,0.07))',
+                            overflow: 'visible',
+                        };
+                        style['--scale'] = c.scale;
+                        style['--drift'] = `${c.drift}px`;
+                        style['--bobOffset'] = `${c.bob}px`;
+                        return style;
+                    })()}
+                >
+                    <div
+                        className="relative w-full h-full"
+                        style={{
+                            animation: `cloud-bob ${c.bobDur}s ease-in-out ${c.bobDelay}s infinite`,
+                        }}
+                    >
+                        {(() => {
+                            const puffs: React.ReactElement[] = [];
+                            const rand = (seed: number) => {
+                                const v = Math.sin(seed * 12345.678 + c.id * 77) * 10000;
+                                return ((v % 1) + 1) % 1;
+                            };
+                            const puffCount = variant === 'far' ? 6 : 9;
+                            for (let i = 0; i < puffCount; i++) {
+                                const r1 = rand(i + 1);
+                                const r2 = rand(i + 11);
+                                const r3 = rand(i + 31);
+                                const widthPct = 13 + r1 * (variant === 'far' ? 20 : 26);
+                                const aspect = 0.5 + r2 * 0.95;
+                                const heightPct = widthPct * aspect;
+                                const leftPct = 4 + r2 * 72;
+                                const verticalBand = r3 * 38;
+                                const topPct = 18 + verticalBand - aspect * 10;
+                                const blur = 1 + r1 * (variant === 'far' ? 2.2 : 3.5);
+                                const radA = 45 + r1 * 25;
+                                const radB = 40 + r2 * 30;
+                                const radC = 50 + r3 * 20;
+                                const radD = 42 + r2 * 26;
+                                const opacityLayer =
+                                    (0.42 + r2 * 0.24) * (variant === 'far' ? 0.72 : 0.9);
+                                const baseBg =
+                                    'radial-gradient(circle at 42% 46%, rgba(255,255,255,0.55) 0%, rgba(225,235,250,0.46) 48%, rgba(160,190,225,0.20) 68%, rgba(120,150,190,0.05) 80%, rgba(120,150,190,0) 95%)';
+                                const nearOverlay =
+                                    'radial-gradient(circle at 55% 60%, rgba(110,130,170,0.15) 0%, rgba(110,130,170,0.08) 35%, rgba(110,130,170,0) 70%)';
+                                puffs.push(
+                                    <span
+                                        key={i}
+                                        className="absolute"
+                                        style={{
+                                            left: `${leftPct}%`,
+                                            top: `${topPct}%`,
+                                            width: `${widthPct}%`,
+                                            height: `${heightPct}%`,
+                                            background:
+                                                variant === 'near'
+                                                    ? `${nearOverlay}, ${baseBg}`
+                                                    : baseBg,
+                                            borderRadius: `${radA}% ${radB}% ${radC}% ${radD}% / ${radB}% ${radC}% ${radD}% ${radA}%`,
+                                            filter: `blur(${blur}px)`,
+                                            opacity: opacityLayer,
+                                            transform: `translateY(-${verticalBand * 0.12}%)`,
+                                        }}
+                                    />,
+                                );
+                            }
+                            return puffs;
+                        })()}
+                    </div>
+                </div>
+            ))}
+        </div>
+    );
+};
+
 export const BackgroundScene: React.FC = () => {
     const { theme } = useTheme();
     const [scrollY, setScrollY] = useState(0);
-    const [cityProgress, setCityProgress] = useState(0); // 0 a 1
+    const [cityProgress, setCityProgress] = useState(0);
     const ticking = useRef(false);
 
     useEffect(() => {
@@ -31,13 +222,13 @@ export const BackgroundScene: React.FC = () => {
                 const doc = document.documentElement;
                 const maxScroll = doc.scrollHeight - window.innerHeight;
                 const remaining = maxScroll - sy;
-                const revealRange = 800; // px antes del final donde empieza a aparecer
+                const revealRange = 800;
                 setCityProgress(clamp(1 - remaining / revealRange));
                 ticking.current = false;
             });
         };
         window.addEventListener('scroll', onScroll, { passive: true });
-        onScroll(); // inicializar
+        onScroll();
         return () => window.removeEventListener('scroll', onScroll);
     }, []);
 
@@ -82,6 +273,9 @@ export const BackgroundScene: React.FC = () => {
                         <div className="absolute w-[55rem] h-[55rem] -top-72 left-1/2 -translate-x-1/2 bg-brand-400/5 blur-[140px] rounded-full" />
                         <div className="absolute w-[35rem] h-[35rem] top-1/3 -left-40 bg-indigo-400/5 blur-[110px] rounded-full" />
                     </div>
+                    {/* Nubes lejanas detrás de la luna */}
+                    <CloudLayer variant="far" scrollFactor={0.04} scrollY={scrollY} />
+
                     {/* Luna */}
                     <div className="absolute inset-0" style={layerTranslate(0.05)}>
                         <div
@@ -96,8 +290,8 @@ export const BackgroundScene: React.FC = () => {
                                 background:
                                     'radial-gradient(circle at 30% 35%, #ffffff 0%, #f2f6fa 30%, #e2e8f0 55%, #cbd5e1 75%)',
                                 boxShadow:
-                                    '0 0 0 2px rgba(255,255,255,0.3), 0 0 25px 8px rgba(255,255,255,0.35), 0 0 80px 40px rgba(160,190,255,0.12)',
-                                filter: 'brightness(1.05) contrast(1.05)',
+                                    '0 0 0 2px rgba(255,255,255,0.3), 0 0 25px 8px rgba(255,255,255,0.35), 0 0 65px 32px rgba(160,190,255,0.10)',
+                                filter: 'brightness(1.0) contrast(1.02)',
                                 overflow: 'hidden',
                             }}
                         >
@@ -118,7 +312,7 @@ export const BackgroundScene: React.FC = () => {
                                         width: c.w,
                                         height: c.h,
                                         background:
-                                            'radial-gradient(circle at 35% 35%, rgba(203,213,225,0.75) 0%, rgba(148,163,184,0.35) 55%, rgba(255,255,255,0) 70%)',
+                                            'radial-gradient(circle at 35% 35%, rgba(203,213,225,0.72) 0%, rgba(148,163,184,0.33) 55%, rgba(255,255,255,0) 70%)',
                                         mixBlendMode: 'multiply',
                                         opacity: c.op,
                                         filter: 'blur(0.5px)',
@@ -126,10 +320,10 @@ export const BackgroundScene: React.FC = () => {
                                 />
                             ))}
                             <div
-                                className="absolute inset-0 opacity-[0.15]"
+                                className="absolute inset-0 opacity-[0.13]"
                                 style={{
                                     background:
-                                        'repeating-radial-gradient(circle at 60% 40%, rgba(255,255,255,0.4) 0 2px, rgba(226,232,240,0.35) 2px 4px, rgba(203,213,225,0.25) 4px 6px, transparent 6px 8px)',
+                                        'repeating-radial-gradient(circle at 60% 40%, rgba(255,255,255,0.38) 0 2px, rgba(226,232,240,0.33) 2px 4px, rgba(203,213,225,0.24) 4px 6px, transparent 6px 8px)',
                                     mixBlendMode: 'overlay',
                                 }}
                             />
@@ -137,13 +331,17 @@ export const BackgroundScene: React.FC = () => {
                                 className="absolute -inset-8 rounded-full pointer-events-none"
                                 style={{
                                     background:
-                                        'radial-gradient(circle, rgba(255,255,255,0.35) 0%, rgba(200,220,255,0.12) 45%, rgba(200,220,255,0.05) 65%, transparent 80%)',
+                                        'radial-gradient(circle, rgba(255,255,255,0.32) 0%, rgba(200,220,255,0.11) 45%, rgba(200,220,255,0.045) 65%, transparent 78%)',
                                     filter: 'blur(2px)',
                                 }}
                             />
                         </div>
                     </div>
 
+                    {/* Nubes cercanas que pueden ocultar la luna */}
+                    <CloudLayer variant="near" scrollFactor={0.09} scrollY={scrollY} />
+
+                    {/* Montañas + Ciudad */}
                     <div
                         className="absolute inset-x-0 bottom-0"
                         style={{
@@ -154,10 +352,7 @@ export const BackgroundScene: React.FC = () => {
                     >
                         <div
                             className="absolute inset-x-0 bottom-0"
-                            style={{
-                                height: '68vh',
-                                mixBlendMode: 'normal',
-                            }}
+                            style={{ height: '68vh', mixBlendMode: 'normal' }}
                         >
                             <svg
                                 aria-hidden="true"
@@ -201,7 +396,6 @@ export const BackgroundScene: React.FC = () => {
                         >
                             <div className="relative w-full h-full opacity-95">
                                 {(() => {
-                                    // Distribución pseudo-aleatoria estable (seeded)
                                     const total = 22;
                                     const seedRandom = (seed: number) => {
                                         let s = seed % 2147483647;
@@ -219,8 +413,8 @@ export const BackgroundScene: React.FC = () => {
                                     const buildings = basePositions.map((baseX, i) => {
                                         const jitter = (rng() - 0.5) * (100 / total) * 0.6;
                                         const xPct = Math.min(100, Math.max(0, baseX + jitter));
-                                        const w = 50 + Math.round(rng() * 55); // 50 - 105
-                                        const h = 110 + Math.round(rng() * 105); // 110 - 215
+                                        const w = 50 + Math.round(rng() * 55);
+                                        const h = 110 + Math.round(rng() * 105);
                                         return { w, h, xPct, i };
                                     });
                                     buildings.sort((a, b) => a.xPct - b.xPct);
@@ -268,7 +462,7 @@ export const BackgroundScene: React.FC = () => {
                                                         const left = offsetX + x * (size + gapX);
                                                         const seed = (b.i * 997 + wi * 37) % 211;
                                                         wi++;
-                                                        if (seed % 5 === 0) continue;
+                                                        if (seed % 5 === 0) continue; // ventana apagada
                                                         const flicker = seed % 11 === 0;
                                                         windows.push(
                                                             <span
@@ -298,7 +492,7 @@ export const BackgroundScene: React.FC = () => {
                                         </div>
                                     ));
                                 })()}
-                                {/* Gradiente base suelo + leve luz central para evitar sombra oscura */}
+                                {/* Gradiente base suelo */}
                                 <div className="absolute inset-x-0 bottom-0 h-full pointer-events-none">
                                     <div className="absolute inset-0 bg-gradient-to-t from-[#050d16] via-[#050d16]/90 to-transparent" />
                                     <div
@@ -318,5 +512,3 @@ export const BackgroundScene: React.FC = () => {
         </div>
     );
 };
-
-// Nubes eliminadas deliberadamente para un fondo limpio.
