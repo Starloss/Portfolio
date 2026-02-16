@@ -20,7 +20,16 @@ export const SKILL_CATEGORIES: SkillCategory[] = [
     },
     {
         name: 'Back',
-        items: ['Node.js', 'Python', 'Django', 'Next.js', 'PostgreSQL', 'MongoDB', 'Firebase'],
+        items: [
+            'Node.js',
+            'Python',
+            'Django',
+            'Next.js',
+            'PostgreSQL',
+            'MongoDB',
+            'Prisma',
+            'Firebase',
+        ],
     },
     { name: 'DevOps', items: ['AWS', 'GCP', 'CI/CD Pipelines'] },
     {

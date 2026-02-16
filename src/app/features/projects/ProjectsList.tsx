@@ -9,21 +9,27 @@ export const ProjectsList: React.FC = () => {
     const { t } = useI18n();
     const trackRef = useRef<HTMLUListElement | null>(null);
     const animationRef = useRef<number | null>(null);
-    const momentumRef = useRef(0);
+    const activePointerIdRef = useRef<number | null>(null);
     const isDraggingRef = useRef(false);
+    const movedRef = useRef(false);
+    const suppressClickUntilRef = useRef(0);
     const startXRef = useRef(0);
     const startScrollRef = useRef(0);
-    const lastXRef = useRef(0);
-    const lastMoveTimeRef = useRef(0);
     const [isDragging, setIsDragging] = useState(false);
 
     const loopProjects = useMemo(() => [...projects, ...projects], [projects]);
+
+    const resetDrag = () => {
+        isDraggingRef.current = false;
+        activePointerIdRef.current = null;
+        setIsDragging(false);
+    };
 
     useEffect(() => {
         const el = trackRef.current;
         if (!el) return;
 
-        const baseSpeed = 0.22;
+        const baseSpeed = 0.14;
 
         const tick = () => {
             if (!trackRef.current) return;
@@ -31,12 +37,7 @@ export const ProjectsList: React.FC = () => {
             const half = node.scrollWidth / 2;
 
             if (!isDraggingRef.current) {
-                if (Math.abs(momentumRef.current) > 0.01) {
-                    node.scrollLeft += momentumRef.current;
-                    momentumRef.current *= 0.95;
-                } else {
-                    node.scrollLeft += baseSpeed;
-                }
+                node.scrollLeft += baseSpeed;
             }
 
             if (node.scrollLeft >= half) node.scrollLeft -= half;
@@ -53,44 +54,75 @@ export const ProjectsList: React.FC = () => {
         };
     }, []);
 
+    useEffect(() => {
+        const onWindowPointerUp = () => resetDrag();
+        const onBlur = () => resetDrag();
+        window.addEventListener('pointerup', onWindowPointerUp);
+        window.addEventListener('pointercancel', onWindowPointerUp);
+        window.addEventListener('blur', onBlur);
+        return () => {
+            window.removeEventListener('pointerup', onWindowPointerUp);
+            window.removeEventListener('pointercancel', onWindowPointerUp);
+            window.removeEventListener('blur', onBlur);
+        };
+    }, []);
+
     const onPointerDown: React.PointerEventHandler<HTMLUListElement> = (event) => {
+        if (event.button !== 0) return;
         const el = trackRef.current;
         if (!el) return;
-        isDraggingRef.current = true;
-        setIsDragging(true);
-        momentumRef.current = 0;
+        activePointerIdRef.current = event.pointerId;
+        isDraggingRef.current = false;
+        movedRef.current = false;
         startXRef.current = event.clientX;
         startScrollRef.current = el.scrollLeft;
-        lastXRef.current = event.clientX;
-        lastMoveTimeRef.current = performance.now();
-        el.setPointerCapture(event.pointerId);
     };
 
     const onPointerMove: React.PointerEventHandler<HTMLUListElement> = (event) => {
-        if (!isDraggingRef.current || !trackRef.current) return;
+        if (!trackRef.current) return;
+        if (activePointerIdRef.current !== event.pointerId) return;
+        if ((event.buttons & 1) !== 1 && !isDraggingRef.current) return;
         const el = trackRef.current;
+        const dragDelta = event.clientX - startXRef.current;
+        if (!isDraggingRef.current && Math.abs(dragDelta) > 8) {
+            isDraggingRef.current = true;
+            movedRef.current = true;
+            setIsDragging(true);
+            el.setPointerCapture(event.pointerId);
+        }
+        if (!isDraggingRef.current) return;
+
         const half = el.scrollWidth / 2;
-        const delta = (event.clientX - startXRef.current) * 1.9;
+        const delta = dragDelta * 1.9;
         let nextScroll = startScrollRef.current - delta;
         if (nextScroll >= half) nextScroll -= half;
         if (nextScroll < 0) nextScroll += half;
         el.scrollLeft = nextScroll;
-
-        const now = performance.now();
-        const elapsed = now - lastMoveTimeRef.current;
-        if (elapsed > 0) {
-            const moveDelta = event.clientX - lastXRef.current;
-            momentumRef.current = -(moveDelta / elapsed) * 10;
-            lastXRef.current = event.clientX;
-            lastMoveTimeRef.current = now;
-        }
     };
 
     const onPointerUp: React.PointerEventHandler<HTMLUListElement> = (event) => {
         if (!trackRef.current) return;
-        isDraggingRef.current = false;
-        setIsDragging(false);
-        trackRef.current.releasePointerCapture(event.pointerId);
+        if (activePointerIdRef.current !== event.pointerId) return;
+        if (isDraggingRef.current) {
+            trackRef.current.releasePointerCapture(event.pointerId);
+        }
+        if (movedRef.current) {
+            suppressClickUntilRef.current = performance.now() + 250;
+        }
+        resetDrag();
+    };
+
+    const onPointerLeave: React.PointerEventHandler<HTMLUListElement> = (event) => {
+        if ((event.buttons & 1) === 0) {
+            resetDrag();
+        }
+    };
+
+    const onClickCapture: React.MouseEventHandler<HTMLUListElement> = (event) => {
+        if (performance.now() < suppressClickUntilRef.current) {
+            event.preventDefault();
+            event.stopPropagation();
+        }
     };
 
     return (
@@ -104,6 +136,9 @@ export const ProjectsList: React.FC = () => {
                 onPointerMove={onPointerMove}
                 onPointerUp={onPointerUp}
                 onPointerCancel={onPointerUp}
+                onPointerLeave={onPointerLeave}
+                onClickCapture={onClickCapture}
+                onDragStart={(event) => event.preventDefault()}
             >
                 {loopProjects.map((p, index) => (
                     <ProjectCard key={`${p.id}-${index}`} project={p} />

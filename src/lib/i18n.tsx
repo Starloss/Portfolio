@@ -43,6 +43,10 @@ const translations: Record<Locale, Record<string, string>> = {
             'Plataforma que optimiza calidad y tiempos de respuesta en servicios de salud.',
         project_hybrid_desc: 'App móvil híbrida con soporte offline y CI/CD optimizado.',
         project_fullstack_desc: 'Conjunto de aplicaciones entregadas puntual y mantenibles.',
+        project_be_desc:
+            'Motor de reservas robusto con flujos de disponibilidad, tarifas dinámicas y checkout optimizado.',
+        project_superwallet_desc:
+            'Billetera digital con foco en transacciones seguras, trazabilidad y experiencia móvil fluida.',
         project_stack: 'Stack usado',
         project_years: 'Años de desarrollo',
         project_back: 'Volver a proyectos',
@@ -84,6 +88,10 @@ const translations: Record<Locale, Record<string, string>> = {
             'Platform that improves quality and response times in healthcare services.',
         project_hybrid_desc: 'Hybrid mobile app with offline support and optimized CI/CD.',
         project_fullstack_desc: 'Set of punctual, maintainable full-stack applications delivered.',
+        project_be_desc:
+            'Robust booking engine with availability flows, dynamic pricing and optimized checkout.',
+        project_superwallet_desc:
+            'Digital wallet focused on secure transactions, traceability and smooth mobile UX.',
         project_stack: 'Used stack',
         project_years: 'Development years',
         project_back: 'Back to projects',

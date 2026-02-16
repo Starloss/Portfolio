@@ -61,9 +61,9 @@ function createBuildings(total: number): BuildingSpec[] {
                 const left = offsetX + x * (size + gapX);
                 const seed = (i * 997 + wi * 37) % 211;
                 const lit = seed % 5 !== 0;
-                const dynamic = seed % 17 === 0;
-                const duration = 9 + (seed % 12);
-                const delay = -(seed % 8);
+                const dynamic = seed % 23 === 0;
+                const duration = 24 + (seed % 34);
+                const delay = -(seed % 22);
                 windows.push({
                     id: `${i}-${wi}`,
                     top,

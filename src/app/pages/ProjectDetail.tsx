@@ -15,10 +15,7 @@ export const ProjectDetail: React.FC = () => {
     if (!project) {
         return (
             <main className="min-h-screen px-6 py-14 max-w-3xl mx-auto space-y-4">
-                <h1
-                    className="text-3xl font-bold text-slate-800 dark:text
-                    -white"
-                >
+                <h1 className="text-3xl font-bold text-slate-800 dark:text-white">
                     {t('project_not_found')}
                 </h1>
                 <Link
@@ -46,11 +43,7 @@ export const ProjectDetail: React.FC = () => {
                     {t('project_back')}
                 </Link>
 
-                <section
-                    className="space-y-5 rounded-2xl border border-slat
-                        e-200/80 dark:border-sla
-                    te-800/80 bg-slate-100/70 dark:bg-slate-900/55 backdrop-blur p-6 md:p-8"
-                >
+                <section className="space-y-5 rounded-2xl border border-slate-200/80 dark:border-slate-800/80 bg-slate-100/70 dark:bg-slate-900/55 backdrop-blur p-6 md:p-8">
                     <h1 className="text-3xl md:text-4xl font-bold text-slate-800 dark:text-white">
                         {project.title}
                     </h1>

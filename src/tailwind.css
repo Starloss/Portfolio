@@ -76,26 +76,29 @@
     }
     @keyframes light-random {
         0%,
-        27%,
-        45%,
-        66%,
-        86%,
+        18%,
+        36%,
+        58%,
+        79%,
         100% {
             opacity: 0.92;
         }
-        31%,
-        72% {
+        24%,
+        63% {
             opacity: 0.18;
         }
-        53% {
+        44% {
             opacity: 0.35;
+        }
+        84% {
+            opacity: 0.52;
         }
     }
     .animate-light-flicker {
         animation: light-flicker 7s linear infinite;
     }
     .animate-light-random {
-        animation: light-random 12s steps(1, end) infinite;
+        animation: light-random 30s steps(1, end) infinite;
     }
     /* (Animaciones de vehículos y faros eliminadas) */
     @media (prefers-reduced-motion: reduce) {

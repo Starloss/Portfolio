@@ -10,7 +10,7 @@ interface Props {
 export const ProjectCard: React.FC<Props> = ({ project }) => {
     const { t } = useI18n();
     return (
-        <li className="group min-w-[310px] max-w-[360px] rounded-xl border border-slate-300 bg-white/80 dark:border-slate-800 dark:bg-slate-900/70 backdrop-blur p-5 hover:border-brand-500 transition-colors">
+        <li className="group flex-none min-w-[310px] max-w-[360px] rounded-xl border border-slate-300 bg-white/80 dark:border-slate-800 dark:bg-slate-900/70 backdrop-blur p-5 hover:border-brand-500 transition-colors">
             <a href={`/projects/${project.id}`} className="inline-block">
                 <h3 className="text-lg font-semibold text-brand-400 group-hover:underline underline-offset-4">
                     {project.title}
