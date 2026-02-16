@@ -19,7 +19,7 @@ export const ProjectsList: React.FC = () => {
     const startScrollRef = useRef(0);
     const [isDragging, setIsDragging] = useState(false);
 
-    const loopProjects = useMemo(() => [...projects, ...projects], [projects]);
+    const loopProjects = useMemo(() => [...projects, ...projects, ...projects], [projects]);
 
     const resetDrag = () => {
         isDraggingRef.current = false;
@@ -33,12 +33,15 @@ export const ProjectsList: React.FC = () => {
 
         const autoSpeedPxPerSec = 32;
 
+        const getSegmentWidth = () => el.scrollWidth / 3;
+        const segment = getSegmentWidth();
+        el.scrollLeft = segment;
         targetScrollRef.current = el.scrollLeft;
 
         const tick = (time: number) => {
             if (!trackRef.current) return;
             const node = trackRef.current;
-            const half = node.scrollWidth / 2;
+            const currentSegment = node.scrollWidth / 3;
 
             if (lastFrameTimeRef.current === 0) {
                 lastFrameTimeRef.current = time;
@@ -50,21 +53,18 @@ export const ProjectsList: React.FC = () => {
                 targetScrollRef.current += autoSpeedPxPerSec * dt;
             }
 
+            if (targetScrollRef.current < currentSegment * 0.5) {
+                targetScrollRef.current += currentSegment;
+                node.scrollLeft += currentSegment;
+            }
+            if (targetScrollRef.current > currentSegment * 1.5) {
+                targetScrollRef.current -= currentSegment;
+                node.scrollLeft -= currentSegment;
+            }
+
             const diff = targetScrollRef.current - node.scrollLeft;
             const smoothing = isDraggingRef.current ? 0.38 : 0.12;
             node.scrollLeft += diff * smoothing;
-
-            if (targetScrollRef.current >= half) {
-                targetScrollRef.current -= half;
-                node.scrollLeft -= half;
-            }
-            if (targetScrollRef.current < 0) {
-                targetScrollRef.current += half;
-                node.scrollLeft += half;
-            }
-
-            if (node.scrollLeft >= half) node.scrollLeft -= half;
-            if (node.scrollLeft < 0) node.scrollLeft += half;
 
             animationRef.current = window.requestAnimationFrame((nextTime) => tick(nextTime));
         };
@@ -117,11 +117,11 @@ export const ProjectsList: React.FC = () => {
         }
         if (!isDraggingRef.current) return;
 
-        const half = el.scrollWidth / 2;
+        const segment = el.scrollWidth / 3;
         const delta = dragDelta * 1.25;
         let nextScroll = startScrollRef.current - delta;
-        if (nextScroll >= half) nextScroll -= half;
-        if (nextScroll < 0) nextScroll += half;
+        if (nextScroll < segment * 0.5) nextScroll += segment;
+        if (nextScroll > segment * 1.5) nextScroll -= segment;
         targetScrollRef.current = nextScroll;
     };
 

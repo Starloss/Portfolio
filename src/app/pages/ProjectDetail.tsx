@@ -36,12 +36,12 @@ export const ProjectDetail: React.FC = () => {
         <>
             <BackgroundScene />
             <main className="max-w-5xl mx-auto px-6 md:px-8 py-10 space-y-8">
-                <Link
-                    to="/#projects"
+                <a
+                    href="/#projects"
                     className="inline-flex items-center text-sm px-3 py-1.5 rounded-lg bg-slate-200 text-slate-700 hover:bg-slate-300 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700 transition"
                 >
                     {t('project_back')}
-                </Link>
+                </a>
 
                 <section className="space-y-5 rounded-2xl border border-slate-200/80 dark:border-slate-800/80 bg-slate-100/70 dark:bg-slate-900/55 backdrop-blur p-6 md:p-8">
                     <h1 className="text-3xl md:text-4xl font-bold text-slate-800 dark:text-white">
