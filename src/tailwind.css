@@ -74,13 +74,36 @@
             opacity: 0.9;
         }
     }
+    @keyframes light-random {
+        0%,
+        27%,
+        45%,
+        66%,
+        86%,
+        100% {
+            opacity: 0.92;
+        }
+        31%,
+        72% {
+            opacity: 0.18;
+        }
+        53% {
+            opacity: 0.35;
+        }
+    }
     .animate-light-flicker {
         animation: light-flicker 7s linear infinite;
+    }
+    .animate-light-random {
+        animation: light-random 12s steps(1, end) infinite;
     }
     /* (Animaciones de vehículos y faros eliminadas) */
     @media (prefers-reduced-motion: reduce) {
         /* Clases de nubes eliminadas */
         .animate-light-flicker {
+            animation: none;
+        }
+        .animate-light-random {
             animation: none;
         }
         /* Clases de vehículos/faros eliminadas */
