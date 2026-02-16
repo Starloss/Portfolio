@@ -7,16 +7,18 @@ import { ProjectCard } from './ProjectCard';
 export const ProjectsList: React.FC = () => {
     const projects = getProjectsSync();
     const { t } = useI18n();
+    const viewportRef = useRef<HTMLDivElement | null>(null);
     const trackRef = useRef<HTMLUListElement | null>(null);
     const animationRef = useRef<number | null>(null);
     const lastFrameTimeRef = useRef(0);
-    const targetScrollRef = useRef(0);
+    const setWidthRef = useRef(1);
+    const logicalXRef = useRef(0);
     const activePointerIdRef = useRef<number | null>(null);
     const isDraggingRef = useRef(false);
     const movedRef = useRef(false);
     const suppressClickUntilRef = useRef(0);
     const startXRef = useRef(0);
-    const startScrollRef = useRef(0);
+    const startLogicalXRef = useRef(0);
     const [isDragging, setIsDragging] = useState(false);
 
     const loopProjects = useMemo(() => [...projects, ...projects, ...projects], [projects]);
@@ -27,21 +29,32 @@ export const ProjectsList: React.FC = () => {
         setIsDragging(false);
     };
 
+    const applyTransform = () => {
+        if (!trackRef.current) return;
+        const width = Math.max(1, setWidthRef.current);
+        const logical = ((logicalXRef.current % width) + width) % width;
+        logicalXRef.current = logical;
+        trackRef.current.style.transform = `translate3d(${-width - logical}px, 0, 0)`;
+    };
+
+    const measure = () => {
+        if (!trackRef.current) return;
+        const total = trackRef.current.scrollWidth;
+        const setWidth = total / 3;
+        if (setWidth > 0) {
+            setWidthRef.current = setWidth;
+        }
+        applyTransform();
+    };
+
     useEffect(() => {
-        const el = trackRef.current;
-        if (!el) return;
+        if (!trackRef.current) return;
 
         const autoSpeedPxPerSec = 32;
-
-        const getSegmentWidth = () => el.scrollWidth / 3;
-        const segment = getSegmentWidth();
-        el.scrollLeft = segment;
-        targetScrollRef.current = el.scrollLeft;
+        measure();
 
         const tick = (time: number) => {
             if (!trackRef.current) return;
-            const node = trackRef.current;
-            const currentSegment = node.scrollWidth / 3;
 
             if (lastFrameTimeRef.current === 0) {
                 lastFrameTimeRef.current = time;
@@ -50,21 +63,10 @@ export const ProjectsList: React.FC = () => {
             lastFrameTimeRef.current = time;
 
             if (!isDraggingRef.current) {
-                targetScrollRef.current += autoSpeedPxPerSec * dt;
+                logicalXRef.current += autoSpeedPxPerSec * dt;
             }
 
-            if (targetScrollRef.current < currentSegment * 0.5) {
-                targetScrollRef.current += currentSegment;
-                node.scrollLeft += currentSegment;
-            }
-            if (targetScrollRef.current > currentSegment * 1.5) {
-                targetScrollRef.current -= currentSegment;
-                node.scrollLeft -= currentSegment;
-            }
-
-            const diff = targetScrollRef.current - node.scrollLeft;
-            const smoothing = isDraggingRef.current ? 0.38 : 0.12;
-            node.scrollLeft += diff * smoothing;
+            applyTransform();
 
             animationRef.current = window.requestAnimationFrame((nextTime) => tick(nextTime));
         };
@@ -77,6 +79,13 @@ export const ProjectsList: React.FC = () => {
             lastFrameTimeRef.current = 0;
         };
     }, []);
+
+    useEffect(() => {
+        measure();
+        const onResize = () => measure();
+        window.addEventListener('resize', onResize);
+        return () => window.removeEventListener('resize', onResize);
+    }, [loopProjects.length]);
 
     useEffect(() => {
         const onWindowPointerUp = () => resetDrag();
@@ -99,8 +108,7 @@ export const ProjectsList: React.FC = () => {
         isDraggingRef.current = false;
         movedRef.current = false;
         startXRef.current = event.clientX;
-        startScrollRef.current = el.scrollLeft;
-        targetScrollRef.current = el.scrollLeft;
+        startLogicalXRef.current = logicalXRef.current;
     };
 
     const onPointerMove: React.PointerEventHandler<HTMLUListElement> = (event) => {
@@ -117,12 +125,9 @@ export const ProjectsList: React.FC = () => {
         }
         if (!isDraggingRef.current) return;
 
-        const segment = el.scrollWidth / 3;
-        const delta = dragDelta * 1.25;
-        let nextScroll = startScrollRef.current - delta;
-        if (nextScroll < segment * 0.5) nextScroll += segment;
-        if (nextScroll > segment * 1.5) nextScroll -= segment;
-        targetScrollRef.current = nextScroll;
+        const delta = dragDelta * 1.08;
+        logicalXRef.current = startLogicalXRef.current - delta;
+        applyTransform();
     };
 
     const onPointerUp: React.PointerEventHandler<HTMLUListElement> = (event) => {
@@ -152,23 +157,27 @@ export const ProjectsList: React.FC = () => {
 
     return (
         <div className="rounded-2xl border border-slate-200/80 dark:border-slate-800/80 bg-slate-50/60 dark:bg-slate-950/30 p-3 md:p-4">
-            <ul
-                ref={trackRef}
-                className={`flex gap-5 overflow-x-scroll select-none [&::-webkit-scrollbar]:hidden ${isDragging ? 'cursor-grabbing' : 'cursor-grab'}`}
-                style={{ scrollbarWidth: 'none' }}
-                aria-label={t('projects_list_aria')}
-                onPointerDown={onPointerDown}
-                onPointerMove={onPointerMove}
-                onPointerUp={onPointerUp}
-                onPointerCancel={onPointerUp}
-                onPointerLeave={onPointerLeave}
-                onClickCapture={onClickCapture}
-                onDragStart={(event) => event.preventDefault()}
+            <div
+                ref={viewportRef}
+                className={`overflow-hidden select-none ${isDragging ? 'cursor-grabbing' : 'cursor-grab'}`}
             >
-                {loopProjects.map((p, index) => (
-                    <ProjectCard key={`${p.id}-${index}`} project={p} isDragging={isDragging} />
-                ))}
-            </ul>
+                <ul
+                    ref={trackRef}
+                    className="flex gap-5 will-change-transform"
+                    aria-label={t('projects_list_aria')}
+                    onPointerDown={onPointerDown}
+                    onPointerMove={onPointerMove}
+                    onPointerUp={onPointerUp}
+                    onPointerCancel={onPointerUp}
+                    onPointerLeave={onPointerLeave}
+                    onClickCapture={onClickCapture}
+                    onDragStart={(event) => event.preventDefault()}
+                >
+                    {loopProjects.map((p, index) => (
+                        <ProjectCard key={`${p.id}-${index}`} project={p} isDragging={isDragging} />
+                    ))}
+                </ul>
+            </div>
         </div>
     );
 };

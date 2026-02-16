@@ -51,6 +51,31 @@ export const Home: React.FC = () => {
         return () => window.removeEventListener('scroll', onScroll);
     }, []);
 
+    useEffect(() => {
+        if (typeof window === 'undefined') return;
+
+        const scrollToHashSection = () => {
+            const hash = window.location.hash;
+            if (!hash) return;
+            const id = hash.replace('#', '');
+            if (!id) return;
+            const section = document.getElementById(id);
+            if (section) {
+                section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+        };
+
+        const rafId = window.requestAnimationFrame(() => {
+            window.setTimeout(scrollToHashSection, 0);
+        });
+
+        window.addEventListener('hashchange', scrollToHashSection);
+        return () => {
+            window.cancelAnimationFrame(rafId);
+            window.removeEventListener('hashchange', scrollToHashSection);
+        };
+    }, []);
+
     const navItems: { id: string; label: string }[] = [
         { id: 'about', label: t('about_title') },
         { id: 'skills', label: t('skills_title') },
