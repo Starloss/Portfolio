@@ -9,6 +9,8 @@ export const ProjectsList: React.FC = () => {
     const { t } = useI18n();
     const trackRef = useRef<HTMLUListElement | null>(null);
     const animationRef = useRef<number | null>(null);
+    const lastFrameTimeRef = useRef(0);
+    const targetScrollRef = useRef(0);
     const activePointerIdRef = useRef<number | null>(null);
     const isDraggingRef = useRef(false);
     const movedRef = useRef(false);
@@ -29,28 +31,50 @@ export const ProjectsList: React.FC = () => {
         const el = trackRef.current;
         if (!el) return;
 
-        const baseSpeed = 0.14;
+        const autoSpeedPxPerSec = 32;
 
-        const tick = () => {
+        targetScrollRef.current = el.scrollLeft;
+
+        const tick = (time: number) => {
             if (!trackRef.current) return;
             const node = trackRef.current;
             const half = node.scrollWidth / 2;
 
+            if (lastFrameTimeRef.current === 0) {
+                lastFrameTimeRef.current = time;
+            }
+            const dt = Math.min(0.05, (time - lastFrameTimeRef.current) / 1000);
+            lastFrameTimeRef.current = time;
+
             if (!isDraggingRef.current) {
-                node.scrollLeft += baseSpeed;
+                targetScrollRef.current += autoSpeedPxPerSec * dt;
+            }
+
+            const diff = targetScrollRef.current - node.scrollLeft;
+            const smoothing = isDraggingRef.current ? 0.38 : 0.12;
+            node.scrollLeft += diff * smoothing;
+
+            if (targetScrollRef.current >= half) {
+                targetScrollRef.current -= half;
+                node.scrollLeft -= half;
+            }
+            if (targetScrollRef.current < 0) {
+                targetScrollRef.current += half;
+                node.scrollLeft += half;
             }
 
             if (node.scrollLeft >= half) node.scrollLeft -= half;
             if (node.scrollLeft < 0) node.scrollLeft += half;
 
-            animationRef.current = window.requestAnimationFrame(tick);
+            animationRef.current = window.requestAnimationFrame((nextTime) => tick(nextTime));
         };
 
-        animationRef.current = window.requestAnimationFrame(tick);
+        animationRef.current = window.requestAnimationFrame((time) => tick(time));
 
         return () => {
             if (animationRef.current) window.cancelAnimationFrame(animationRef.current);
             animationRef.current = null;
+            lastFrameTimeRef.current = 0;
         };
     }, []);
 
@@ -76,6 +100,7 @@ export const ProjectsList: React.FC = () => {
         movedRef.current = false;
         startXRef.current = event.clientX;
         startScrollRef.current = el.scrollLeft;
+        targetScrollRef.current = el.scrollLeft;
     };
 
     const onPointerMove: React.PointerEventHandler<HTMLUListElement> = (event) => {
@@ -93,11 +118,11 @@ export const ProjectsList: React.FC = () => {
         if (!isDraggingRef.current) return;
 
         const half = el.scrollWidth / 2;
-        const delta = dragDelta * 1.9;
+        const delta = dragDelta * 1.25;
         let nextScroll = startScrollRef.current - delta;
         if (nextScroll >= half) nextScroll -= half;
         if (nextScroll < 0) nextScroll += half;
-        el.scrollLeft = nextScroll;
+        targetScrollRef.current = nextScroll;
     };
 
     const onPointerUp: React.PointerEventHandler<HTMLUListElement> = (event) => {
@@ -141,7 +166,7 @@ export const ProjectsList: React.FC = () => {
                 onDragStart={(event) => event.preventDefault()}
             >
                 {loopProjects.map((p, index) => (
-                    <ProjectCard key={`${p.id}-${index}`} project={p} />
+                    <ProjectCard key={`${p.id}-${index}`} project={p} isDragging={isDragging} />
                 ))}
             </ul>
         </div>

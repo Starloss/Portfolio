@@ -14,6 +14,11 @@ const PROJECTS: Project[] = [
             '/projects/be-3.svg',
             '/projects/be-4.svg',
             '/projects/be-5.svg',
+            '/projects/be-6.svg',
+            '/projects/be-7.svg',
+            '/projects/be-8.svg',
+            '/projects/be-9.svg',
+            '/projects/be-10.svg',
         ],
     },
     {
@@ -28,6 +33,11 @@ const PROJECTS: Project[] = [
             '/projects/superwallet-3.svg',
             '/projects/superwallet-4.svg',
             '/projects/superwallet-5.svg',
+            '/projects/superwallet-6.svg',
+            '/projects/superwallet-7.svg',
+            '/projects/superwallet-8.svg',
+            '/projects/superwallet-9.svg',
+            '/projects/superwallet-10.svg',
         ],
     },
 ];
