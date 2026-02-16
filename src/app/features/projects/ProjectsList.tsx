@@ -5,6 +5,8 @@ import { getProjectsSync } from './data';
 import { ProjectCard } from './ProjectCard';
 
 export const ProjectsList: React.FC = () => {
+    const repeatCount = 7;
+    const centerBlockIndex = Math.floor(repeatCount / 2);
     const projects = getProjectsSync();
     const { t } = useI18n();
     const viewportRef = useRef<HTMLDivElement | null>(null);
@@ -21,7 +23,10 @@ export const ProjectsList: React.FC = () => {
     const startLogicalXRef = useRef(0);
     const [isDragging, setIsDragging] = useState(false);
 
-    const loopProjects = useMemo(() => [...projects, ...projects, ...projects], [projects]);
+    const loopProjects = useMemo(
+        () => Array.from({ length: repeatCount }, () => projects).flat(),
+        [projects],
+    );
 
     const resetDrag = () => {
         isDraggingRef.current = false;
@@ -32,15 +37,32 @@ export const ProjectsList: React.FC = () => {
     const applyTransform = () => {
         if (!trackRef.current) return;
         const width = Math.max(1, setWidthRef.current);
-        const logical = ((logicalXRef.current % width) + width) % width;
+        const logical =
+            logicalXRef.current >= 0 && logicalXRef.current < width
+                ? logicalXRef.current
+                : ((logicalXRef.current % width) + width) % width;
         logicalXRef.current = logical;
-        trackRef.current.style.transform = `translate3d(${-width - logical}px, 0, 0)`;
+        const baseOffset = centerBlockIndex * width;
+        trackRef.current.style.transform = `translate3d(${-baseOffset - logical}px, 0, 0)`;
     };
 
     const measure = () => {
         if (!trackRef.current) return;
-        const total = trackRef.current.scrollWidth;
-        const setWidth = total / 3;
+        const children = Array.from(trackRef.current.children) as HTMLElement[];
+        const setCount = projects.length;
+        let setWidth = 0;
+
+        if (setCount > 0 && children.length >= setCount + 1) {
+            const firstRect = children[0].getBoundingClientRect();
+            const nextSetRect = children[setCount].getBoundingClientRect();
+            setWidth = nextSetRect.left - firstRect.left;
+        }
+
+        if (setWidth <= 0) {
+            const total = trackRef.current.scrollWidth;
+            setWidth = total / repeatCount;
+        }
+
         if (setWidth > 0) {
             setWidthRef.current = setWidth;
         }
@@ -84,7 +106,18 @@ export const ProjectsList: React.FC = () => {
         measure();
         const onResize = () => measure();
         window.addEventListener('resize', onResize);
-        return () => window.removeEventListener('resize', onResize);
+
+        let resizeObserver: ResizeObserver | null = null;
+        if (typeof ResizeObserver !== 'undefined' && trackRef.current) {
+            resizeObserver = new ResizeObserver(() => measure());
+            resizeObserver.observe(trackRef.current);
+            if (viewportRef.current) resizeObserver.observe(viewportRef.current);
+        }
+
+        return () => {
+            window.removeEventListener('resize', onResize);
+            resizeObserver?.disconnect();
+        };
     }, [loopProjects.length]);
 
     useEffect(() => {
@@ -163,7 +196,7 @@ export const ProjectsList: React.FC = () => {
             >
                 <ul
                     ref={trackRef}
-                    className="flex gap-5 will-change-transform"
+                    className="flex gap-5 will-change-transform list-none p-0 m-0"
                     aria-label={t('projects_list_aria')}
                     onPointerDown={onPointerDown}
                     onPointerMove={onPointerMove}
