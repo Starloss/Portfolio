@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { currentYear } from '@lib/date';
 import { useI18n } from '@lib/i18n';
@@ -11,6 +11,11 @@ export const ProjectDetail: React.FC = () => {
     const { t } = useI18n();
     const project = id ? getProjectById(id) : undefined;
     const [imageIndex, setImageIndex] = useState(0);
+    const [isPortraitImage, setIsPortraitImage] = useState(false);
+
+    useEffect(() => {
+        setIsPortraitImage(false);
+    }, [id, imageIndex]);
 
     if (!project) {
         return (
@@ -31,6 +36,14 @@ export const ProjectDetail: React.FC = () => {
     const nextImage = () => setImageIndex((prev) => (prev + 1) % project.images.length);
     const prevImage = () =>
         setImageIndex((prev) => (prev - 1 + project.images.length) % project.images.length);
+    const onImageLoad: React.ReactEventHandler<HTMLImageElement> = (event) => {
+        const { naturalWidth, naturalHeight } = event.currentTarget;
+        if (naturalWidth <= 0 || naturalHeight <= 0) {
+            setIsPortraitImage(false);
+            return;
+        }
+        setIsPortraitImage(naturalHeight > naturalWidth);
+    };
 
     return (
         <>
@@ -51,11 +64,37 @@ export const ProjectDetail: React.FC = () => {
                         {t(project.description)}
                     </p>
 
+                    <div className="space-y-2" aria-label={t('project_role_aria')}>
+                        <h2 className="text-xl font-semibold text-slate-800 dark:text-white">
+                            {t('project_role_title')}
+                        </h2>
+                        <p className="text-slate-700 dark:text-slate-300 leading-relaxed">
+                            {t(project.role)}
+                        </p>
+                    </div>
+
+                    <div className="space-y-3">
+                        <h2 className="text-xl font-semibold text-slate-800 dark:text-white">
+                            {t('project_contributions_title')}
+                        </h2>
+                        <ul
+                            className="list-disc pl-5 space-y-2 text-slate-700 dark:text-slate-300"
+                            aria-label={t('project_contributions_aria')}
+                        >
+                            {project.contributions.map((item) => (
+                                <li key={item} className="leading-relaxed">
+                                    {t(item)}
+                                </li>
+                            ))}
+                        </ul>
+                    </div>
+
                     <div className="relative rounded-xl overflow-hidden border border-slate-300 dark:border-slate-700">
                         <img
                             src={project.images[imageIndex]}
                             alt={`${project.title} ${imageIndex + 1}`}
-                            className="w-full h-[260px] md:h-[420px] object-cover"
+                            onLoad={onImageLoad}
+                            className={`w-full h-[260px] md:h-[420px] ${isPortraitImage ? 'object-contain bg-slate-200/70 dark:bg-slate-900' : 'object-cover'}`}
                         />
                         <button
                             onClick={prevImage}

@@ -45,8 +45,25 @@ const translations: Record<Locale, Record<string, string>> = {
         project_fullstack_desc: 'Conjunto de aplicaciones entregadas puntual y mantenibles.',
         project_be_desc:
             'Motor de reservas robusto con flujos de disponibilidad, tarifas dinámicas y checkout optimizado.',
+        project_role_title: 'Rol',
+        project_role_aria: 'rol desempeñado en el proyecto',
+        project_be_role: 'Full-Stack Lead Developer',
+        project_contributions_title: 'Lo que hice en este proyecto',
+        project_contributions_aria: 'lista de contribuciones del proyecto',
+        project_be_contrib_1: 'Implementé flujos de búsqueda y disponibilidad en tiempo real.',
+        project_be_contrib_2: 'Desarrollé lógica de tarifas dinámicas y reglas de negocio.',
+        project_be_contrib_3: 'Optimicé el checkout para reducir fricción y abandono.',
+        project_be_contrib_4: 'Integré paneles de monitoreo para incidencias y rendimiento.',
         project_superwallet_desc:
             'Billetera digital con foco en transacciones seguras, trazabilidad y experiencia móvil fluida.',
+        project_superwallet_role: 'Frontend Lead Developer',
+        project_superwallet_contrib_1:
+            'Construí módulos de transferencias y validación de operaciones.',
+        project_superwallet_contrib_2:
+            'Mejoré la trazabilidad con historial y estados claros por transacción.',
+        project_superwallet_contrib_3: 'Fortalecí controles de seguridad en flujos sensibles.',
+        project_superwallet_contrib_4:
+            'Ajusté la UX móvil para una navegación más simple y rápida.',
         project_stack: 'Stack usado',
         project_years: 'Años de desarrollo',
         project_back: 'Volver a proyectos',
@@ -90,8 +107,23 @@ const translations: Record<Locale, Record<string, string>> = {
         project_fullstack_desc: 'Set of punctual, maintainable full-stack applications delivered.',
         project_be_desc:
             'Robust booking engine with availability flows, dynamic pricing and optimized checkout.',
+        project_role_title: 'Role',
+        project_role_aria: 'role held in the project',
+        project_be_role: 'Full-Stack Developer',
+        project_contributions_title: 'What I built in this project',
+        project_contributions_aria: 'project contributions list',
+        project_be_contrib_1: 'Implemented real-time search and availability flows.',
+        project_be_contrib_2: 'Built dynamic pricing logic and key business rules.',
+        project_be_contrib_3: 'Optimized checkout to reduce friction and drop-off.',
+        project_be_contrib_4: 'Integrated monitoring dashboards for incidents and performance.',
         project_superwallet_desc:
             'Digital wallet focused on secure transactions, traceability and smooth mobile UX.',
+        project_superwallet_role: 'Frontend Developer',
+        project_superwallet_contrib_1: 'Built transfer modules and operation validation flows.',
+        project_superwallet_contrib_2:
+            'Improved traceability with clear transaction history and statuses.',
+        project_superwallet_contrib_3: 'Strengthened security controls on sensitive flows.',
+        project_superwallet_contrib_4: 'Refined mobile UX for faster, simpler navigation.',
         project_stack: 'Used stack',
         project_years: 'Development years',
         project_back: 'Back to projects',
