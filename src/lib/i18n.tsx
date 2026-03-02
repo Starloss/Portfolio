@@ -11,6 +11,11 @@ interface I18nContextValue {
 const translations: Record<Locale, Record<string, string>> = {
     es: {
         hero_greeting: 'Hola, soy',
+        hero_role_chip: 'Full-Stack Lead Developer',
+        hero_experience_chip: '7+ años de experiencia',
+        hero_headline:
+            'Lidero equipos y construyo productos web/móviles escalables con foco en rendimiento, arquitectura y resultados de negocio',
+        hero_location: 'Caracas, Venezuela',
         about_title: 'Sobre mí',
         about_aria: 'resumen profesional',
         skills_title: 'Habilidades',
@@ -35,7 +40,7 @@ const translations: Record<Locale, Record<string, string>> = {
         nav_menu_open: 'Abrir menú',
         nav_menu_close: 'Cerrar menú',
         professional_summary:
-            'Full-Stack Developer con más de 7 años construyendo soluciones web y móviles, liderando equipos y optimizando productividad.',
+            'Full-Stack Lead Developer con más de 7 años creando productos web y móviles de alto impacto. Lidero equipos de ingeniería, defino arquitectura y desarrollo componentes críticos para mejorar rendimiento, escalabilidad y calidad. Combino visión de negocio con ejecución técnica para convertir problemas complejos en soluciones robustas y medibles.',
         cv_button: 'Descargar CV',
         cv_missing: 'Agrega public/cv.pdf para habilitar la descarga',
         lang_toggle: 'EN',
@@ -96,6 +101,11 @@ const translations: Record<Locale, Record<string, string>> = {
     },
     en: {
         hero_greeting: "Hi, I'm",
+        hero_role_chip: 'Full-Stack Lead Developer',
+        hero_experience_chip: '7+ years of experience',
+        hero_headline:
+            'I lead teams and build scalable web/mobile products focused on performance, architecture, and business outcomes',
+        hero_location: 'Caracas, Venezuela',
         about_title: 'About me',
         about_aria: 'professional summary',
         skills_title: 'Skills',
@@ -120,7 +130,7 @@ const translations: Record<Locale, Record<string, string>> = {
         nav_menu_open: 'Open menu',
         nav_menu_close: 'Close menu',
         professional_summary:
-            'Full-Stack Developer with 7+ years building web & mobile solutions, leading teams and boosting productivity.',
+            'Full-Stack Lead Developer with 7+ years building high-impact web and mobile products. I lead engineering teams, define architecture, and develop critical components to improve performance, scalability, and quality. I combine business vision with strong technical execution to turn complex problems into robust, measurable solutions.',
         cv_button: 'Download CV',
         cv_missing: 'Add public/cv.pdf to enable download',
         lang_toggle: 'ES',
