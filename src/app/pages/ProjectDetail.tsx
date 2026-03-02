@@ -13,11 +13,39 @@ export const ProjectDetail: React.FC = () => {
     const { t } = useI18n();
     const project = id ? getProjectById(id) : undefined;
     const [imageIndex, setImageIndex] = useState(0);
-    const [isPortraitImage, setIsPortraitImage] = useState(false);
+    const [imageFitMode, setImageFitMode] = useState<'contain' | 'fill'>('fill');
+    const [isGalleryOpen, setIsGalleryOpen] = useState(false);
+    const AUTOPLAY_MS = 4000;
 
     useEffect(() => {
-        setIsPortraitImage(false);
-    }, [id, imageIndex]);
+        setImageFitMode('fill');
+        setIsGalleryOpen(false);
+    }, [id]);
+
+    useEffect(() => {
+        if (!project || isGalleryOpen || project.images.length <= 1) return;
+        const intervalId = window.setInterval(() => {
+            setImageIndex((prev) => (prev + 1) % project.images.length);
+        }, AUTOPLAY_MS);
+        return () => window.clearInterval(intervalId);
+    }, [project, isGalleryOpen]);
+
+    useEffect(() => {
+        if (!isGalleryOpen) return;
+        const onKeyDown = (event: KeyboardEvent) => {
+            if (event.key === 'Escape') {
+                setIsGalleryOpen(false);
+            }
+            if (event.key === 'ArrowRight') {
+                setImageIndex((prev) => (prev + 1) % project.images.length);
+            }
+            if (event.key === 'ArrowLeft') {
+                setImageIndex((prev) => (prev - 1 + project.images.length) % project.images.length);
+            }
+        };
+        window.addEventListener('keydown', onKeyDown);
+        return () => window.removeEventListener('keydown', onKeyDown);
+    }, [isGalleryOpen, project]);
 
     if (!project) {
         return (
@@ -42,11 +70,21 @@ export const ProjectDetail: React.FC = () => {
     const onImageLoad: React.ReactEventHandler<HTMLImageElement> = (event) => {
         const { naturalWidth, naturalHeight } = event.currentTarget;
         if (naturalWidth <= 0 || naturalHeight <= 0) {
-            setIsPortraitImage(false);
+            setImageFitMode('fill');
             return;
         }
-        setIsPortraitImage(naturalHeight > naturalWidth);
+        const isPortrait = naturalHeight > naturalWidth;
+        if (isPortrait) {
+            setImageFitMode('contain');
+            return;
+        }
+        setImageFitMode('fill');
     };
+
+    const imageFitClass =
+        imageFitMode === 'contain'
+            ? 'object-contain bg-slate-200/70 dark:bg-slate-900'
+            : 'object-fill';
 
     return (
         <>
@@ -102,7 +140,8 @@ export const ProjectDetail: React.FC = () => {
                             src={project.images[imageIndex]}
                             alt={`${project.title} ${imageIndex + 1}`}
                             onLoad={onImageLoad}
-                            className={`w-full h-[260px] md:h-[420px] ${isPortraitImage ? 'object-contain bg-slate-200/70 dark:bg-slate-900' : 'object-cover'}`}
+                            className={`w-full h-[260px] md:h-[420px] cursor-zoom-in ${imageFitClass}`}
+                            onClick={() => setIsGalleryOpen(true)}
                         />
                         <button
                             onClick={prevImage}
@@ -157,6 +196,88 @@ export const ProjectDetail: React.FC = () => {
                     © {currentYear()}
                 </footer>
             </main>
+
+            {isGalleryOpen && (
+                <div
+                    className="fixed inset-0 z-[100] bg-slate-950/90 backdrop-blur-sm p-4 md:p-10"
+                    role="dialog"
+                    aria-modal="true"
+                    aria-label={`${project.title} gallery`}
+                    onClick={() => setIsGalleryOpen(false)}
+                >
+                    <button
+                        type="button"
+                        onClick={() => setIsGalleryOpen(false)}
+                        className="absolute right-5 top-5 z-[110] rounded-lg bg-slate-900/80 px-3 py-2 text-white hover:bg-slate-900"
+                    >
+                        ✕
+                    </button>
+
+                    <div
+                        className="relative mx-auto flex h-full max-w-6xl flex-col items-center justify-center gap-4"
+                        onClick={(event) => event.stopPropagation()}
+                    >
+                        <img
+                            src={project.images[imageIndex]}
+                            alt={`${project.title} ${imageIndex + 1}`}
+                            className="max-h-[70vh] max-w-full object-contain"
+                        />
+
+                        <button
+                            type="button"
+                            onClick={(event) => {
+                                event.stopPropagation();
+                                prevImage();
+                            }}
+                            aria-label={t('project_prev_image')}
+                            className="absolute left-2 md:left-4 top-1/2 -translate-y-1/2 rounded-lg bg-slate-900/70 px-3 py-2 text-white hover:bg-slate-900/85"
+                        >
+                            ‹
+                        </button>
+                        <button
+                            type="button"
+                            onClick={(event) => {
+                                event.stopPropagation();
+                                nextImage();
+                            }}
+                            aria-label={t('project_next_image')}
+                            className="absolute right-2 md:right-4 top-1/2 -translate-y-1/2 rounded-lg bg-slate-900/70 px-3 py-2 text-white hover:bg-slate-900/85"
+                        >
+                            ›
+                        </button>
+
+                        <div
+                            className="w-full overflow-x-auto rounded-xl border border-slate-700/70 bg-slate-900/40 p-2"
+                            aria-label="gallery thumbnails"
+                        >
+                            <div className="mx-auto flex min-w-max items-center gap-2">
+                                {project.images.map((image, index) => (
+                                    <button
+                                        key={image}
+                                        type="button"
+                                        onClick={(event) => {
+                                            event.stopPropagation();
+                                            setImageIndex(index);
+                                        }}
+                                        className={`h-16 w-24 overflow-hidden rounded-lg border transition ${
+                                            index === imageIndex
+                                                ? 'border-brand-400 ring-2 ring-brand-500/50'
+                                                : 'border-slate-600 hover:border-slate-400'
+                                        }`}
+                                        aria-label={`${project.title} thumbnail ${index + 1}`}
+                                    >
+                                        <img
+                                            src={image}
+                                            alt={`${project.title} miniatura ${index + 1}`}
+                                            className="h-full w-full object-fill"
+                                        />
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
         </>
     );
 };

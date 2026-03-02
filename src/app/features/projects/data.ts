@@ -56,6 +56,22 @@ const PROJECTS: Project[] = [
             '/projects/superwallet-10.svg',
         ],
     },
+    {
+        id: 'boda-dicor',
+        title: 'Boda DiCor',
+        company: 'Personal',
+        description: 'project_boda_desc',
+        role: 'project_boda_role',
+        contributions: [
+            'project_boda_contrib_1',
+            'project_boda_contrib_2',
+            'project_boda_contrib_3',
+            'project_boda_contrib_4',
+        ],
+        tech: ['Astro', 'TypeScript', 'Firebase', 'Firestore', 'Cloud Functions', 'Vercel'],
+        years: '2026',
+        images: ['/projects/boda-dicor-1.svg'],
+    },
 ];
 
 export function getProjects(): Promise<Project[]> {

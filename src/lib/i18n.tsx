@@ -45,26 +45,42 @@ const translations: Record<Locale, Record<string, string>> = {
         project_hybrid_desc: 'App móvil híbrida con soporte offline y CI/CD optimizado.',
         project_fullstack_desc: 'Conjunto de aplicaciones entregadas puntual y mantenibles.',
         project_be_desc:
-            'Motor de reservas robusto con flujos de disponibilidad, tarifas dinámicas y checkout optimizado.',
+            'Plataforma de reservas enfocada en estabilidad operativa, velocidad de respuesta y reducción de errores en flujos críticos de booking.',
         project_role_title: 'Rol',
         project_role_aria: 'rol desempeñado en el proyecto',
-        project_be_role: 'Full-Stack Lead Developer',
+        project_be_role: 'Tech Lead / Full-Stack Lead Developer',
         project_contributions_title: 'Lo que hice en este proyecto',
         project_contributions_aria: 'lista de contribuciones del proyecto',
-        project_be_contrib_1: 'Implementé flujos de búsqueda y disponibilidad en tiempo real.',
-        project_be_contrib_2: 'Desarrollé lógica de tarifas dinámicas y reglas de negocio.',
-        project_be_contrib_3: 'Optimicé el checkout para reducir fricción y abandono.',
-        project_be_contrib_4: 'Integré paneles de monitoreo para incidencias y rendimiento.',
+        project_be_contrib_1:
+            'Lidero un equipo de más de 10 developers, organizando el trabajo técnico, priorizando iniciativas y acompañando la ejecución diaria.',
+        project_be_contrib_2:
+            'Diseño la arquitectura y desarrollo el código más sensible del producto, especialmente en flujos críticos de booking y negocio.',
+        project_be_contrib_3:
+            'Defino decisiones técnicas y de diseño, alineando mantenibilidad, rendimiento y calidad en todo el ciclo de desarrollo.',
+        project_be_contrib_4:
+            'Coordino con áreas de negocio para traducir necesidades operativas en soluciones técnicas concretas y escalables.',
         project_superwallet_desc:
-            'Billetera digital con foco en transacciones seguras, trazabilidad y experiencia móvil fluida.',
-        project_superwallet_role: 'Frontend Lead Developer',
+            'Producto transaccional orientado a operaciones de booking y pagos, con foco en rendimiento, confiabilidad y experiencia fluida.',
+        project_superwallet_role: 'Senior Developer',
         project_superwallet_contrib_1:
-            'Construí módulos de transferencias y validación de operaciones.',
+            'Desarrollé integraciones con APIs externas para el proceso de booking de hoteles, reduciendo tiempos de procesamiento en un 80%.',
         project_superwallet_contrib_2:
-            'Mejoré la trazabilidad con historial y estados claros por transacción.',
-        project_superwallet_contrib_3: 'Fortalecí controles de seguridad en flujos sensibles.',
+            'Implementé integraciones y mejoras para bookings de actividades, logrando una reducción de tiempo del 90%.',
+        project_superwallet_contrib_3:
+            'Construí funcionalidades clave de producto como sistemas de referidos y cupones, y optimicé la comunicación cliente-servidor en un 70%.',
         project_superwallet_contrib_4:
-            'Ajusté la UX móvil para una navegación más simple y rápida.',
+            'Participé en decisiones de flujo de la aplicación y mejoras de UI/UX para elevar claridad, conversión y experiencia general.',
+        project_boda_desc:
+            'Invitación interactiva de boda desarrollada como proyecto personal, diseñada, implementada y desplegada en 1 semana con arquitectura full-stack moderna.',
+        project_boda_role: 'Full-Stack Developer (Proyecto Personal)',
+        project_boda_contrib_1:
+            'Diseñé y construí una experiencia mobile-first en Astro + TypeScript con secciones dinámicas, countdown en tiempo real y navegación fluida.',
+        project_boda_contrib_2:
+            'Implementé RSVP por token con Firestore para validación de invitados, confirmación de asistencia y control de cupos por invitación.',
+        project_boda_contrib_3:
+            'Integré carga de fotos en Firebase Storage y automatizaciones con Cloud Functions para envío de invitaciones y recordatorios programados.',
+        project_boda_contrib_4:
+            'Definí reglas de seguridad (Firestore/Storage), configuración de despliegue en Vercel y documentación operativa para puesta en producción rápida.',
         project_stack: 'Stack usado',
         project_repository_title: 'Repositorio',
         project_repository_aria: 'estado de repositorio del proyecto',
@@ -112,24 +128,42 @@ const translations: Record<Locale, Record<string, string>> = {
         project_hybrid_desc: 'Hybrid mobile app with offline support and optimized CI/CD.',
         project_fullstack_desc: 'Set of punctual, maintainable full-stack applications delivered.',
         project_be_desc:
-            'Robust booking engine with availability flows, dynamic pricing and optimized checkout.',
+            'Booking platform focused on operational stability, fast response times, and error reduction across critical reservation flows.',
         project_role_title: 'Role',
         project_role_aria: 'role held in the project',
-        project_be_role: 'Full-Stack Developer',
+        project_be_role: 'Tech Lead / Full-Stack Lead Developer',
         project_contributions_title: 'What I built in this project',
         project_contributions_aria: 'project contributions list',
-        project_be_contrib_1: 'Implemented real-time search and availability flows.',
-        project_be_contrib_2: 'Built dynamic pricing logic and key business rules.',
-        project_be_contrib_3: 'Optimized checkout to reduce friction and drop-off.',
-        project_be_contrib_4: 'Integrated monitoring dashboards for incidents and performance.',
+        project_be_contrib_1:
+            'Lead a team of 10+ developers, organizing technical work, prioritizing initiatives, and guiding day-to-day execution.',
+        project_be_contrib_2:
+            'Own architecture decisions and develop the most sensitive code paths, especially across critical booking and business flows.',
+        project_be_contrib_3:
+            'Drive technical and product design decisions, balancing maintainability, performance, and delivery quality.',
+        project_be_contrib_4:
+            'Coordinate with business teams to translate operational needs into scalable technical solutions.',
         project_superwallet_desc:
-            'Digital wallet focused on secure transactions, traceability and smooth mobile UX.',
-        project_superwallet_role: 'Frontend Developer',
-        project_superwallet_contrib_1: 'Built transfer modules and operation validation flows.',
+            'Transactional product for booking and payment operations, focused on performance, reliability, and a smooth user experience.',
+        project_superwallet_role: 'Senior Developer',
+        project_superwallet_contrib_1:
+            'Built external API integrations for hotel booking flows, reducing processing time by 80%.',
         project_superwallet_contrib_2:
-            'Improved traceability with clear transaction history and statuses.',
-        project_superwallet_contrib_3: 'Strengthened security controls on sensitive flows.',
-        project_superwallet_contrib_4: 'Refined mobile UX for faster, simpler navigation.',
+            'Implemented integrations and flow improvements for activity bookings, achieving a 90% time reduction.',
+        project_superwallet_contrib_3:
+            'Developed key product features such as referral and coupon systems, while improving client-server response times by 70%.',
+        project_superwallet_contrib_4:
+            'Contributed to app flow decisions and UI/UX improvements to increase clarity, conversion, and overall user experience.',
+        project_boda_desc:
+            'Interactive wedding invitation built as a personal project, designed, implemented, and deployed in 1 week using a modern full-stack architecture.',
+        project_boda_role: 'Full-Stack Developer (Personal Project)',
+        project_boda_contrib_1:
+            'Designed and built a mobile-first Astro + TypeScript experience with dynamic sections, real-time countdown, and smooth navigation.',
+        project_boda_contrib_2:
+            'Implemented token-based RSVP with Firestore for guest validation, attendance confirmation, and per-invitation guest limits.',
+        project_boda_contrib_3:
+            'Integrated photo uploads with Firebase Storage and automated Cloud Functions for invitation sending and scheduled reminders.',
+        project_boda_contrib_4:
+            'Defined security rules (Firestore/Storage), Vercel deployment configuration, and operational docs for fast production rollout.',
         project_stack: 'Used stack',
         project_repository_title: 'Repository',
         project_repository_aria: 'project repository status',
