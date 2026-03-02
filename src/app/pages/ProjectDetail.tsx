@@ -19,6 +19,7 @@ export const ProjectDetail: React.FC = () => {
     const AUTOPLAY_MS = 4000;
 
     useEffect(() => {
+        setImageIndex(0);
         setImageFitMode('fill');
         setIsGalleryOpen(false);
     }, [id]);

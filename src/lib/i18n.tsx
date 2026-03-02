@@ -70,16 +70,16 @@ const translations: Record<Locale, Record<string, string>> = {
             'Construí funcionalidades clave de producto como sistemas de referidos y cupones, y optimicé la comunicación cliente-servidor en un 70%.',
         project_superwallet_contrib_4:
             'Participé en decisiones de flujo de la aplicación y mejoras de UI/UX para elevar claridad, conversión y experiencia general.',
-        project_boda_desc:
+        project_wedding_invitation_desc:
             'Invitación interactiva de boda desarrollada como proyecto personal, diseñada, implementada y desplegada en 1 semana con arquitectura full-stack moderna.',
-        project_boda_role: 'Full-Stack Developer (Proyecto Personal)',
-        project_boda_contrib_1:
+        project_wedding_invitation_role: 'Full-Stack Developer (Proyecto Personal)',
+        project_wedding_invitation_contrib_1:
             'Diseñé y construí una experiencia mobile-first en Astro + TypeScript con secciones dinámicas, countdown en tiempo real y navegación fluida.',
-        project_boda_contrib_2:
+        project_wedding_invitation_contrib_2:
             'Implementé RSVP por token con Firestore para validación de invitados, confirmación de asistencia y control de cupos por invitación.',
-        project_boda_contrib_3:
+        project_wedding_invitation_contrib_3:
             'Integré carga de fotos en Firebase Storage y automatizaciones con Cloud Functions para envío de invitaciones y recordatorios programados.',
-        project_boda_contrib_4:
+        project_wedding_invitation_contrib_4:
             'Definí reglas de seguridad (Firestore/Storage), configuración de despliegue en Vercel y documentación operativa para puesta en producción rápida.',
         project_stack: 'Stack usado',
         project_repository_title: 'Repositorio',
