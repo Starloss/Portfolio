@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { FiGithub } from 'react-icons/fi';
 import { Link, useLocation, useParams } from 'react-router-dom';
 import { currentYear } from '@lib/date';
 import { useI18n } from '@lib/i18n';
@@ -208,7 +209,19 @@ export const ProjectDetail: React.FC = () => {
                             {t('project_repository_title')}
                         </h2>
                         <div aria-label={t('project_repository_aria')}>
-                            <Badge variant="outline">{t('project_repository_private')}</Badge>
+                            {project.repositoryUrl ? (
+                                <a
+                                    href={project.repositoryUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="inline-flex items-center gap-2 rounded-full border border-slate-300 bg-white/80 px-3 py-1.5 text-sm font-medium text-slate-700 transition hover:border-slate-400 hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-900/70 dark:text-slate-200 dark:hover:bg-slate-800"
+                                >
+                                    <FiGithub className="h-4 w-4" />
+                                    {t('project_repository_view')}
+                                </a>
+                            ) : (
+                                <Badge variant="outline">{t('project_repository_private')}</Badge>
+                            )}
                         </div>
                     </div>
 

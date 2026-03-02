@@ -64,6 +64,7 @@ const PROJECTS: Project[] = [
         id: 'wedding-invitation',
         title: 'Wedding Invitation',
         company: 'Personal',
+        repositoryUrl: 'https://github.com/Starloss/wedding-invitation',
         description: 'project_wedding_invitation_desc',
         role: 'project_wedding_invitation_role',
         contributions: [
