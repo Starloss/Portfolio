@@ -6,7 +6,7 @@ import { useI18n } from '@lib/i18n';
 import { BackgroundScene } from '../components/BackgroundScene';
 import { MainHeader } from '../components/MainHeader';
 import { Badge } from '../components/ui/Badge';
-import { getProjectById } from '../features/projects/data';
+import { getProjectById, getProjectsSync } from '../features/projects/data';
 
 export const ProjectDetail: React.FC = () => {
     const { id } = useParams<{ id: string }>();
@@ -64,6 +64,12 @@ export const ProjectDetail: React.FC = () => {
         );
     }
 
+    const projects = getProjectsSync();
+    const currentProjectIndex = projects.findIndex((item) => item.id === project.id);
+    const previousProject =
+        projects[(currentProjectIndex - 1 + projects.length) % projects.length] ?? project;
+    const nextProjectRef = projects[(currentProjectIndex + 1) % projects.length] ?? project;
+
     const nextImage = () => setImageIndex((prev) => (prev + 1) % project.images.length);
     const prevImage = () =>
         setImageIndex((prev) => (prev - 1 + project.images.length) % project.images.length);
@@ -90,7 +96,7 @@ export const ProjectDetail: React.FC = () => {
         <>
             <BackgroundScene />
             <MainHeader activeId="projects" />
-            <main className="max-w-5xl mx-auto px-6 md:px-8 py-10 space-y-8">
+            <main className="max-w-5xl mx-auto px-6 md:px-8 py-10 pb-28 md:pb-10 space-y-8">
                 <Link
                     to="/#projects"
                     className="inline-flex items-center gap-2 text-sm px-4 py-2 rounded-full border border-slate-300 bg-white/80 text-slate-700 hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-900/70 dark:text-slate-200 dark:hover:bg-slate-800 transition"
@@ -191,6 +197,27 @@ export const ProjectDetail: React.FC = () => {
                         {project.years}
                     </p>
                 </section>
+
+                <div className="fixed bottom-4 left-0 right-0 z-40 px-4 md:static md:px-0">
+                    <div className="mx-auto grid max-w-5xl gap-3 md:grid-cols-2">
+                        <Link
+                            to={`/projects/${previousProject.id}`}
+                            className="inline-flex items-center justify-between gap-2 rounded-xl border border-slate-300 bg-white/90 px-4 py-3 text-sm text-slate-700 shadow-sm backdrop-blur transition hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-900/85 dark:text-slate-200 dark:hover:bg-slate-800"
+                        >
+                            <span>← {t('project_prev_project')}</span>
+                            <span className="font-semibold text-brand-500">
+                                {previousProject.title}
+                            </span>
+                        </Link>
+                        <Link
+                            to={`/projects/${nextProjectRef.id}`}
+                            className="inline-flex items-center justify-between gap-2 rounded-xl border border-slate-300 bg-white/90 px-4 py-3 text-sm text-slate-700 shadow-sm backdrop-blur transition hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-900/85 dark:text-slate-200 dark:hover:bg-slate-800"
+                        >
+                            <span>{t('project_next_project')} →</span>
+                            <span className="font-semibold text-brand-500">{nextProjectRef.title}</span>
+                        </Link>
+                    </div>
+                </div>
 
                 <footer className="text-center text-xs text-slate-600 dark:text-slate-500 pb-10">
                     © {currentYear()}
