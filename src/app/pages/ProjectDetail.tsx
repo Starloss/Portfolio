@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { currentYear } from '@lib/date';
 import { useI18n } from '@lib/i18n';
@@ -15,6 +15,7 @@ export const ProjectDetail: React.FC = () => {
     const [imageIndex, setImageIndex] = useState(0);
     const [imageFitMode, setImageFitMode] = useState<'contain' | 'fill'>('fill');
     const [isGalleryOpen, setIsGalleryOpen] = useState(false);
+    const thumbnailRefs = useRef<Array<HTMLButtonElement | null>>([]);
     const AUTOPLAY_MS = 4000;
 
     useEffect(() => {
@@ -46,6 +47,17 @@ export const ProjectDetail: React.FC = () => {
         window.addEventListener('keydown', onKeyDown);
         return () => window.removeEventListener('keydown', onKeyDown);
     }, [isGalleryOpen, project]);
+
+    useEffect(() => {
+        if (!isGalleryOpen) return;
+        const activeThumbnail = thumbnailRefs.current[imageIndex];
+        if (!activeThumbnail) return;
+        activeThumbnail.scrollIntoView({
+            behavior: 'smooth',
+            block: 'nearest',
+            inline: 'center',
+        });
+    }, [isGalleryOpen, imageIndex]);
 
     if (!project) {
         return (
@@ -284,6 +296,9 @@ export const ProjectDetail: React.FC = () => {
                                     <button
                                         key={image}
                                         type="button"
+                                        ref={(element) => {
+                                            thumbnailRefs.current[index] = element;
+                                        }}
                                         onClick={(event) => {
                                             event.stopPropagation();
                                             setImageIndex(index);
