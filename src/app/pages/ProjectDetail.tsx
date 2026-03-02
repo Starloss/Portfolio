@@ -214,7 +214,9 @@ export const ProjectDetail: React.FC = () => {
                             className="inline-flex items-center justify-between gap-2 rounded-xl border border-slate-300 bg-white/90 px-4 py-3 text-sm text-slate-700 shadow-sm backdrop-blur transition hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-900/85 dark:text-slate-200 dark:hover:bg-slate-800"
                         >
                             <span>{t('project_next_project')} →</span>
-                            <span className="font-semibold text-brand-500">{nextProjectRef.title}</span>
+                            <span className="font-semibold text-brand-500">
+                                {nextProjectRef.title}
+                            </span>
                         </Link>
                     </div>
                 </div>
