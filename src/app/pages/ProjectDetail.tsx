@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useLocation, useParams } from 'react-router-dom';
 import { currentYear } from '@lib/date';
 import { useI18n } from '@lib/i18n';
 
@@ -10,8 +10,11 @@ import { getProjectById, getProjectsSync } from '../features/projects/data';
 
 export const ProjectDetail: React.FC = () => {
     const { id } = useParams<{ id: string }>();
+    const location = useLocation();
     const { t } = useI18n();
     const project = id ? getProjectById(id) : undefined;
+    const navState = location.state as { direction?: 'prev' | 'next' } | null;
+    const projectTransitionDirection = navState?.direction ?? 'next';
     const [imageIndex, setImageIndex] = useState(0);
     const [imageFitMode, setImageFitMode] = useState<'contain' | 'fill'>('fill');
     const [isGalleryOpen, setIsGalleryOpen] = useState(false);
@@ -105,6 +108,9 @@ export const ProjectDetail: React.FC = () => {
             ? 'object-contain bg-slate-200/70 dark:bg-slate-900'
             : 'object-fill';
 
+    const projectTransitionClass =
+        projectTransitionDirection === 'next' ? 'project-enter-next' : 'project-enter-prev';
+
     return (
         <>
             <BackgroundScene />
@@ -118,7 +124,10 @@ export const ProjectDetail: React.FC = () => {
                     {t('project_go_back')}
                 </Link>
 
-                <section className="relative space-y-5 rounded-2xl border border-slate-200/80 dark:border-slate-800/80 bg-slate-100/70 dark:bg-slate-900/55 backdrop-blur p-6 md:p-8">
+                <section
+                    key={`content-${project.id}`}
+                    className={`relative space-y-5 rounded-2xl border border-slate-200/80 dark:border-slate-800/80 bg-slate-100/70 dark:bg-slate-900/55 backdrop-blur p-6 md:p-8 ${projectTransitionClass}`}
+                >
                     <Badge variant="outline" className="absolute right-6 top-6">
                         {project.company}
                     </Badge>
@@ -211,10 +220,14 @@ export const ProjectDetail: React.FC = () => {
                     </p>
                 </section>
 
-                <div className="fixed bottom-4 left-0 right-0 z-40 px-4 md:static md:px-0">
+                <div
+                    key={`nav-${project.id}`}
+                    className={`fixed bottom-4 left-0 right-0 z-40 px-4 md:static md:px-0 ${projectTransitionClass}`}
+                >
                     <div className="mx-auto grid max-w-5xl gap-3 md:grid-cols-2">
                         <Link
                             to={`/projects/${previousProject.id}`}
+                            state={{ direction: 'prev' }}
                             className="inline-flex items-center justify-between gap-2 rounded-xl border border-slate-300 bg-white/90 px-4 py-3 text-sm text-slate-700 shadow-sm backdrop-blur transition hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-900/85 dark:text-slate-200 dark:hover:bg-slate-800"
                         >
                             <span>← {t('project_prev_project')}</span>
@@ -224,6 +237,7 @@ export const ProjectDetail: React.FC = () => {
                         </Link>
                         <Link
                             to={`/projects/${nextProjectRef.id}`}
+                            state={{ direction: 'next' }}
                             className="inline-flex items-center justify-between gap-2 rounded-xl border border-slate-300 bg-white/90 px-4 py-3 text-sm text-slate-700 shadow-sm backdrop-blur transition hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-900/85 dark:text-slate-200 dark:hover:bg-slate-800"
                         >
                             <span>{t('project_next_project')} →</span>

@@ -1,7 +1,38 @@
 /* Estilos adicionales puntuales (si algo no cabe bien en utilidades) */
 code {
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', monospace;
+    font-family:
+        ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', monospace;
 }
 html {
-  scroll-behavior: smooth;
+    scroll-behavior: smooth;
+}
+
+@keyframes project-enter-from-right {
+    from {
+        opacity: 0;
+        transform: translateX(24px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+@keyframes project-enter-from-left {
+    from {
+        opacity: 0;
+        transform: translateX(-24px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+.project-enter-next {
+    animation: project-enter-from-right 340ms ease-out;
+}
+
+.project-enter-prev {
+    animation: project-enter-from-left 340ms ease-out;
 }
