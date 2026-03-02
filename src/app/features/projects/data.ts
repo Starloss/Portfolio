@@ -5,6 +5,7 @@ const PROJECTS: Project[] = [
     {
         id: 'be-booking-engine',
         title: 'BE - Booking Engine',
+        company: 'CORE',
         description: 'project_be_desc',
         role: 'project_be_role',
         contributions: [
@@ -31,6 +32,7 @@ const PROJECTS: Project[] = [
     {
         id: 'superwallet',
         title: 'SuperWallet',
+        company: 'XHype',
         description: 'project_superwallet_desc',
         role: 'project_superwallet_role',
         contributions: [

@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useCallback } from 'react';
+import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
 
 type Locale = 'es' | 'en';
 
@@ -37,6 +37,7 @@ const translations: Record<Locale, Record<string, string>> = {
         professional_summary:
             'Full-Stack Developer con más de 7 años construyendo soluciones web y móviles, liderando equipos y optimizando productividad.',
         cv_button: 'Descargar CV',
+        cv_missing: 'Agrega public/cv.pdf para habilitar la descarga',
         lang_toggle: 'EN',
         // Projects
         project_healthcare_desc:
@@ -65,7 +66,11 @@ const translations: Record<Locale, Record<string, string>> = {
         project_superwallet_contrib_4:
             'Ajusté la UX móvil para una navegación más simple y rápida.',
         project_stack: 'Stack usado',
+        project_repository_title: 'Repositorio',
+        project_repository_aria: 'estado de repositorio del proyecto',
+        project_repository_private: 'Privado',
         project_years: 'Años de desarrollo',
+        project_go_back: 'Volver',
         project_back: 'Volver a proyectos',
         project_not_found: 'Proyecto no encontrado',
         project_prev_image: 'Imagen anterior',
@@ -99,6 +104,7 @@ const translations: Record<Locale, Record<string, string>> = {
         professional_summary:
             'Full-Stack Developer with 7+ years building web & mobile solutions, leading teams and boosting productivity.',
         cv_button: 'Download CV',
+        cv_missing: 'Add public/cv.pdf to enable download',
         lang_toggle: 'ES',
         // Projects
         project_healthcare_desc:
@@ -125,7 +131,11 @@ const translations: Record<Locale, Record<string, string>> = {
         project_superwallet_contrib_3: 'Strengthened security controls on sensitive flows.',
         project_superwallet_contrib_4: 'Refined mobile UX for faster, simpler navigation.',
         project_stack: 'Used stack',
+        project_repository_title: 'Repository',
+        project_repository_aria: 'project repository status',
+        project_repository_private: 'Private',
         project_years: 'Development years',
+        project_go_back: 'Go back',
         project_back: 'Back to projects',
         project_not_found: 'Project not found',
         project_prev_image: 'Previous image',
@@ -135,9 +145,22 @@ const translations: Record<Locale, Record<string, string>> = {
 
 const I18nContext = createContext<I18nContextValue | null>(null);
 
+const LOCALE_STORAGE_KEY = 'portfolio_locale';
+
+function getInitialLocale(): Locale {
+    if (typeof window === 'undefined') return 'es';
+    const savedLocale = window.localStorage.getItem(LOCALE_STORAGE_KEY);
+    return savedLocale === 'en' || savedLocale === 'es' ? savedLocale : 'es';
+}
+
 export const I18nProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-    const [locale, setLocale] = useState<Locale>('es');
+    const [locale, setLocale] = useState<Locale>(getInitialLocale);
     const switchLocale = useCallback(() => setLocale((l) => (l === 'es' ? 'en' : 'es')), []);
+    useEffect(() => {
+        if (typeof window === 'undefined') return;
+        window.localStorage.setItem(LOCALE_STORAGE_KEY, locale);
+        document.documentElement.lang = locale;
+    }, [locale]);
     const t = useCallback((key: string) => translations[locale][key] ?? key, [locale]);
     return (
         <I18nContext.Provider value={{ locale, t, switchLocale }}>{children}</I18nContext.Provider>
