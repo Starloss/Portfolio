@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { FiGithub } from 'react-icons/fi';
+import { FiExternalLink, FiGithub } from 'react-icons/fi';
 import { Link, useLocation, useParams } from 'react-router-dom';
 import { currentYear } from '@lib/date';
 import { useI18n } from '@lib/i18n';
@@ -208,7 +208,10 @@ export const ProjectDetail: React.FC = () => {
                         <h2 className="text-xl font-semibold text-slate-800 dark:text-white">
                             {t('project_repository_title')}
                         </h2>
-                        <div aria-label={t('project_repository_aria')}>
+                        <div
+                            className="flex flex-wrap gap-3"
+                            aria-label={t('project_repository_aria')}
+                        >
                             {project.repositoryUrl ? (
                                 <a
                                     href={project.repositoryUrl}
@@ -220,7 +223,21 @@ export const ProjectDetail: React.FC = () => {
                                     {t('project_repository_view')}
                                 </a>
                             ) : (
-                                <Badge variant="outline">{t('project_repository_private')}</Badge>
+                                <span className="inline-flex items-center gap-2 rounded-full border border-slate-300 bg-white/80 px-3 py-1.5 text-sm font-medium text-slate-400 cursor-default select-none dark:border-slate-700 dark:bg-slate-900/70 dark:text-slate-500">
+                                    <FiGithub className="h-4 w-4" />
+                                    {t('project_repository_private')}
+                                </span>
+                            )}
+                            {project.liveUrl && (
+                                <a
+                                    href={project.liveUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="inline-flex items-center gap-2 rounded-full border border-brand-400/60 bg-brand-50/80 px-3 py-1.5 text-sm font-medium text-brand-700 transition hover:border-brand-500 hover:bg-brand-100 dark:border-brand-500/40 dark:bg-brand-900/20 dark:text-brand-300 dark:hover:bg-brand-900/40"
+                                >
+                                    <FiExternalLink className="h-4 w-4" />
+                                    {t('project_live_url_view')}
+                                </a>
                             )}
                         </div>
                     </div>

@@ -3,6 +3,7 @@ export interface Project {
     title: string;
     company: string;
     repositoryUrl?: string;
+    liveUrl?: string;
     description: string;
     role: string;
     contributions: string[];

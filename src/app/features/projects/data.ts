@@ -33,6 +33,7 @@ const PROJECTS: Project[] = [
         id: 'superwallet',
         title: 'SuperWallet',
         company: 'XHype',
+        liveUrl: 'https://superwallet.xhype.io',
         description: 'project_superwallet_desc',
         role: 'project_superwallet_role',
         contributions: [
@@ -42,7 +43,7 @@ const PROJECTS: Project[] = [
             'project_superwallet_contrib_4',
         ],
         tech: ['React', 'TypeScript', 'Prisma', 'Nest'],
-        years: '2021 - 2026',
+        years: '2025 - Present',
         images: [
             '/projects/superwallet-1.jpg',
             '/projects/superwallet-2.jpg',
@@ -65,6 +66,7 @@ const PROJECTS: Project[] = [
         title: 'Wedding Invitation',
         company: 'Personal',
         repositoryUrl: 'https://github.com/Starloss/wedding-invitation',
+        liveUrl: 'https://wedding-invitation-seven-brown.vercel.app',
         description: 'project_wedding_invitation_desc',
         role: 'project_wedding_invitation_role',
         contributions: [
@@ -75,7 +77,27 @@ const PROJECTS: Project[] = [
         ],
         tech: ['Astro', 'TypeScript', 'Firebase', 'Firestore', 'Cloud Functions', 'Vercel'],
         years: '2026',
-        images: ['/projects/wedding-invitation-1.svg'],
+        images: [
+            '/projects/wedding-invitation-1.jpg',
+            '/projects/wedding-invitation-2.jpg',
+            '/projects/wedding-invitation-3.jpg',
+            '/projects/wedding-invitation-4.jpg',
+            '/projects/wedding-invitation-5.jpg',
+            '/projects/wedding-invitation-6.jpg',
+            '/projects/wedding-invitation-7.jpg',
+            '/projects/wedding-invitation-8.jpg',
+            '/projects/wedding-invitation-9.jpg',
+            '/projects/wedding-invitation-10.jpg',
+            '/projects/wedding-invitation-11.jpg',
+            '/projects/wedding-invitation-12.jpg',
+            '/projects/wedding-invitation-13.jpg',
+            '/projects/wedding-invitation-14.jpg',
+            '/projects/wedding-invitation-15.jpg',
+            '/projects/wedding-invitation-16.jpg',
+            '/projects/wedding-invitation-17.jpg',
+            '/projects/wedding-invitation-18.jpg',
+            '/projects/wedding-invitation-19.jpg',
+        ],
     },
 ];
 
