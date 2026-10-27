@@ -1,0 +1,37 @@
+# DESECHABLE: mide la línea base de Lighthouse móvil para el ticket
+# https://github.com/Starloss/Portfolio/issues/16. Solo corre en esta rama; no se mergea.
+name: Lighthouse baseline (desechable)
+
+on:
+  push:
+    branches: [task/lighthouse-baseline]
+
+permissions:
+  contents: read
+
+jobs:
+  lighthouse:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.x
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
+      - name: Lighthouse CI
+        run: pnpm dlx @lhci/cli@0.15.1 autorun
+        continue-on-error: true
+      - name: Lighthouse CI con reduced motion
+        run: |
+          jq '.ci.collect.settings.chromeFlags = "--force-prefers-reduced-motion" | .ci.upload.outputDir = "./lhci-reports-rm"' lighthouserc.json > lighthouserc-rm.json
+          pnpm dlx @lhci/cli@0.15.1 autorun --config=./lighthouserc-rm.json
+        continue-on-error: true
+      - uses: actions/upload-artifact@v4
+        with:
+          name: lhci-reports
+          path: |
+            lhci-reports
+            lhci-reports-rm
