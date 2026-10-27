@@ -3,12 +3,14 @@ import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 
 import { Home } from './pages/Home';
 import { ProjectDetail } from './pages/ProjectDetail';
+import { IdentidadPrototype } from './prototypes/IdentidadPrototype'; // PROTOTIPO desechable
 
 export const App: React.FC = () => (
     <BrowserRouter>
         <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/projects/:id" element={<ProjectDetail />} />
+            <Route path="/prototype/identidad" element={<IdentidadPrototype />} />
             <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
     </BrowserRouter>
