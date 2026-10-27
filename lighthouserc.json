@@ -1,0 +1,28 @@
+{
+  "ci": {
+    "collect": {
+      "staticDistDir": "./dist",
+      "isSinglePageApplication": true,
+      "numberOfRuns": 5,
+      "url": [
+        "http://localhost/",
+        "http://localhost/projects/superwallet",
+        "http://localhost/projects/be-booking-engine",
+        "http://localhost/projects/wedding-invitation"
+      ]
+    },
+    "assert": {
+      "assertions": {
+        "categories:performance": ["error", { "minScore": 0.9, "aggregationMethod": "median-run" }],
+        "categories:accessibility": ["error", { "minScore": 0.9, "aggregationMethod": "median-run" }],
+        "resource-summary:script:size": ["error", { "maxNumericValue": 130000, "aggregationMethod": "median-run" }],
+        "resource-summary:stylesheet:size": ["error", { "maxNumericValue": 15000, "aggregationMethod": "median-run" }],
+        "resource-summary:font:size": ["error", { "maxNumericValue": 30000, "aggregationMethod": "median-run" }]
+      }
+    },
+    "upload": {
+      "target": "filesystem",
+      "outputDir": "./.lighthouseci"
+    }
+  }
+}

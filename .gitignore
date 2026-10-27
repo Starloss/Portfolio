@@ -24,3 +24,8 @@ pnpm-debug.log*
 
 # Misc
 Thumbs.db
+
+# Lighthouse CI y Playwright
+.lighthouseci
+playwright-report
+test-results

@@ -1,7 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { FiMoon, FiSun } from 'react-icons/fi';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { useI18n } from '@lib/i18n';
+import { cvPath, localizedPath, switchLocalePath } from '@lib/locale-path';
 import { useTheme } from '@lib/theme';
 
 interface MainHeaderProps {
@@ -10,13 +11,12 @@ interface MainHeaderProps {
 }
 
 export const MainHeader: React.FC<MainHeaderProps> = ({ activeId, isHome = false }) => {
-    const { t, switchLocale } = useI18n();
+    const { t, locale } = useI18n();
+    const location = useLocation();
     const { theme, toggleTheme } = useTheme();
     const [menuOpen, setMenuOpen] = useState(false);
     const [scrolled, setScrolled] = useState(false);
-    const [isCvPdfAvailable, setIsCvPdfAvailable] = useState(false);
     const mobileMenuRef = useRef<HTMLDivElement | null>(null);
-    const cvPath = '/cv.pdf';
 
     useEffect(() => {
         if (typeof window === 'undefined') return;
@@ -37,30 +37,7 @@ export const MainHeader: React.FC<MainHeaderProps> = ({ activeId, isHome = false
         return () => window.removeEventListener('click', onClick);
     }, [menuOpen]);
 
-    useEffect(() => {
-        if (typeof window === 'undefined') return;
-        let mounted = true;
-
-        async function checkCvAvailability() {
-            try {
-                const response = await fetch(cvPath, { method: 'HEAD' });
-                const contentType = response.headers.get('content-type') ?? '';
-                if (!mounted) return;
-                setIsCvPdfAvailable(response.ok && contentType.includes('pdf'));
-            } catch {
-                if (!mounted) return;
-                setIsCvPdfAvailable(false);
-            }
-        }
-
-        void checkCvAvailability();
-        return () => {
-            mounted = false;
-        };
-    }, []);
-
     const navItems: { id: string; label: string }[] = [
-        { id: 'about', label: t('about_title') },
         { id: 'skills', label: t('skills_title') },
         { id: 'experience', label: t('experience_title') },
         { id: 'projects', label: t('projects_title') },
@@ -73,7 +50,7 @@ export const MainHeader: React.FC<MainHeaderProps> = ({ activeId, isHome = false
     const linkActive =
         'text-brand-700 dark:text-brand-300 font-semibold bg-brand-100/70 dark:bg-brand-400/10 px-2 py-1 rounded-full';
 
-    const buildHref = (id: string) => (isHome ? `#${id}` : `/#${id}`);
+    const buildHref = (id: string) => (isHome ? `#${id}` : `${localizedPath(locale, '/')}#${id}`);
 
     const controlButtonClass =
         'h-9 min-w-9 px-2.5 inline-flex items-center justify-center rounded-xl border border-slate-300/90 bg-white/80 text-slate-700 shadow-sm hover:bg-white hover:border-brand-300 hover:text-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-500 transition dark:border-slate-700 dark:bg-slate-900/70 dark:text-slate-100 dark:hover:bg-slate-800 dark:hover:border-brand-400';
@@ -155,29 +132,41 @@ export const MainHeader: React.FC<MainHeaderProps> = ({ activeId, isHome = false
                             <FiMoon className="w-4 h-4" />
                         )}
                     </button>
-                    <button
-                        onClick={switchLocale}
-                        aria-label={t('lang_toggle')}
-                        className={controlButtonClass}
+                    <nav
+                        aria-label={t('language')}
+                        className="flex items-center text-xs font-semibold"
                     >
-                        <span
-                            aria-hidden="true"
-                            className={`fi text-base leading-none ${t('lang_toggle') === 'EN' ? 'fi-gb' : 'fi-es'}`}
-                        />
-                    </button>
+                        {(['es', 'en'] as const).map((l, i) => (
+                            <React.Fragment key={l}>
+                                {i > 0 && (
+                                    <span aria-hidden="true" className="px-1 text-slate-400">
+                                        /
+                                    </span>
+                                )}
+                                {l === locale ? (
+                                    <span
+                                        aria-current="true"
+                                        className="px-1.5 py-1 text-brand-700 dark:text-brand-300"
+                                    >
+                                        {l.toUpperCase()}
+                                    </span>
+                                ) : (
+                                    <Link
+                                        to={`${switchLocalePath(location.pathname)}${location.hash}`}
+                                        hrefLang={l}
+                                        lang={l}
+                                        className={`${linkInactive} ${linkBase} py-1`}
+                                    >
+                                        {l.toUpperCase()}
+                                    </Link>
+                                )}
+                            </React.Fragment>
+                        ))}
+                    </nav>
                     <a
-                        href={isCvPdfAvailable ? cvPath : '#'}
-                        onClick={(event) => {
-                            if (!isCvPdfAvailable) event.preventDefault();
-                        }}
-                        className={`text-xs px-3 h-9 inline-flex items-center rounded-xl border transition focus:outline-none focus:ring-2 focus:ring-brand-500 ${
-                            isCvPdfAvailable
-                                ? 'border-brand-400 bg-brand-500 text-white hover:bg-brand-400'
-                                : 'border-slate-300 bg-slate-200 text-slate-500 cursor-not-allowed dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400'
-                        }`}
-                        download={isCvPdfAvailable ? 'Diego Rangel Resume.pdf' : undefined}
-                        aria-disabled={!isCvPdfAvailable}
-                        title={!isCvPdfAvailable ? t('cv_missing') : undefined}
+                        href={cvPath(locale)}
+                        download
+                        className="text-xs px-3 h-9 inline-flex items-center rounded-xl border transition focus:outline-none focus:ring-2 focus:ring-brand-500 border-brand-400 bg-brand-500 text-white hover:bg-brand-400"
                     >
                         {t('cv_button')}
                     </a>

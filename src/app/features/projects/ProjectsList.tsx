@@ -1,14 +1,13 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useI18n } from '@lib/i18n';
 
-import { getProjectsSync } from './data';
 import { ProjectCard } from './ProjectCard';
 
 export const ProjectsList: React.FC = () => {
     const repeatCount = 7;
     const centerBlockIndex = Math.floor(repeatCount / 2);
-    const projects = getProjectsSync();
-    const { t } = useI18n();
+    const { t, content } = useI18n();
+    const projects = content.featuredProjects;
     const viewportRef = useRef<HTMLDivElement | null>(null);
     const trackRef = useRef<HTMLUListElement | null>(null);
     const animationRef = useRef<number | null>(null);

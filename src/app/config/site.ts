@@ -1,11 +1,2 @@
-export const SITE_AUTHOR = 'Diego Rangel';
-export const CONTACT_EMAIL = 'starloss09@gmail.com';
-export const SITE_LOCATION = 'Caracas, Venezuela';
-export const SITE_ROLE = 'Full-Stack Lead Developer';
-export const SITE_EXPERIENCE = '7+ años de experiencia';
-export const SITE_HEADLINE =
-    'Lidero equipos y construyo productos web/móviles escalables con foco en rendimiento, arquitectura y resultados de negocio';
-export const SOCIAL_LINKS = {
-    linkedin: 'https://www.linkedin.com/in/diego-rangel-de-ornelas',
-    github: 'https://github.com/Starloss',
-};
+/** Host canónico: lo usan el `<head>` por ruta, el sitemap y el CV. */
+export const SITE_URL = 'https://www.diegorangel.dev';

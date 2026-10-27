@@ -19,6 +19,8 @@ export default defineConfig({
   test: {
     environment: 'jsdom',
     setupFiles: ['./vitest.setup.ts'],
+    // Las pruebas de Playwright corren aparte, contra el sitio construido.
+    exclude: ['**/node_modules/**', '**/dist/**', 'e2e/**'],
     coverage: {
       provider: 'v8',
       reporter: ['text', 'html', 'lcov'],
@@ -39,6 +41,10 @@ export default defineConfig({
         '**/node_modules/**',
         '**/dist/**',
         '**/__tests__/**',
+        'e2e/**',
+        'scripts/**',
+        'playwright.config.*',
+        'src/app/prototypes/**',
       ],
     },
   },

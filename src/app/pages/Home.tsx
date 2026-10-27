@@ -13,12 +13,12 @@ import { ContactSection } from '../features/contact/ContactSection';
 // Página Home con todo el contenido previo de App
 export const Home: React.FC = () => {
     const { t } = useI18n();
-    const [activeId, setActiveId] = useState<string>('about');
+    const [activeId, setActiveId] = useState<string>('skills');
 
     useEffect(() => {
         if (typeof window === 'undefined' || typeof window.IntersectionObserver === 'undefined')
             return;
-        const ids = ['about', 'skills', 'experience', 'projects', 'contact'];
+        const ids = ['skills', 'experience', 'projects', 'contact'];
         const observer = new window.IntersectionObserver(
             (entries) => {
                 for (const entry of entries) {
@@ -68,15 +68,6 @@ export const Home: React.FC = () => {
             <MainHeader activeId={activeId} isHome />
             <Hero />
             <main className="max-w-5xl mx-auto space-y-24 pb-24 px-6 md:px-8 py-8 rounded-2xl border border-slate-200/70 dark:border-slate-800/80 bg-slate-100/70 dark:bg-slate-900/55 backdrop-blur supports-[backdrop-filter]:bg-slate-100/55 dark:supports-[backdrop-filter]:bg-slate-900/45">
-                <section id="about" className="space-y-4" aria-label={t('about_aria')}>
-                    <h2 className="text-2xl font-semibold flex items-center gap-3 text-slate-800 dark:text-white">
-                        {t('about_title')}{' '}
-                        <span className="h-px grow bg-slate-300 dark:bg-slate-700" />
-                    </h2>
-                    <p className="leading-relaxed text-slate-700 dark:text-slate-300">
-                        {t('professional_summary')}
-                    </p>
-                </section>
                 <SkillsSection />
                 <ExperienceSection />
                 <section id="projects" className="space-y-6">
