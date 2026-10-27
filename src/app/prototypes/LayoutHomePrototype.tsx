@@ -7,7 +7,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 
-type Modo = 'dia' | 'noche';
+export type Modo = 'dia' | 'noche';
 type Sobre = 'fuera' | 'hero' | 'impacto' | 'seccion';
 
 interface Variante {
@@ -187,7 +187,7 @@ const COLORES = {
 };
 
 // Tokens de Identidad de la UI (Verde Ávila + ámbar).
-const TOKENS = {
+export const TOKENS = {
     dia: {
         superficie: 'rgba(250,252,248,0.86)',
         opaca: '#f6f9f5',
@@ -239,7 +239,7 @@ const capa: React.CSSProperties = {
 };
 const svgFull: React.CSSProperties = { width: '100%', height: '100%', display: 'block' };
 
-const Escena: React.FC<{ modo: Modo; alt: number }> = ({ modo, alt }) => {
+export const Escena: React.FC<{ modo: Modo; alt: number }> = ({ modo, alt }) => {
     const c = COLORES[modo];
     // BASE baja el paisaje para dejar la franja de cielo libre para el Hero.
     const BASE = 0.3;
