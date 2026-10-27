@@ -50,6 +50,7 @@
     "format": "prettier --write .",
     "lint": "eslint \"src/**/*.{js,ts,tsx}\" --max-warnings=0",
     "preview": "vite preview",
+    "prototype:viaje": "vite --open /prototype/viaje?v=a",
     "test": "vitest run",
     "test:watch": "vitest"
   },
