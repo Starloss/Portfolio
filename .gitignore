@@ -7,7 +7,7 @@ dist
 coverage
 .env*
 # Builds
-build
+/build
 
 # Logs
 npm-debug.log*
