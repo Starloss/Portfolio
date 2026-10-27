@@ -164,29 +164,31 @@ export const ProjectDetail: React.FC = () => {
                         </ul>
                     </div>
 
-                    <div className="relative rounded-xl overflow-hidden border border-slate-300 dark:border-slate-700">
-                        <img
-                            src={project.images[imageIndex]}
-                            alt={`${project.title} ${imageIndex + 1}`}
-                            onLoad={onImageLoad}
-                            className={`w-full h-[260px] md:h-[420px] cursor-zoom-in ${imageFitClass}`}
-                            onClick={() => setIsGalleryOpen(true)}
-                        />
-                        <button
-                            onClick={prevImage}
-                            aria-label={t('project_prev_image')}
-                            className="absolute left-3 top-1/2 -translate-y-1/2 px-3 py-2 rounded-lg bg-slate-900/70 text-white hover:bg-slate-900/85 transition"
-                        >
-                            ‹
-                        </button>
-                        <button
-                            onClick={nextImage}
-                            aria-label={t('project_next_image')}
-                            className="absolute right-3 top-1/2 -translate-y-1/2 px-3 py-2 rounded-lg bg-slate-900/70 text-white hover:bg-slate-900/85 transition"
-                        >
-                            ›
-                        </button>
-                    </div>
+                    {project.images.length > 0 && (
+                        <div className="relative rounded-xl overflow-hidden border border-slate-300 dark:border-slate-700">
+                            <img
+                                src={project.images[imageIndex]}
+                                alt={`${project.title} ${imageIndex + 1}`}
+                                onLoad={onImageLoad}
+                                className={`w-full h-[260px] md:h-[420px] cursor-zoom-in ${imageFitClass}`}
+                                onClick={() => setIsGalleryOpen(true)}
+                            />
+                            <button
+                                onClick={prevImage}
+                                aria-label={t('project_prev_image')}
+                                className="absolute left-3 top-1/2 -translate-y-1/2 px-3 py-2 rounded-lg bg-slate-900/70 text-white hover:bg-slate-900/85 transition"
+                            >
+                                ‹
+                            </button>
+                            <button
+                                onClick={nextImage}
+                                aria-label={t('project_next_image')}
+                                className="absolute right-3 top-1/2 -translate-y-1/2 px-3 py-2 rounded-lg bg-slate-900/70 text-white hover:bg-slate-900/85 transition"
+                            >
+                                ›
+                            </button>
+                        </div>
+                    )}
 
                     <div className="space-y-3">
                         <h2 className="text-xl font-semibold text-slate-800 dark:text-white">
