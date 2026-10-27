@@ -50,6 +50,7 @@
     "format": "prettier --write .",
     "lint": "eslint \"src/**/*.{js,ts,tsx}\" --max-warnings=0",
     "preview": "vite preview",
+    "prototype:escena": "vite --open /prototype/escena?v=a",
     "test": "vitest run",
     "test:watch": "vitest"
   },
