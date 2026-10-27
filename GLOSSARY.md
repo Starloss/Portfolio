@@ -9,8 +9,12 @@ El conjunto de todas las Experiencias de Diego, desde la primera hasta hoy. Su d
 _Avoid_: carrera, CV
 
 **Experiencia**:
-Un período de empleo de Diego en una Empresa, con su rol, fechas y logros.
+Un período de empleo de Diego en una Empresa, con su rol, fechas y Logros.
 _Avoid_: trabajo, empleo, job
+
+**Logro**:
+Una afirmación sobre lo que Diego consiguió dentro de una Experiencia. Los Logros de una Experiencia están ordenados por importancia: el Home muestra solo los primeros y el CV los muestra todos.
+_Avoid_: bullet, viñeta, responsabilidad
 
 **Empresa**:
 La organización donde ocurrió una Experiencia, nombrada de una sola forma en todo el sitio. No existe por sí sola: un Proyecto de trabajo la conoce a través de su Experiencia.
