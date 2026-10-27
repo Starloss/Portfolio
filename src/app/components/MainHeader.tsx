@@ -5,6 +5,8 @@ import { useI18n } from '@lib/i18n';
 import { cvPath, localizedPath, switchLocalePath } from '@lib/locale-path';
 import { useTheme } from '@lib/theme';
 
+import { LOCALES } from '@/content';
+
 interface MainHeaderProps {
     activeId?: string;
     isHome?: boolean;
@@ -136,7 +138,7 @@ export const MainHeader: React.FC<MainHeaderProps> = ({ activeId, isHome = false
                         aria-label={t('language')}
                         className="flex items-center text-xs font-semibold"
                     >
-                        {(['es', 'en'] as const).map((l, i) => (
+                        {LOCALES.map((l, i) => (
                             <React.Fragment key={l}>
                                 {i > 0 && (
                                     <span aria-hidden="true" className="px-1 text-slate-400">

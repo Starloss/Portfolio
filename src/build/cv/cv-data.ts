@@ -1,4 +1,4 @@
-import { localizedPath } from '@lib/locale-path';
+import { localizedPath, projectPath } from '@lib/locale-path';
 
 import { resolveContent, type Locale } from '@/content';
 
@@ -52,7 +52,7 @@ export function cvData(locale: Locale, today: Date, siteUrl: string) {
         featuredProjects: content.featuredProjects.map((p) => ({
             title: p.title,
             summary: p.caseStudy.summary,
-            url: `${siteUrl}${localizedPath(locale, `/projects/${p.id}`)}`,
+            url: `${siteUrl}${localizedPath(locale, projectPath(p.id))}`,
         })),
         education: content.education,
         skills: content.skills,

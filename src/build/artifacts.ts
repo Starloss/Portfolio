@@ -1,6 +1,6 @@
 // Archivos que el post-build escribe en dist/: un index.html con su <head> por ruta e idioma,
 // el sitemap y robots.txt. Es una función pura para poder probarla sin construir el sitio.
-import { localizedPath, routePaths } from '@lib/locale-path';
+import { localizedPath, projectPath, routePaths } from '@lib/locale-path';
 
 import { CONTENT, LOCALES, resolveContent, type Locale } from '@/content';
 
@@ -48,7 +48,7 @@ function pagesFor(locale: Locale, siteUrl: string, today: Date) {
         },
     };
     const caseStudies: Page[] = content.projects.map((p) => ({
-        path: `/projects/${p.id}`,
+        path: projectPath(p.id),
         title: `${p.title} · ${CASE_STUDY[locale]} · ${profile.name}`,
         description: p.caseStudy.summary,
     }));

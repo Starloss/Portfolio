@@ -19,10 +19,10 @@ export function switchLocalePath(pathname: string): string {
     return localizedPath('en', pathname);
 }
 
+/** Ruta del Caso de estudio de un Proyecto, en su forma en español. */
+export const projectPath = (projectId: string) => `/projects/${projectId}`;
+
 /** Rutas de la app en su forma en español: la Home y un Caso de estudio por Proyecto. */
-export const routePaths = (projectIds: string[]) => [
-    '/',
-    ...projectIds.map((id) => `/projects/${id}`),
-];
+export const routePaths = (projectIds: string[]) => ['/', ...projectIds.map(projectPath)];
 
 export const cvPath = (locale: Locale) => `/cv-diego-rangel-${locale}.pdf`;

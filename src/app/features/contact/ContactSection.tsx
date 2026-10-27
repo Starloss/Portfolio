@@ -3,7 +3,7 @@ import { useI18n } from '@lib/i18n';
 
 export const ContactSection: React.FC = () => {
     const { t, content } = useI18n();
-    const { email: CONTACT_EMAIL, linkedin, github } = content.profile;
+    const { email: contactEmail, linkedin, github } = content.profile;
     const [name, setName] = useState('');
     const [email, setEmail] = useState('');
     const [message, setMessage] = useState('');
@@ -12,7 +12,7 @@ export const ContactSection: React.FC = () => {
         e.preventDefault();
         const subject = `Portfolio Contact: ${name || '(sin nombre)'}`;
         const body = `Nombre: ${name}\nEmail: ${email}\n\n${message}`;
-        const mailto = `mailto:${CONTACT_EMAIL}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+        const mailto = `mailto:${contactEmail}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
         // Evitar fallos en tests (jsdom) donde location podría no navegar
         try {
             window.location.href = mailto;
@@ -112,7 +112,7 @@ export const ContactSection: React.FC = () => {
                             </a>
                         )}
                         <a
-                            href={`mailto:${CONTACT_EMAIL}`}
+                            href={`mailto:${contactEmail}`}
                             aria-label={t('contact_email_label')}
                             className="p-2 rounded text-slate-600 hover:text-brand-500 dark:text-slate-300 dark:hover:text-brand-400 transition"
                         >
@@ -148,7 +148,7 @@ export const ContactSection: React.FC = () => {
                             </a>
                         )}
                     </div>
-                    <p className="text-xs text-slate-400 break-all">{CONTACT_EMAIL}</p>
+                    <p className="text-xs text-slate-400 break-all">{contactEmail}</p>
                 </div>
             </div>
         </section>

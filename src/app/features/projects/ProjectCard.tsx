@@ -1,7 +1,7 @@
 import React from 'react';
 import { Badge } from '@app/components/ui/Badge';
 import { useI18n } from '@lib/i18n';
-import { localizedPath } from '@lib/locale-path';
+import { localizedPath, projectPath } from '@lib/locale-path';
 
 import type { ResolvedProject } from '@/content';
 
@@ -15,7 +15,7 @@ export const ProjectCard: React.FC<Props> = ({ project, isDragging }) => {
     return (
         <li className="group flex-none min-w-[310px] max-w-[360px]">
             <a
-                href={localizedPath(locale, `/projects/${project.id}`)}
+                href={localizedPath(locale, projectPath(project.id))}
                 className={`relative block h-full rounded-xl border border-slate-300 bg-white/80 dark:border-slate-800 dark:bg-slate-900/70 backdrop-blur p-5 hover:border-brand-500 transition-colors ${isDragging ? 'cursor-grabbing' : 'cursor-pointer'}`}
             >
                 <Badge variant="outline" className="absolute right-4 top-4">

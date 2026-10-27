@@ -1,36 +1,38 @@
-import type { Content } from './types';
+import { LOCALES, type Content } from './types';
 
 interface Options {
     /** Comprueba si existe un archivo publicado, p. ej. "/projects/x.jpg". */
     fileExists: (src: string) => boolean;
 }
 
+/** Un texto traducible: sus claves son idiomas, aunque falte alguno. */
 const isLocalized = (value: object) => {
-    const keys = Object.keys(value).sort();
-    return keys.length === 2 && keys[0] === 'en' && keys[1] === 'es';
+    const keys = Object.keys(value);
+    return keys.length > 0 && keys.every((k) => (LOCALES as string[]).includes(k));
 };
 
-const join = (base: string, key: string | number) =>
+/** Ruta legible de un campo: "projects[0].caseStudy.problem". */
+const fieldPath = (base: string, key: string | number) =>
     typeof key === 'number' ? `${base}[${key}]` : base ? `${base}.${key}` : key;
 
 /** Recorre todo el contenido buscando Datos pendientes y traducciones incompletas. */
 function walk(value: unknown, at: string, problems: string[]) {
     if (Array.isArray(value)) {
-        value.forEach((item, i) => walk(item, join(at, i), problems));
+        value.forEach((item, i) => walk(item, fieldPath(at, i), problems));
         return;
     }
     if (!value || typeof value !== 'object') return;
     const record = value as Record<string, unknown>;
     if (record.pending === true) problems.push(`Dato pendiente en ${at}`);
     if (isLocalized(record)) {
-        for (const locale of ['es', 'en'] as const) {
+        for (const locale of LOCALES) {
             const text = record[locale];
             if (typeof text !== 'string' || !text.trim())
                 problems.push(`Falta "${locale}" en ${at}`);
         }
         return;
     }
-    for (const [key, child] of Object.entries(record)) walk(child, join(at, key), problems);
+    for (const [key, child] of Object.entries(record)) walk(child, fieldPath(at, key), problems);
 }
 
 /** Devuelve la lista de problemas; vacía si el contenido se puede publicar. */

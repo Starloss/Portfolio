@@ -46,6 +46,12 @@ describe('validateContent', () => {
         ]);
     });
 
+    it('falla si a un texto traducible le falta un idioma entero', () => {
+        const c = clone();
+        (c.hero.location as Record<string, string>) = { es: 'Caracas' };
+        expect(validateContent(c, { fileExists: ok })).toEqual(['Falta "en" en hero.location']);
+    });
+
     it('falla si una imagen de galería no tiene alt o su archivo no existe', () => {
         const c = clone();
         c.projects[0].caseStudy.gallery[1].alt.es = '';

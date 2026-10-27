@@ -3,7 +3,7 @@ import { FiExternalLink, FiGithub } from 'react-icons/fi';
 import { Link, useLocation, useParams } from 'react-router-dom';
 import { currentYear } from '@lib/date';
 import { useI18n } from '@lib/i18n';
-import { localizedPath } from '@lib/locale-path';
+import { localizedPath, projectPath } from '@lib/locale-path';
 
 import { BackgroundScene } from '../components/BackgroundScene';
 import { MainHeader } from '../components/MainHeader';
@@ -211,7 +211,7 @@ const CaseStudyPage: React.FC<{ project: ResolvedProject }> = ({ project }) => {
                         ].map(({ p, direction, label }) => (
                             <Link
                                 key={direction}
-                                to={localizedPath(locale, `/projects/${p.id}`)}
+                                to={localizedPath(locale, projectPath(p.id))}
                                 state={{ direction }}
                                 className="inline-flex items-center justify-between gap-2 rounded-xl border border-slate-300 bg-white/90 px-4 py-3 text-sm text-slate-700 shadow-sm backdrop-blur transition hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-900/85 dark:text-slate-200 dark:hover:bg-slate-800"
                             >
