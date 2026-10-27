@@ -16,6 +16,14 @@ _Avoid_: trabajo, empleo, job
 Una afirmación sobre lo que Diego consiguió dentro de una Experiencia. Los Logros de una Experiencia están ordenados por importancia: el Home muestra solo los primeros y el CV los muestra todos.
 _Avoid_: bullet, viñeta, responsabilidad
 
+**Formación**:
+Los estudios de Diego en una institución, con su título, ubicación y años. No forma parte de la Trayectoria ni cuenta para su duración, aunque se solape con una Experiencia.
+_Avoid_: educación, estudios, education
+
+**CV**:
+El documento descargable, en español y en inglés, que resume a Diego con el mismo contenido del sitio: la Trayectoria con todos sus Logros, los Proyectos destacados, la Formación y las skills.
+_Avoid_: currículum, resume, hoja de vida
+
 **Empresa**:
 La organización donde ocurrió una Experiencia, nombrada de una sola forma en todo el sitio. No existe por sí sola: un Proyecto de trabajo la conoce a través de su Experiencia.
 _Avoid_: compañía, cliente, company
