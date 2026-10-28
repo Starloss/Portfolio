@@ -1,26 +1,24 @@
-import React, { useLayoutEffect, useState } from 'react';
+import React, { useLayoutEffect, useRef, useState } from 'react';
 import { m, useScroll, useTransform, type MotionStyle, type MotionValue } from 'motion/react';
 import { useMediaQuery, usePrefersReducedMotion } from '@lib/motion';
 import { useTheme } from '@lib/theme';
 
 import {
     cabinPoint,
-    CAMERA_HEIGHTS,
-    cameraJourney,
+    CAMERA_JOURNEY,
     cloudsAt,
-    heroSink,
-    layerOffset,
+    HERO_HEIGHT,
+    layerShift,
     MOON_SIZE,
     moonPosition,
+    mountainSink,
     sceneFrame,
     toScreen,
-    type CameraJourney,
     type SceneFrame,
-    type SectionBox,
     type TextColumn,
     type Viewport,
 } from './camera';
-import { useDocumentHidden, useSceneCovered, useViewport } from './environment';
+import { useDocumentHidden, useElementViewport, useSceneCovered } from './environment';
 import { skyline } from './geometry';
 import { DAY, NIGHT, NIGHT_LIGHTS, paletteVars, VARS } from './palette';
 import { Avila, CabinShape, City, FarRidge, HaloGradient, Macaws, Stars, Towers } from './parts';
@@ -28,8 +26,9 @@ import './scene.css';
 
 const MOBILE_QUERY = '(max-width: 767px)';
 
-// Cuánto se oscurece el cielo arriba de todo, con la cámara sobre las nubes.
-const SKY_DARKENING = 0.55;
+// Cuánto se oscurece el cielo arriba de todo con la cámara sobre las nubes; poco, para que el
+// texto del Hero siga contrastando.
+const SKY_DARKENING = 0.3;
 const CABIN_WIDTH = 12;
 
 type StyledPart = 'farRidge' | 'avila' | 'city' | 'towers' | 'clouds' | 'skyHigh' | 'cabin';
@@ -40,7 +39,7 @@ const px = (n: number) => `${n.toFixed(1)}px`;
 /** Estilos de cada capa con la cámara a una altura dada, como valores de CSS. */
 function stylesAt(height: number, sink: number, viewport: Viewport, frame: SceneFrame) {
     const shift = (layer: 'farRidge' | 'avila' | 'city' | 'towers') =>
-        `translateY(${px(sink + layerOffset(layer, height, viewport.height))})`;
+        `translateY(${px(layerShift(layer, height, viewport.height, sink))})`;
     const clouds = cloudsAt(height, viewport.height);
     const cabin = cabinPoint(height);
     const cabinOnScreen = toScreen(frame, cabin.x, cabin.y);
@@ -71,15 +70,16 @@ function toPartStyles(s: {
 }
 
 // Cada capa liga solo transform (como string) u opacity al progreso de scroll de la página, con
-// rangos fijos: así motion puede pasar el movimiento al compositor. Los rangos se fijan al montar,
-// por eso este componente se vuelve a montar cuando cambian las medidas.
+// rangos fijos: así motion puede pasar el movimiento al compositor. Los valores se fijan al montar,
+// por eso este componente se vuelve a montar si cambia el tamaño de la Escena o el hundimiento.
+const journey = CAMERA_JOURNEY;
+
 const JourneyStyles: React.FC<{
-    journey: CameraJourney;
     sink: number;
     viewport: Viewport;
     frame: SceneFrame;
     children: (styles: PartStyles) => React.ReactNode;
-}> = ({ journey, sink, viewport, frame, children }) => {
+}> = ({ sink, viewport, frame, children }) => {
     const { scrollYProgress } = useScroll();
     const frames = journey.height.map((h) => stylesAt(h, sink, viewport, frame));
     const values = <K extends keyof (typeof frames)[number]>(key: K) => frames.map((f) => f[key]);
@@ -97,29 +97,17 @@ const JourneyStyles: React.FC<{
 };
 
 interface PageLayout {
-    sections: SectionBox[];
-    documentHeight: number;
     column: TextColumn | null;
     headerBottom: number;
 }
 
-// Mide en coordenadas del documento: las secciones del Viaje, la columna de texto del Hero hasta
-// la línea de ubicación y el borde inferior de la cabecera.
+// Mide en coordenadas del documento la columna de texto del Hero hasta la línea de ubicación y el
+// borde inferior de la cabecera: de ellos dependen el hundimiento de la montaña y la luna.
 function measurePage(): PageLayout {
     const y = window.scrollY;
-    const sections: SectionBox[] = [];
-    for (const id of Object.keys(CAMERA_HEIGHTS)) {
-        const el = document.getElementById(id);
-        if (!el) continue;
-        const r = el.getBoundingClientRect();
-        sections.push({ id, top: r.top + y, height: r.height });
-    }
-    sections.sort((a, b) => a.top - b.top);
     const text = document.querySelector('[data-hero-text]')?.getBoundingClientRect();
     const header = document.querySelector('header')?.getBoundingClientRect();
     return {
-        sections,
-        documentHeight: document.documentElement.scrollHeight,
         column:
             text && text.width > 0
                 ? { left: text.left, right: text.right, top: text.top + y, bottom: text.bottom + y }
@@ -155,14 +143,18 @@ const CLOUDS = [
 
 /**
  * La Escena de Caracas detrás del contenido. Sin `height`, hace el Viaje de cámara con el
- * scroll de la página (Home); con `height`, queda fija a esa altura (Caso de estudio).
+ * scroll de la página (Home), o queda en el encuadre del Hero con reduced-motion; con `height`,
+ * queda fija a esa altura (Caso de estudio).
  */
 export const Scene: React.FC<{ height?: number }> = ({ height }) => {
     const { theme } = useTheme();
     const night = theme === 'dark';
     const mobile = useMediaQuery(MOBILE_QUERY);
     const reduced = usePrefersReducedMotion();
-    const viewport = useViewport();
+    // El tamaño sale de la propia Escena (100vh): no cambia cuando el teléfono muestra u oculta la
+    // barra del navegador, así el encuadre no salta mientras se hace scroll.
+    const root = useRef<HTMLDivElement>(null);
+    const viewport = useElementViewport(root);
     const hidden = useDocumentHidden();
     const covered = useSceneCovered();
     const paused = hidden || covered;
@@ -170,15 +162,11 @@ export const Scene: React.FC<{ height?: number }> = ({ height }) => {
     const journeyMode = height === undefined;
     const page = usePageLayout(journeyMode, viewport);
 
-    const sink = page?.column ? heroSink(viewport, page.column, skyline(night)) : 0;
+    const sink = page?.column ? mountainSink(viewport, page.column, skyline(night)) : 0;
     const moon = page?.column
         ? moonPosition(viewport, page.column, page.headerBottom)
         : { x: viewport.width - 90, y: 140 };
-    const journey =
-        journeyMode && !reduced && page
-            ? cameraJourney(page.sections, viewport.height, page.documentHeight)
-            : null;
-    const moves = journey !== null && journey.height.some((h) => h !== journey.height[0]);
+    const travels = journeyMode && !reduced;
 
     // Animan siempre las cabinas y las estrellas; nubes, guacamayas y ventanas solo en escritorio.
     const animate = !reduced;
@@ -279,15 +267,15 @@ export const Scene: React.FC<{ height?: number }> = ({ height }) => {
 
     return (
         <div
+            ref={root}
             className="scene"
             aria-hidden="true"
             data-paused={paused || undefined}
             style={paletteVars(night ? NIGHT : DAY)}
         >
-            {journey && moves ? (
+            {travels ? (
                 <JourneyStyles
-                    key={`${journey.progress.join()}|${sink}|${viewport.width}x${viewport.height}`}
-                    journey={journey}
+                    key={`${sink}|${viewport.width}x${viewport.height}`}
                     sink={sink}
                     viewport={viewport}
                     frame={frame}
@@ -295,7 +283,7 @@ export const Scene: React.FC<{ height?: number }> = ({ height }) => {
                     {layers}
                 </JourneyStyles>
             ) : (
-                layers(toPartStyles(stylesAt(height ?? 0, sink, viewport, frame)))
+                layers(toPartStyles(stylesAt(height ?? HERO_HEIGHT, sink, viewport, frame)))
             )}
         </div>
     );

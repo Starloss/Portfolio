@@ -1,91 +1,62 @@
 import { describe, it, expect } from 'vitest';
 import {
     cabinPoint,
+    CAMERA_JOURNEY,
     cameraHeightAt,
-    cameraJourney,
     cloudsAt,
+    HERO_HEIGHT,
     heroSink,
     layerOffset,
+    layerShift,
     moonPosition,
+    mountainSink,
     sceneFrame,
     toScreen,
 } from '@app/scene/camera';
 import { STATIONS } from '@app/scene/geometry';
 
-// Home de 6 secciones apiladas, con una ventana de 900 px de alto.
-const VIEWPORT_HEIGHT = 900;
-const SECTIONS = [
-    { id: 'hero', top: 0, height: 700 },
-    { id: 'impact', top: 700, height: 500 },
-    { id: 'experience', top: 1200, height: 1400 },
-    { id: 'projects', top: 2600, height: 900 },
-    { id: 'skills', top: 3500, height: 600 },
-    { id: 'contact', top: 4100, height: 500 },
-];
-const DOCUMENT_HEIGHT = 4600;
-const MAX_SCROLL = DOCUMENT_HEIGHT - VIEWPORT_HEIGHT;
-
-// Scroll en el que el centro de una sección cruza el centro de la pantalla.
-const centerOf = (top: number, height: number) => top + height / 2 - VIEWPORT_HEIGHT / 2;
-const heightAtScroll = (scroll: number, sections = SECTIONS) =>
-    cameraHeightAt(cameraJourney(sections, VIEWPORT_HEIGHT, DOCUMENT_HEIGHT), scroll / MAX_SCROLL);
-
-describe('Viaje de cámara: altura por sección', () => {
-    it('empieza en la ciudad con el Hero', () => {
-        expect(heightAtScroll(0)).toBe(0);
+describe('Viaje de cámara: baja del Hero a la ciudad', () => {
+    it('empieza arriba en el Hero, con las cumbres del Ávila y cielo libre', () => {
+        expect(HERO_HEIGHT).toBe(0.8);
+        expect(cameraHeightAt(0)).toBe(0.8);
     });
 
-    it('sube sobre las nubes cuando Proyectos destacados cruza el centro de la pantalla', () => {
-        expect(heightAtScroll(centerOf(2600, 900))).toBeCloseTo(1, 5);
+    it('termina en la ciudad al final de la página, en Contacto', () => {
+        expect(cameraHeightAt(1)).toBe(0);
     });
 
-    it('usa la altura de cada sección en su centro', () => {
-        expect(heightAtScroll(centerOf(700, 500))).toBeCloseTo(0.35, 5);
-        expect(heightAtScroll(centerOf(1200, 1400))).toBeCloseTo(0.7, 5);
-        expect(heightAtScroll(centerOf(3500, 600))).toBeCloseTo(0.6, 5);
+    it('baja en un solo sentido: nunca vuelve a subir', () => {
+        let previous = cameraHeightAt(0);
+        for (let i = 1; i <= 100; i++) {
+            const height = cameraHeightAt(i / 100);
+            expect(height).toBeLessThanOrEqual(previous);
+            previous = height;
+        }
     });
 
-    it('vuelve a la ciudad al llegar a Contacto, al final de la página', () => {
-        expect(heightAtScroll(MAX_SCROLL)).toBeCloseTo(0, 5);
+    it('baja con suavizado: lento al empezar y al terminar', () => {
+        // Al 25% del scroll, una bajada lineal daría 0,6; con suavizado (smoothstep) baja
+        // 0,8 × 0,15625 = 0,125 y queda en 0,675. A la mitad, justo a medio camino.
+        expect(cameraHeightAt(0.25)).toBeCloseTo(0.675, 5);
+        expect(cameraHeightAt(0.5)).toBeCloseTo(0.4, 5);
+        expect(cameraHeightAt(0.75)).toBeCloseTo(0.125, 5);
     });
 
-    it('entre dos secciones interpola con suavizado y no en línea recta', () => {
-        const from = centerOf(1200, 1400);
-        const to = centerOf(2600, 900);
-        // Al 25% del tramo de 0,7 a 1, una interpolación lineal daría 0,775; con suavizado
-        // (smoothstep) da 0,7 + 0,3 × 0,15625 = 0,746875.
-        expect(heightAtScroll(from + (to - from) * 0.25)).toBeCloseTo(0.746875, 3);
-        expect(heightAtScroll(from + (to - from) * 0.5)).toBeCloseTo(0.85, 3);
+    it('fuera del rango de scroll se queda en los extremos', () => {
+        expect(cameraHeightAt(-0.2)).toBe(0.8);
+        expect(cameraHeightAt(1.3)).toBe(0);
     });
 
-    it('ignora las secciones sin altura configurada y sigue con las que existen', () => {
-        const sections = [
-            { id: 'hero', top: 0, height: 700 },
-            { id: 'skills', top: 700, height: 900 },
-            { id: 'about', top: 1600, height: 900 },
-            { id: 'experience', top: 2500, height: 1200 },
-            { id: 'projects', top: 3700, height: 500 },
-            { id: 'contact', top: 4200, height: 400 },
-        ];
-        expect(heightAtScroll(centerOf(700, 900), sections)).toBeCloseTo(0.6, 5);
-        expect(heightAtScroll(centerOf(3700, 500), sections)).toBeCloseTo(1, 5);
-        expect(heightAtScroll(MAX_SCROLL, sections)).toBeCloseTo(0, 5);
-    });
-
-    it('se queda en la ciudad si la página no tiene scroll', () => {
-        const journey = cameraJourney(SECTIONS.slice(0, 1), VIEWPORT_HEIGHT, 600);
-        expect(cameraHeightAt(journey, 0)).toBe(0);
-        expect(cameraHeightAt(journey, 1)).toBe(0);
-    });
-
-    it('da rangos de progreso estrictamente crecientes entre 0 y 1', () => {
-        const { progress, height } = cameraJourney(SECTIONS, VIEWPORT_HEIGHT, DOCUMENT_HEIGHT);
+    it('da keyframes con progreso estrictamente creciente de 0 a 1', () => {
+        const { progress, height } = CAMERA_JOURNEY;
         expect(progress.length).toBe(height.length);
-        expect(progress[0]).toBeGreaterThanOrEqual(0);
-        expect(progress[progress.length - 1]).toBeLessThanOrEqual(1);
+        expect(progress[0]).toBe(0);
+        expect(progress[progress.length - 1]).toBe(1);
         for (let i = 1; i < progress.length; i++) {
             expect(progress[i]).toBeGreaterThan(progress[i - 1]);
         }
+        expect(height[0]).toBe(0.8);
+        expect(height[height.length - 1]).toBe(0);
     });
 });
 
@@ -102,6 +73,17 @@ describe('Viaje de cámara: desplazamiento de las capas', () => {
         for (const layer of ['farRidge', 'avila', 'city', 'towers'] as const) {
             expect(layerOffset(layer, 0, 900)).toBe(0);
         }
+    });
+
+    it('el hundimiento del Hero baja las crestas y el Ávila, pero no la ciudad ni las Torres', () => {
+        // Con la cámara en la ciudad (Hero y Contacto), la ciudad sigue apoyada abajo.
+        expect(layerShift('farRidge', 0, 900, 150)).toBe(150);
+        expect(layerShift('avila', 0, 900, 150)).toBe(150);
+        expect(layerShift('city', 0, 900, 150)).toBe(0);
+        expect(layerShift('towers', 0, 900, 150)).toBe(0);
+        // Al subir, cada capa suma lo que se hunde por su profundidad.
+        expect(layerShift('avila', 1, 900, 150)).toBeCloseTo(645, 5);
+        expect(layerShift('city', 1, 900, 150)).toBeCloseTo(720, 5);
     });
 
     it('las nubes bajan de −70vh a +10vh y aparecen al subir', () => {
@@ -156,6 +138,16 @@ describe('Hundimiento del paisaje según el alto del Hero', () => {
         const viewport = { width: 1440, height: 900 };
         const wide = { left: 400, right: 1300, top: 120, bottom: 330 };
         expect(heroSink(viewport, wide, skyline)).toBeCloseTo(246, 5);
+    });
+
+    it('la montaña solo se hunde lo que no alcanzó a bajar la cámara en el Hero', () => {
+        // En el Hero la cresta lejana ya bajó 0,35 × 0,8 × 900 = 252 px.
+        const viewport = { width: 1440, height: 900 };
+        const column = { left: 400, right: 1000, top: 120, bottom: 330 };
+        expect(mountainSink(viewport, column, skyline)).toBe(0);
+        const low = { left: 400, right: 1000, top: 120, bottom: 600 };
+        // Haría falta 600 + 16 − 300 = 316 px: faltan 64.
+        expect(mountainSink(viewport, low, skyline)).toBeCloseTo(64, 5);
     });
 
     it('en una pantalla baja lo hunde más', () => {

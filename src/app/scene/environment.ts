@@ -1,17 +1,31 @@
 // Lo que la Escena lee del entorno además del tema y las media queries.
-import { useEffect, useSyncExternalStore } from 'react';
+import { useEffect, useLayoutEffect, useState, useSyncExternalStore, type RefObject } from 'react';
 
 import type { Viewport } from './camera';
 
-const onResize = (onChange: () => void) => {
-    window.addEventListener('resize', onChange);
-    return () => window.removeEventListener('resize', onChange);
-};
-
-export function useViewport(): Viewport {
-    const width = useSyncExternalStore(onResize, () => window.innerWidth);
-    const height = useSyncExternalStore(onResize, () => window.innerHeight);
-    return { width, height };
+/** Tamaño de un elemento; hasta poder medirlo (o si mide 0, como en jsdom), el de la ventana. */
+export function useElementViewport(ref: RefObject<HTMLElement | null>): Viewport {
+    const [size, setSize] = useState<Viewport>(() => ({
+        width: window.innerWidth,
+        height: window.innerHeight,
+    }));
+    useLayoutEffect(() => {
+        const el = ref.current;
+        if (!el) return;
+        const update = () => {
+            const { width, height } = el.getBoundingClientRect();
+            if (width === 0 || height === 0) return;
+            setSize((prev) =>
+                prev.width === width && prev.height === height ? prev : { width, height },
+            );
+        };
+        update();
+        if (typeof ResizeObserver === 'undefined') return;
+        const observer = new ResizeObserver(update);
+        observer.observe(el);
+        return () => observer.disconnect();
+    }, [ref]);
+    return size;
 }
 
 const onVisibilityChange = (onChange: () => void) => {

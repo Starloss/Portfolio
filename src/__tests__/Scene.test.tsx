@@ -137,9 +137,17 @@ describe('prefers-reduced-motion', () => {
     });
 
     it('la Escena queda en el encuadre del Hero y no se mueve con el scroll', () => {
+        // Encuadre del Hero: cámara a 0,8 con una ventana de 1000 px; cada capa baja
+        // profundidad × 0,8 × 1000 (cresta lejana 0,35, Ávila 0,55, ciudad 0,8, Torres 0,9).
+        vi.spyOn(window, 'innerHeight', 'get').mockReturnValue(1000);
         const { shift } = renderScene({ reducedMotion: true });
         const before = ['far-ridge', 'avila', 'city', 'towers'].map(shift);
-        expect(before.every((t) => t === 'translateY(0.0px)')).toBe(true);
+        expect(before).toEqual([
+            'translateY(280.0px)',
+            'translateY(440.0px)',
+            'translateY(640.0px)',
+            'translateY(720.0px)',
+        ]);
         act(() => {
             window.scrollY = 2000;
             window.dispatchEvent(new Event('scroll'));

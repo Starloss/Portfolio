@@ -1,7 +1,11 @@
 /* Escena de Caracas: capas fijas detrás del contenido. Solo se animan transform y opacity. */
 .scene {
+    /* 100vh y no inset: 0, para que la barra del navegador del teléfono no cambie su tamaño. */
     position: fixed;
-    inset: 0;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100vh;
     z-index: -1;
     overflow: hidden;
     pointer-events: none;

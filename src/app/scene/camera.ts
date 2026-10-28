@@ -2,22 +2,8 @@
 // La altura de la cámara va de 0 (ciudad) a 1 (sobre las nubes) y solo hay movimiento vertical.
 import { cablePoint, VIEW } from './geometry';
 
-/** Altura de la cámara cuando cada sección cruza el centro de la pantalla, por id de sección. */
-export const CAMERA_HEIGHTS: Readonly<Record<string, number>> = {
-    hero: 0,
-    impact: 0.35,
-    experience: 0.7,
-    projects: 1,
-    skills: 0.6,
-    contact: 0,
-};
-
-export interface SectionBox {
-    id: string;
-    /** Distancia desde el inicio del documento, en px. */
-    top: number;
-    height: number;
-}
+/** Altura de la cámara en el Hero: arriba, con las cumbres del Ávila y cielo libre para el texto. */
+export const HERO_HEIGHT = 0.8;
 
 /** Keyframes del Viaje: progreso de scroll (0 a 1) y altura de la cámara en cada punto. */
 export interface CameraJourney {
@@ -25,51 +11,24 @@ export interface CameraJourney {
     height: number[];
 }
 
-const SAMPLES_PER_SEGMENT = 8;
-
 const smoothstep = (t: number) => t * t * (3 - 2 * t);
 const clamp = (v: number, min: number, max: number) => Math.min(max, Math.max(min, v));
 
-export function cameraJourney(
-    sections: readonly SectionBox[],
-    viewportHeight: number,
-    documentHeight: number,
-): CameraJourney {
-    const maxScroll = documentHeight - viewportHeight;
-    if (maxScroll <= 0) return { progress: [0, 1], height: [0, 0] };
-
-    // Cada sección configurada aporta un ancla: el scroll en que su centro cruza el de la pantalla.
-    // Si varias anclas caen en el mismo punto (el final de la página), gana la última del documento.
-    const anchors: { scroll: number; height: number }[] = [];
-    for (const s of sections) {
-        const height = CAMERA_HEIGHTS[s.id];
-        if (height === undefined) continue;
-        const scroll = clamp(s.top + s.height / 2 - viewportHeight / 2, 0, maxScroll);
-        while (anchors.length > 0 && anchors[anchors.length - 1].scroll >= scroll) anchors.pop();
-        anchors.push({ scroll, height });
-    }
-    if (anchors.length === 0) return { progress: [0, 1], height: [0, 0] };
-    if (anchors.length === 1) {
-        return { progress: [0, 1], height: [anchors[0].height, anchors[0].height] };
-    }
-
-    // Entre anclas se interpola con suavizado; se muestrea para que el tramo sea lineal a trozos.
-    const progress: number[] = [];
-    const height: number[] = [];
-    for (let i = 0; i < anchors.length - 1; i++) {
-        const a = anchors[i];
-        const b = anchors[i + 1];
-        for (let k = 0; k < SAMPLES_PER_SEGMENT; k++) {
-            const t = k / SAMPLES_PER_SEGMENT;
-            progress.push((a.scroll + (b.scroll - a.scroll) * t) / maxScroll);
-            height.push(a.height + (b.height - a.height) * smoothstep(t));
-        }
-    }
-    const last = anchors[anchors.length - 1];
-    progress.push(last.scroll / maxScroll);
-    height.push(last.height);
-    return { progress, height };
+/**
+ * Altura de la cámara según el progreso de scroll de toda la página (0 arriba, 1 abajo). Baja en
+ * un solo sentido, con suavizado, como el Teleférico de Waraira Repano a Maripérez: del Hero a la
+ * ciudad en Contacto. No depende de cuánto mide cada sección.
+ */
+export function cameraHeightAt(progress: number): number {
+    return HERO_HEIGHT * (1 - smoothstep(clamp(progress, 0, 1)));
 }
+
+// Muestreada para ligar las capas al scroll con tramos lineales cortos.
+const SAMPLES = 16;
+export const CAMERA_JOURNEY: CameraJourney = {
+    progress: Array.from({ length: SAMPLES + 1 }, (_, i) => i / SAMPLES),
+    height: Array.from({ length: SAMPLES + 1 }, (_, i) => cameraHeightAt(i / SAMPLES)),
+};
 
 /** Profundidad de cada capa que se mueve: cuánto se hunde por unidad de altura, en altos de ventana. */
 export const LAYER_DEPTH = {
@@ -84,6 +43,21 @@ export type MovingLayer = keyof typeof LAYER_DEPTH;
 /** Desplazamiento vertical de una capa, en px. */
 export function layerOffset(layer: MovingLayer, height: number, viewportHeight: number): number {
     return LAYER_DEPTH[layer] * height * viewportHeight;
+}
+
+// El hundimiento del Hero solo baja la montaña: la ciudad y las Torres quedan apoyadas abajo,
+// así que se ven al empezar y al volver a la ciudad en Contacto.
+const SINKS_WITH_HERO: readonly MovingLayer[] = ['farRidge', 'avila'];
+
+/** Desplazamiento vertical total de una capa (px): su hundimiento con la cámara más el del Hero. */
+export function layerShift(
+    layer: MovingLayer,
+    height: number,
+    viewportHeight: number,
+    heroSink: number,
+): number {
+    const sink = SINKS_WITH_HERO.includes(layer) ? heroSink : 0;
+    return sink + layerOffset(layer, height, viewportHeight);
 }
 
 /** Las nubes bajan de −70vh a +10vh y aparecen con opacidad al subir la cámara. */
@@ -163,6 +137,19 @@ export function heroSink(
     return Math.max(0, column.bottom + HERO_CLEARANCE - screenTop);
 }
 
+/**
+ * Cuánto más hay que hundir la montaña (px) en el Hero, además de lo que ya bajó la cámara: la
+ * cresta lejana es la capa que menos baja, así que manda ella.
+ */
+export function mountainSink(
+    viewport: Viewport,
+    column: TextColumn,
+    skyline: readonly number[],
+): number {
+    const needed = heroSink(viewport, column, skyline);
+    return Math.max(0, needed - layerOffset('farRidge', HERO_HEIGHT, viewport.height));
+}
+
 export const MOON_SIZE = 52;
 const MOON_MARGIN = 24;
 
@@ -196,16 +183,4 @@ export function moonPosition(
 /** Punto del cable (SVG) donde va la cabina del visitante: sube con la cámara. */
 export function cabinPoint(height: number): { x: number; y: number } {
     return cablePoint(clamp(height, 0, 1));
-}
-
-/** Altura de la cámara para un progreso de scroll (0 a 1). */
-export function cameraHeightAt({ progress, height }: CameraJourney, at: number): number {
-    if (at <= progress[0]) return height[0];
-    for (let i = 1; i < progress.length; i++) {
-        if (at <= progress[i]) {
-            const t = (at - progress[i - 1]) / (progress[i] - progress[i - 1]);
-            return height[i - 1] + (height[i] - height[i - 1]) * t;
-        }
-    }
-    return height[height.length - 1];
 }
