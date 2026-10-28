@@ -1,0 +1,160 @@
+/* Escena de Caracas: capas fijas detrás del contenido. Solo se animan transform y opacity. */
+.scene {
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    overflow: hidden;
+    pointer-events: none;
+}
+
+.scene-layer {
+    position: absolute;
+    inset: 0;
+}
+
+.scene-layer > svg {
+    position: absolute;
+    inset: 0;
+    display: block;
+    width: 100%;
+    height: 100%;
+}
+
+/* Día ↔ Noche: un atardecer o un amanecer, no un salto. */
+.scene * {
+    transition:
+        fill 0.6s ease,
+        stroke 0.6s ease,
+        background-color 0.6s ease;
+}
+
+.scene-sky {
+    position: absolute;
+    inset: 0;
+}
+
+.scene-sky-night {
+    transition: opacity 0.6s ease;
+}
+
+.scene-sky-high {
+    background: linear-gradient(to bottom, var(--scene-sky-high), transparent 75%);
+}
+
+.scene-moon {
+    position: absolute;
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    background: #f4f1e4;
+    box-shadow: 0 0 28px rgba(255, 241, 196, 0.45);
+}
+
+.scene-cloud {
+    position: absolute;
+    border-radius: 50%;
+    background: radial-gradient(closest-side, var(--scene-cloud), transparent);
+}
+
+.scene-cabin {
+    position: absolute;
+    top: 0;
+    left: 0;
+}
+
+.scene-cabin > svg {
+    display: block;
+}
+
+/* "Más vida": grupos animados, nunca nodos sueltos. */
+.scene [data-anim='twinkle'] {
+    animation: scene-twinkle 5s ease-in-out infinite;
+}
+
+.scene [data-anim='flicker'] {
+    animation: scene-flicker 9s linear infinite;
+}
+
+.scene [data-anim='cabin'] {
+    animation: scene-cabin 26s ease-in-out infinite alternate;
+}
+
+.scene [data-anim='drift'] {
+    animation: scene-drift 48s ease-in-out infinite alternate;
+}
+
+.scene [data-anim='macaws'] {
+    animation: scene-macaws 16s ease-in-out infinite;
+}
+
+/* Con la pestaña oculta o la Escena tapada, todo se detiene sin desmontarse. */
+.scene[data-paused] [data-anim] {
+    animation-play-state: paused;
+}
+
+@keyframes scene-twinkle {
+    0%,
+    100% {
+        opacity: 0.85;
+    }
+    50% {
+        opacity: 0.25;
+    }
+}
+
+@keyframes scene-flicker {
+    0%,
+    40%,
+    48%,
+    100% {
+        opacity: 0.85;
+    }
+    44% {
+        opacity: 0.3;
+    }
+    70% {
+        opacity: 0.6;
+    }
+}
+
+@keyframes scene-cabin {
+    from {
+        transform: translate(0, 0);
+    }
+    50% {
+        transform: translate(var(--mx), var(--my));
+    }
+    to {
+        transform: translate(var(--dx), var(--dy));
+    }
+}
+
+@keyframes scene-drift {
+    from {
+        transform: translateX(0);
+    }
+    to {
+        transform: translateX(var(--drift));
+    }
+}
+
+@keyframes scene-macaws {
+    0%,
+    100% {
+        transform: translate(0, 0);
+    }
+    50% {
+        transform: translate(-40px, -12px);
+    }
+}
+
+/* Red de seguridad: con prefers-reduced-motion no se mueve nada. */
+@media (prefers-reduced-motion: reduce) {
+    .scene [data-anim] {
+        animation: none;
+    }
+    .scene,
+    .scene * {
+        transition: none;
+    }
+}

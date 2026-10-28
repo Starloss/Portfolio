@@ -5,11 +5,15 @@ import { currentYear } from '@lib/date';
 import { useI18n } from '@lib/i18n';
 import { localizedPath, projectPath } from '@lib/locale-path';
 
-import { BackgroundScene } from '../components/BackgroundScene';
 import { MainHeader } from '../components/MainHeader';
 import { Badge } from '../components/ui/Badge';
+import { useCoverScene } from '../scene/environment';
+import { Scene } from '../scene/Scene';
 
 import type { ResolvedProject } from '@/content';
+
+// La Escena del Caso de estudio queda fija "sobre las nubes", donde viven los Proyectos en el Home.
+const CASE_STUDY_CAMERA_HEIGHT = 1;
 
 const headingClass = 'text-xl font-semibold text-slate-800 dark:text-white';
 const textClass = 'text-slate-700 dark:text-slate-300 leading-relaxed';
@@ -56,7 +60,7 @@ const CaseStudyPage: React.FC<{ project: ResolvedProject }> = ({ project }) => {
 
     return (
         <>
-            <BackgroundScene />
+            <Scene height={CASE_STUDY_CAMERA_HEIGHT} />
             <MainHeader activeId="projects" />
             <main className="max-w-5xl mx-auto px-6 md:px-8 py-10 pb-28 md:pb-10 space-y-8">
                 <Link
@@ -68,7 +72,7 @@ const CaseStudyPage: React.FC<{ project: ResolvedProject }> = ({ project }) => {
                 </Link>
 
                 <section
-                    className={`relative space-y-6 rounded-2xl border border-slate-200/80 dark:border-slate-800/80 bg-slate-100/70 dark:bg-slate-900/55 backdrop-blur p-6 md:p-8 ${projectTransitionClass}`}
+                    className={`relative space-y-6 rounded-2xl border border-slate-200/80 dark:border-slate-800/80 bg-slate-100/90 dark:bg-slate-900/80 p-6 md:p-8 ${projectTransitionClass}`}
                 >
                     <Badge variant="outline" className="absolute right-6 top-6">
                         {project.company ?? t('project_personal')}
@@ -217,7 +221,7 @@ const CaseStudyPage: React.FC<{ project: ResolvedProject }> = ({ project }) => {
                                     key={direction}
                                     to={localizedPath(locale, projectPath(p.id))}
                                     state={{ direction }}
-                                    className="inline-flex items-center justify-between gap-2 rounded-xl border border-slate-300 bg-white/90 px-4 py-3 text-sm text-slate-700 shadow-sm backdrop-blur transition hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-900/85 dark:text-slate-200 dark:hover:bg-slate-800"
+                                    className="inline-flex items-center justify-between gap-2 rounded-xl border border-slate-300 bg-white/90 px-4 py-3 text-sm text-slate-700 shadow-sm transition hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-900/85 dark:text-slate-200 dark:hover:bg-slate-800"
                                 >
                                     <span>{label}</span>
                                     <span className="font-semibold text-brand-500">{p.title}</span>
@@ -227,7 +231,7 @@ const CaseStudyPage: React.FC<{ project: ResolvedProject }> = ({ project }) => {
                     </div>
                 </div>
 
-                <footer className="text-center text-xs text-slate-600 dark:text-slate-500 pb-10">
+                <footer className="text-center text-xs text-slate-900 dark:text-slate-300 pb-10">
                     © {currentYear()}
                 </footer>
             </main>
@@ -240,6 +244,7 @@ const Gallery: React.FC<{ project: ResolvedProject }> = ({ project }) => {
     const images = project.caseStudy.gallery;
     const [index, setIndex] = useState(0);
     const [isOpen, setIsOpen] = useState(false);
+    useCoverScene(isOpen);
     const thumbnailRefs = useRef<Array<HTMLButtonElement | null>>([]);
     const AUTOPLAY_MS = 4000;
 
@@ -309,7 +314,7 @@ const Gallery: React.FC<{ project: ResolvedProject }> = ({ project }) => {
 
             {isOpen && (
                 <div
-                    className="fixed inset-0 z-[100] bg-slate-950/90 backdrop-blur-sm p-4 md:p-10"
+                    className="fixed inset-0 z-[100] bg-slate-950/95 p-4 md:p-10"
                     role="dialog"
                     aria-modal="true"
                     aria-label={`${project.title} · ${t('project_gallery_aria')}`}

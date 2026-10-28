@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 
-import { buildSiteArtifacts } from '@/build/artifacts';
+import { buildSiteArtifacts, ogImages } from '@/build/artifacts';
 
 const INDEX_HTML = `<!doctype html>
 <html lang="es">
@@ -69,8 +69,29 @@ describe('<head> por ruta e idioma', () => {
         );
         expect(head).toContain('<meta property="og:locale" content="en_US" />');
         expect(head).toContain('<meta property="og:locale:alternate" content="es_ES" />');
-        expect(head).toContain('<meta name="twitter:card" content="summary" />');
-        expect(head).not.toContain('og:image');
+    });
+
+    it('cada página enlaza su imagen OG, con texto alternativo y tamaño', () => {
+        const home = headOf(files['index.html']);
+        expect(home).toContain(
+            '<meta property="og:image" content="https://www.diegorangel.dev/og/es/home.png" />',
+        );
+        expect(home).toContain(
+            '<meta property="og:image:alt" content="Diego Rangel · Full-Stack Lead Developer" />',
+        );
+        expect(home).toContain('<meta property="og:image:width" content="1200" />');
+        expect(home).toContain('<meta property="og:image:height" content="630" />');
+        expect(home).toContain('<meta name="twitter:card" content="summary_large_image" />');
+
+        const caseStudy = headOf(files['en/projects/wedding-invitation.html']);
+        expect(caseStudy).toContain(
+            '<meta property="og:image" content="https://www.diegorangel.dev/og/en/projects/wedding-invitation.png" />',
+        );
+        expect(caseStudy).toContain(
+            '<meta property="og:image:alt" content="Wedding Invitation · Case study · Diego Rangel" />',
+        );
+        expect(caseStudy).toContain('<meta name="twitter:card" content="summary_large_image" />');
+        expect(caseStudy).not.toContain('content="summary"');
     });
 
     it('la Home lleva el JSON-LD de Person y los Casos de estudio no', () => {
@@ -94,6 +115,37 @@ describe('<head> por ruta e idioma', () => {
             ],
         });
         expect(files['projects/superwallet.html']).not.toContain('application/ld+json');
+    });
+});
+
+describe('Imágenes OG', () => {
+    const images = ogImages(new Date(2026, 9, 27));
+
+    it('hay una por página e idioma: la Home y los 3 Casos de estudio', () => {
+        expect(images.map((i) => i.file).sort()).toEqual([
+            'og/en/home.png',
+            'og/en/projects/be-booking-engine.png',
+            'og/en/projects/superwallet.png',
+            'og/en/projects/wedding-invitation.png',
+            'og/es/home.png',
+            'og/es/projects/be-booking-engine.png',
+            'og/es/projects/superwallet.png',
+            'og/es/projects/wedding-invitation.png',
+        ]);
+    });
+
+    it('la de la Home lleva el nombre y el rol', () => {
+        const home = images.find((i) => i.file === 'og/es/home.png')!;
+        expect(home.card).toEqual({ title: 'Diego Rangel', label: 'Full-Stack Lead Developer' });
+    });
+
+    it('la de un Caso de estudio lleva el Proyecto, "Caso de estudio" en su idioma y la tech', () => {
+        const es = images.find((i) => i.file === 'og/es/projects/superwallet.png')!;
+        const en = images.find((i) => i.file === 'og/en/projects/superwallet.png')!;
+        expect(es.card.title).toBe('SuperWallet');
+        expect(es.card.label).toBe('Caso de estudio');
+        expect(en.card.label).toBe('Case study');
+        expect(es.card.detail).toBe('React · TypeScript · Prisma · Nest');
     });
 });
 

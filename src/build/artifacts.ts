@@ -1,5 +1,6 @@
 // Archivos que el post-build escribe en dist/: un index.html con su <head> por ruta e idioma,
-// el sitemap y robots.txt. Es una función pura para poder probarla sin construir el sitio.
+// el sitemap, robots.txt y qué dice cada imagen OG. Son funciones puras para poder probarlas sin
+// construir el sitio; las imágenes las rasteriza el post-build.
 import { localizedPath, projectPath, routePaths } from '@lib/locale-path';
 
 import { CONTENT, LOCALES, resolveContent, type Locale } from '@/content';
@@ -23,10 +24,24 @@ const escapeHtml = (text: string) =>
  */
 const fileOf = (path: string) => (path === '/' ? 'index.html' : `${path.slice(1)}.html`);
 
+/** Lo que dice una imagen OG: el título grande, un rótulo y, en los Casos de estudio, la tech. */
+export interface OgCard {
+    title: string;
+    label: string;
+    detail?: string;
+}
+
+export const OG_SIZE = { width: 1200, height: 630 } as const;
+
+/** "/" → "og/es/home.png", "/projects/x" → "og/en/projects/x.png". */
+const ogFileOf = (locale: Locale, path: string) =>
+    `og/${locale}${path === '/' ? '/home' : path}.png`;
+
 interface Page {
     path: string;
     title: string;
     description: string;
+    og: OgCard;
     jsonLd?: object;
 }
 
@@ -37,6 +52,7 @@ function pagesFor(locale: Locale, siteUrl: string, today: Date) {
         path: '/',
         title: `${profile.name} · ${profile.role}`,
         description: `${hero.valueProposition} ${hero.location}.`,
+        og: { title: profile.name, label: profile.role },
         jsonLd: {
             '@context': 'https://schema.org',
             '@type': 'Person',
@@ -51,6 +67,7 @@ function pagesFor(locale: Locale, siteUrl: string, today: Date) {
         path: projectPath(p.id),
         title: `${p.title} · ${CASE_STUDY[locale]} · ${profile.name}`,
         description: p.caseStudy.summary,
+        og: { title: p.title, label: CASE_STUDY[locale], detail: p.tech.join(' · ') },
     }));
     return [home, ...caseStudies];
 }
@@ -68,8 +85,11 @@ function headTags(page: Page, locale: Locale, siteUrl: string) {
         `<meta property="og:url" content="${url(locale)}" />`,
         `<meta property="og:locale" content="${OG_LOCALE[locale]}" />`,
         `<meta property="og:locale:alternate" content="${OG_LOCALE[other]}" />`,
-        // Pasa a summary_large_image cuando lleguen las imágenes OG (Fase 2).
-        `<meta name="twitter:card" content="summary" />`,
+        `<meta property="og:image" content="${siteUrl}/${ogFileOf(locale, page.path)}" />`,
+        `<meta property="og:image:alt" content="${escapeHtml(page.title)}" />`,
+        `<meta property="og:image:width" content="${OG_SIZE.width}" />`,
+        `<meta property="og:image:height" content="${OG_SIZE.height}" />`,
+        `<meta name="twitter:card" content="summary_large_image" />`,
     ];
     if (page.jsonLd)
         tags.push(`<script type="application/ld+json">${JSON.stringify(page.jsonLd)}</script>`);
@@ -103,6 +123,16 @@ function sitemap(siteUrl: string) {
 ${urls.join('\n')}
 </urlset>
 `;
+}
+
+/** Las imágenes OG que el post-build tiene que generar: una por página e idioma. */
+export function ogImages(today: Date): { file: string; card: OgCard }[] {
+    return LOCALES.flatMap((locale) =>
+        pagesFor(locale, '', today).map((page) => ({
+            file: ogFileOf(locale, page.path),
+            card: page.og,
+        })),
+    );
 }
 
 export function buildSiteArtifacts({ indexHtml, siteUrl, today }: Options): Record<string, string> {

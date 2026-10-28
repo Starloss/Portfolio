@@ -59,7 +59,7 @@ export const MainHeader: React.FC<MainHeaderProps> = ({ activeId, isHome = false
 
     return (
         <header
-            className={`sticky top-0 z-50 px-4 md:px-6 py-3 bg-slate-100/80 dark:bg-slate-900/40 backdrop-blur supports-[backdrop-filter]:bg-slate-100/60 dark:supports-[backdrop-filter]:bg-slate-900/50 border-b border-slate-200/70 dark:border-slate-800 transition-colors ${scrolled ? 'shadow-sm' : ''}`}
+            className={`sticky top-0 z-50 px-4 md:px-6 py-3 bg-slate-100/90 dark:bg-slate-900/80 border-b border-slate-200/70 dark:border-slate-800 transition-colors ${scrolled ? 'shadow-sm' : ''}`}
         >
             <div className="max-w-5xl mx-auto w-full flex items-center gap-4">
                 <div className="flex-1 flex items-center gap-4">
