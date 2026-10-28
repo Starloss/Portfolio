@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { currentYear } from '@lib/date';
 
 import { Hero } from '../components/Hero';
-import { MainHeader } from '../components/MainHeader';
+import { MainHeader, NAV_SECTIONS } from '../components/MainHeader';
 import { ContactSection } from '../features/contact/ContactSection';
 import { ExperienceSection } from '../features/experience/ExperienceSection';
 import { ImpactSection } from '../features/impact/ImpactSection';
@@ -10,15 +10,13 @@ import { FeaturedProjects } from '../features/projects/FeaturedProjects';
 import { SkillsSection } from '../features/skills/SkillsSection';
 import { Scene } from '../scene/Scene';
 
-// Secciones a las que lleva la cabecera, en el orden del Home.
-const NAV_SECTIONS = ['experience', 'projects', 'skills', 'contact'];
-
 /**
  * Home · Layout B: el Hero en el cielo y un bloque por sección, con un respiro de paisaje entre
  * bloques para que se vea el Viaje de cámara.
  */
 export const Home: React.FC = () => {
-    const [activeId, setActiveId] = useState<string>(NAV_SECTIONS[0]);
+    // Ninguna sección marcada hasta que una cruce la parte de arriba de la pantalla.
+    const [activeId, setActiveId] = useState<string>();
 
     useEffect(() => {
         if (typeof window === 'undefined' || typeof window.IntersectionObserver === 'undefined')
@@ -65,7 +63,7 @@ export const Home: React.FC = () => {
         <>
             <Scene />
             <MainHeader activeId={activeId} isHome />
-            <main className="mx-auto max-w-[860px] space-y-[20vh] px-4 pb-[20vh] md:space-y-[35vh] md:px-0">
+            <main className="mx-auto max-w-[892px] space-y-[20vh] px-4 pb-[20vh] md:space-y-[35vh]">
                 <Hero />
                 <ImpactSection />
                 <ExperienceSection />

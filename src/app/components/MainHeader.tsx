@@ -7,6 +7,16 @@ import { useTheme } from '@lib/theme';
 
 import { LOCALES } from '@/content';
 
+/** Secciones del Home a las que lleva la cabecera, en su orden. */
+export const NAV_SECTIONS = ['experience', 'projects', 'skills', 'contact'] as const;
+
+const NAV_LABELS: Record<(typeof NAV_SECTIONS)[number], string> = {
+    experience: 'experience_title',
+    projects: 'projects_title',
+    skills: 'skills_title',
+    contact: 'contact_title',
+};
+
 interface MainHeaderProps {
     activeId?: string;
     isHome?: boolean;
@@ -39,12 +49,7 @@ export const MainHeader: React.FC<MainHeaderProps> = ({ activeId, isHome = false
         return () => window.removeEventListener('click', onClick);
     }, [menuOpen]);
 
-    const navItems: { id: string; label: string }[] = [
-        { id: 'experience', label: t('experience_title') },
-        { id: 'projects', label: t('projects_title') },
-        { id: 'skills', label: t('skills_title') },
-        { id: 'contact', label: t('contact_title') },
-    ];
+    const navItems = NAV_SECTIONS.map((id) => ({ id, label: t(NAV_LABELS[id]) }));
 
     const linkBase = 'transition-colors rounded px-1';
     const linkInactive = 'text-ink hover:text-primary';

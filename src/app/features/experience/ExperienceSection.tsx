@@ -22,7 +22,7 @@ export const ExperienceSection: React.FC = () => {
                 className="relative space-y-8 pl-7 before:absolute before:bottom-2 before:left-[7px] before:top-2 before:w-0.5 before:rounded-full before:bg-muted before:content-['']"
             >
                 {content.experiences.map((item) => {
-                    const project = content.projects.find((p) => p.experienceId === item.id);
+                    const projects = content.projects.filter((p) => p.experienceId === item.id);
                     return (
                         <li
                             key={item.id}
@@ -43,14 +43,15 @@ export const ExperienceSection: React.FC = () => {
                                     <li key={a}>{a}</li>
                                 ))}
                             </ul>
-                            {project && (
+                            {projects.map((project) => (
                                 <Link
+                                    key={project.id}
                                     to={localizedPath(locale, projectPath(project.id))}
-                                    className="mt-3 inline-block text-sm font-semibold text-primary hover:underline underline-offset-4"
+                                    className="mr-4 mt-3 inline-block text-sm font-semibold text-primary hover:underline underline-offset-4"
                                 >
                                     {t('experience_project').replace('{title}', project.title)}
                                 </Link>
-                            )}
+                            ))}
                         </li>
                     );
                 })}

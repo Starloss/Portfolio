@@ -191,7 +191,7 @@ const CaseStudyPage: React.FC<{ project: ResolvedProject }> = ({ project }) => {
                                     href={project.liveUrl}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="inline-flex items-center gap-2 rounded-full border border-primary bg-primary px-3 py-1.5 text-sm font-semibold text-on-primary transition-opacity hover:opacity-90"
+                                    className="inline-flex items-center gap-2 rounded-full border border-primary bg-surface px-3 py-1.5 text-sm font-medium text-primary transition-colors hover:border-ink"
                                 >
                                     <FiExternalLink className="h-4 w-4" />
                                     {t('project_live_url_view')}

@@ -56,11 +56,8 @@ describe('Home IntersectionObserver no intersect', () => {
         }
         (window as any).IntersectionObserver = MockIO;
     });
-    it('mantiene la primera sección activa cuando ninguna intersecta', () => {
+    it('no marca ninguna sección mientras ninguna cruza la pantalla', () => {
         renderWithProviders(<Home />);
-        // Activo por defecto en estado inicial (skills) sin cambiar
-        expect(document.querySelector('[aria-current="page"]')?.getAttribute('href')).toBe(
-            '#experience',
-        );
+        expect(document.querySelector('[aria-current="page"]')).toBeNull();
     });
 });

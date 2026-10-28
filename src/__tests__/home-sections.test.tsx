@@ -1,5 +1,5 @@
 import React from 'react';
-import { describe, it, expect } from 'vitest';
+import { afterEach, describe, it, expect, vi } from 'vitest';
 import { render, screen, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { AppRoutes } from '@app/App';
@@ -176,5 +176,32 @@ describe('Contacto', () => {
             'href',
             '/cv-diego-rangel-en.pdf',
         );
+    });
+});
+
+describe('Entrada de los bloques', () => {
+    afterEach(() => {
+        vi.restoreAllMocks();
+    });
+
+    const reduceMotion = (reduce: boolean) => {
+        const original = window.matchMedia;
+        vi.spyOn(window, 'matchMedia').mockImplementation((query: string) => ({
+            ...original(query),
+            matches: query.includes('prefers-reduced-motion') && reduce,
+        }));
+    };
+
+    it('sin reduced-motion, un bloque arranca oculto hasta entrar en pantalla', () => {
+        reduceMotion(false);
+        renderAt('/');
+        expect(section(/Impacto/).style.opacity).toBe('0');
+    });
+
+    it('con reduced-motion, los bloques aparecen sin animación', () => {
+        reduceMotion(true);
+        renderAt('/');
+        expect(section(/Impacto/).style.opacity).toBe('');
+        expect(section(/Contacto/).style.transform).toBe('');
     });
 });
