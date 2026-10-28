@@ -43,7 +43,7 @@ jobs:
       # Solo informa: el mínimo de cobertura lo exige vitest (thresholds). Sin el secreto
       # CODECOV_TOKEN, Codecov rechaza la subida y el paso se salta sin romper el job.
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v4
+        uses: codecov/codecov-action@b9fd7d16f6d7d1b5d2bec1a2887e65ceed900238 # v4.6.0
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: coverage/lcov.info
