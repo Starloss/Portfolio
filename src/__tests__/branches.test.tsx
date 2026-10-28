@@ -1,9 +1,8 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React from 'react';
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import { render } from '@testing-library/react';
 import { ThemeProvider, useTheme } from '@lib/theme';
-import { BackgroundScene } from '@app/components/BackgroundScene';
 import { Home } from '@app/pages/Home';
 
 import { renderWithProviders } from './render';
@@ -35,27 +34,6 @@ describe('ThemeProvider ramas extra', () => {
         // restaurar
         (window.localStorage as any).getItem = getItemOrig;
         window.matchMedia = matchMediaOrig;
-    });
-});
-
-// BackgroundScene: cubrir rama early-return de onScroll (ticking.current true)
-describe('BackgroundScene scroll throttling', () => {
-    const rafOrig = window.requestAnimationFrame;
-    afterEach(() => {
-        window.requestAnimationFrame = rafOrig;
-    });
-    it('ejecuta rama de retorno temprano cuando múltiples scroll antes de rAF', () => {
-        (window as any).requestAnimationFrame = () => 1; // no ejecuta callback
-        window.localStorage.setItem('theme', 'dark');
-        render(
-            <ThemeProvider>
-                <BackgroundScene />
-            </ThemeProvider>,
-        );
-        Object.defineProperty(window, 'scrollY', { value: 10, configurable: true });
-        window.dispatchEvent(new Event('scroll'));
-        window.dispatchEvent(new Event('scroll')); // segunda debería disparar rama early return
-        expect(true).toBe(true); // si no rompe, rama cubierta
     });
 });
 

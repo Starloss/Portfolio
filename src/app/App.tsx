@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
 import { BrowserRouter, Navigate, Outlet, Route, Routes } from 'react-router-dom';
+import { MotionProvider } from '@lib/motion';
 import { I18nProvider } from '@lib/i18n';
 import { localizedPath } from '@lib/locale-path';
 
@@ -40,6 +41,8 @@ export const AppRoutes: React.FC = () => (
 
 export const App: React.FC = () => (
     <BrowserRouter>
-        <AppRoutes />
+        <MotionProvider>
+            <AppRoutes />
+        </MotionProvider>
     </BrowserRouter>
 );

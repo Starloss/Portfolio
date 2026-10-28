@@ -4,7 +4,6 @@ import { render, screen, fireEvent, within } from '@testing-library/react';
 import { Badge } from '@app/components/ui/Badge';
 import { Heading } from '@app/components/ui/Heading';
 import { Section } from '@app/components/ui/Section';
-import { BackgroundScene } from '@app/components/BackgroundScene';
 import { ContactSection } from '@app/features/contact/ContactSection';
 import { ExperienceSection } from '@app/features/experience/ExperienceSection';
 import { I18nProvider, useI18n } from '@lib/i18n';
@@ -205,37 +204,5 @@ describe('i18n fallback', () => {
             return null;
         };
         render(<Err />);
-    });
-});
-
-describe('BackgroundScene ramas', () => {
-    it('renderiza estrellas solo en dark', () => {
-        const Scene = () => {
-            const { toggleTheme, theme } = useTheme();
-            return (
-                <div>
-                    <button onClick={toggleTheme}>toggleTheme</button>
-                    <span data-testid="mode">{theme}</span>
-                    <BackgroundScene />
-                </div>
-            );
-        };
-        render(
-            <ThemeProvider>
-                <Scene />
-            </ThemeProvider>,
-        );
-        // En modo inicial (dark por defecto) debe haber varias spans (estrellas)
-        expect(document.querySelectorAll('[style*="twinkle"]').length).toBeGreaterThan(0);
-    });
-    it('rama light sin estrellas', () => {
-        // Forzar light inicial
-        window.localStorage.setItem('theme', 'light');
-        render(
-            <ThemeProvider>
-                <BackgroundScene />
-            </ThemeProvider>,
-        );
-        expect(document.querySelectorAll('[style*="twinkle"]').length).toBe(0);
     });
 });

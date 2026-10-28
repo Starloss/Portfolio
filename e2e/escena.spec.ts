@@ -1,0 +1,62 @@
+import { expect, test, type Page } from '@playwright/test';
+
+// Dónde está una capa de la Escena: su desplazamiento vertical es el de la cámara.
+const layerTop = (page: Page, layer: string) =>
+    page.locator(`[data-layer="${layer}"]`).evaluate((el) => el.getBoundingClientRect().top);
+const avilaTop = (page: Page) => layerTop(page, 'avila');
+
+// Lleva el scroll a una fracción de la página (0 arriba, 1 abajo).
+async function scrollToFraction(page: Page, fraction: number) {
+    await page.evaluate((f) => {
+        const max = document.documentElement.scrollHeight - window.innerHeight;
+        window.scrollTo({ top: max * f, behavior: 'instant' });
+    }, fraction);
+    // Deja pasar unos frames para que la Escena siga al scroll.
+    await page.waitForTimeout(400);
+}
+
+test('el Viaje de cámara baja en un solo sentido, del Hero a la ciudad en Contacto', async ({
+    page,
+}) => {
+    await page.goto('/');
+    await page.waitForTimeout(400);
+    const viewport = page.viewportSize()!;
+
+    // En el Hero la cámara está arriba: la ciudad queda hundida bajo la pantalla.
+    expect(await layerTop(page, 'city')).toBeGreaterThan(0.5 * viewport.height);
+
+    // Al hacer scroll el paisaje solo sube: nunca vuelve a bajar.
+    const tops: number[] = [];
+    for (const fraction of [0, 0.25, 0.5, 0.75, 1]) {
+        await scrollToFraction(page, fraction);
+        tops.push(await avilaTop(page));
+    }
+    for (let i = 1; i < tops.length; i++) expect(tops[i]).toBeLessThanOrEqual(tops[i - 1] + 1);
+
+    // Al final, en Contacto, la ciudad está apoyada abajo: se ve Caracas completa.
+    expect(Math.abs(await layerTop(page, 'city'))).toBeLessThan(2);
+    expect(Math.abs(await layerTop(page, 'towers'))).toBeLessThan(2);
+});
+
+test('con prefers-reduced-motion la Escena no se mueve al hacer scroll', async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await page.goto('/');
+    await page.waitForTimeout(400);
+    const hero = await avilaTop(page);
+
+    await scrollToFraction(page, 0.6);
+    expect(await avilaTop(page)).toBe(hero);
+    expect(await page.locator('.scene [data-anim]').count()).toBe(0);
+});
+
+test('en un Caso de estudio la Escena queda fija sobre las nubes', async ({ page }) => {
+    await page.goto('/projects/superwallet');
+    await page.waitForTimeout(400);
+    const viewport = page.viewportSize()!;
+    const top = await avilaTop(page);
+    expect(top).toBeCloseTo(0.55 * viewport.height, 0);
+
+    await page.evaluate(() => window.scrollTo({ top: 800, behavior: 'instant' }));
+    await page.waitForTimeout(400);
+    expect(await avilaTop(page)).toBe(top);
+});

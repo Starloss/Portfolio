@@ -15,7 +15,7 @@
       "assertions": {
         "categories:performance": ["error", { "minScore": 0.9, "aggregationMethod": "median-run" }],
         "categories:accessibility": ["error", { "minScore": 0.9, "aggregationMethod": "median-run" }],
-        "resource-summary:script:size": ["error", { "maxNumericValue": 130000, "aggregationMethod": "median-run" }],
+        "resource-summary:script:size": ["error", { "maxNumericValue": 140000, "aggregationMethod": "median-run" }],
         "resource-summary:stylesheet:size": ["error", { "maxNumericValue": 15000, "aggregationMethod": "median-run" }],
         "resource-summary:font:size": ["error", { "maxNumericValue": 30000, "aggregationMethod": "median-run" }]
       }

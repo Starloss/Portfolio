@@ -11,19 +11,6 @@
         position: relative;
         min-height: 100vh;
     }
-    /* Patrón decorativo: nubes (claro) / estrellas (oscuro) */
-    body::before {
-        content: '';
-        position: fixed;
-        inset: 0;
-        z-index: -1;
-        pointer-events: none;
-        background: linear-gradient(to bottom, #f1f8ff 0%, #e6f3ff 55%, #dcebff 100%);
-        transition: background 0.8s ease;
-    }
-    .dark body::before {
-        background: linear-gradient(to bottom, #0f172a 0%, #0b1221 50%, #020617 100%);
-    }
 }
 
 @layer components {
@@ -35,80 +22,5 @@
 @layer utilities {
     .text-balance {
         text-wrap: balance;
-    }
-    @keyframes twinkle {
-        0%,
-        100% {
-            opacity: 0.9;
-            filter: drop-shadow(0 0 2px rgba(255, 255, 255, 0.8));
-        }
-        50% {
-            opacity: 0.2;
-            filter: drop-shadow(0 0 1px rgba(255, 255, 255, 0.3));
-        }
-    }
-    /* (Animaciones de nubes eliminadas) */
-    /* Parpadeo suave de luces de edificios */
-    @keyframes light-flicker {
-        0%,
-        14%,
-        16%,
-        44%,
-        46%,
-        100% {
-            opacity: 1;
-        }
-        15% {
-            opacity: 0.55;
-        }
-        45% {
-            opacity: 0.35;
-        }
-        60% {
-            opacity: 0.85;
-        }
-        72% {
-            opacity: 0.5;
-        }
-        82% {
-            opacity: 0.9;
-        }
-    }
-    @keyframes light-random {
-        0%,
-        18%,
-        36%,
-        58%,
-        79%,
-        100% {
-            opacity: 0.92;
-        }
-        24%,
-        63% {
-            opacity: 0.18;
-        }
-        44% {
-            opacity: 0.35;
-        }
-        84% {
-            opacity: 0.52;
-        }
-    }
-    .animate-light-flicker {
-        animation: light-flicker 7s linear infinite;
-    }
-    .animate-light-random {
-        animation: light-random 30s steps(1, end) infinite;
-    }
-    /* (Animaciones de vehículos y faros eliminadas) */
-    @media (prefers-reduced-motion: reduce) {
-        /* Clases de nubes eliminadas */
-        .animate-light-flicker {
-            animation: none;
-        }
-        .animate-light-random {
-            animation: none;
-        }
-        /* Clases de vehículos/faros eliminadas */
     }
 }

@@ -70,5 +70,5 @@ Los dos estados de la Escena. Siguen siempre el tema claro u oscuro que elige el
 _Avoid_: light mode, dark mode (al hablar de la Escena)
 
 **Viaje de cámara**:
-El recorrido vertical de la Escena que acompaña el scroll, contado como un viaje en el Teleférico: empieza en la ciudad, sube sobre las nubes mientras pasan las secciones y regresa a la ciudad al llegar a Contacto.
+El recorrido vertical de la Escena que acompaña el scroll, contado como un viaje de bajada en el Teleférico: empieza arriba, entre las nubes y las cumbres del Ávila, y baja en un solo sentido hasta la ciudad, que se ve completa al llegar a Contacto.
 _Avoid_: parallax, revelado de ciudad

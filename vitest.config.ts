@@ -45,6 +45,8 @@ export default defineConfig({
         'scripts/**',
         'playwright.config.*',
         'src/app/prototypes/**',
+        // Datos generados por scripts/avila-profile.ts.
+        'src/app/scene/avila-data.ts',
       ],
     },
   },
