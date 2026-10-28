@@ -9,12 +9,13 @@ import { ContactSection } from '@app/features/contact/ContactSection';
 import { ExperienceSection } from '@app/features/experience/ExperienceSection';
 import { I18nProvider, useI18n } from '@lib/i18n';
 import { ThemeProvider, useTheme } from '@lib/theme';
-import { getProjects } from '@app/features/projects/data';
+
+import { renderWithProviders } from './render';
 
 // Wrapper util para providers combinados
 const Providers: React.FC<{ children: React.ReactNode }> = ({ children }) => (
     <ThemeProvider>
-        <I18nProvider>{children}</I18nProvider>
+        <I18nProvider locale="es">{children}</I18nProvider>
     </ThemeProvider>
 );
 
@@ -114,36 +115,11 @@ describe('ContactSection submit', () => {
 });
 
 describe('ExperienceSection locales y tech list', () => {
-    it('cambia textos al cambiar locale', () => {
-        const LocaleToggler: React.FC = () => {
-            const { switchLocale, locale, t } = useI18n();
-            return (
-                <div>
-                    <button onClick={switchLocale}>toggle</button>
-                    <span data-testid="current-locale">{locale}</span>
-                    <h3>{t('experience_title')}</h3>
-                </div>
-            );
-        };
-        render(
-            <Providers>
-                <LocaleToggler />
-                <ExperienceSection />
-            </Providers>,
-        );
-        expect(screen.getByTestId('current-locale')).toHaveTextContent('es');
-        // Hay dos headings con el mismo texto (h2 sección y h3 de LocaleToggler), usar getAll
-        expect(
-            screen.getAllByRole('heading', { name: /Experiencia|Experience/i }).length,
-        ).toBeGreaterThan(0);
-        fireEvent.click(screen.getByText('toggle'));
-        expect(screen.getByTestId('current-locale')).toHaveTextContent('en');
-        // Tech list: asegurar que al menos un chip aparece
-        const list = screen.getAllByRole('list', {
-            name: /tecnologías clave|key technologies/i,
-        })[0];
-        const chips = within(list).getAllByRole('listitem');
-        expect(chips.length).toBeGreaterThan(0);
+    it('muestra los textos en el idioma del provider y la lista de tecnologías', () => {
+        renderWithProviders(<ExperienceSection />, 'en');
+        expect(screen.getByRole('heading', { name: 'Experience' })).toBeInTheDocument();
+        const list = screen.getAllByRole('list', { name: 'key technologies' })[0];
+        expect(within(list).getAllByRole('listitem').length).toBeGreaterThan(0);
     });
 });
 
@@ -216,7 +192,7 @@ describe('i18n fallback', () => {
             return <span data-testid="txt">{t('clave_inexistente_xyz')}</span>;
         };
         render(
-            <I18nProvider>
+            <I18nProvider locale="es">
                 <MissingKey />
             </I18nProvider>,
         );
@@ -246,9 +222,7 @@ describe('BackgroundScene ramas', () => {
         };
         render(
             <ThemeProvider>
-                <I18nProvider>
-                    <Scene />
-                </I18nProvider>
+                <Scene />
             </ThemeProvider>,
         );
         // En modo inicial (dark por defecto) debe haber varias spans (estrellas)
@@ -259,19 +233,9 @@ describe('BackgroundScene ramas', () => {
         window.localStorage.setItem('theme', 'light');
         render(
             <ThemeProvider>
-                <I18nProvider>
-                    <BackgroundScene />
-                </I18nProvider>
+                <BackgroundScene />
             </ThemeProvider>,
         );
         expect(document.querySelectorAll('[style*="twinkle"]').length).toBe(0);
-    });
-});
-
-describe('Projects async', () => {
-    it('getProjects devuelve proyectos', async () => {
-        const list = await getProjects();
-        expect(Array.isArray(list)).toBe(true);
-        expect(list.length).toBeGreaterThan(0);
     });
 });

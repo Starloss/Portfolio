@@ -63,6 +63,8 @@ export default [
       ...jsxA11y.configs.recommended.rules,
       ...prettierPlugin.configs.recommended.rules,
       'react/react-in-jsx-scope': 'off',
+      // TypeScript ya detecta identificadores indefinidos; la lista fija de globals no cubre DOM ni Node.
+      'no-undef': 'off',
       'prettier/prettier': ['error', { endOfLine: 'auto' }],
       'import/order': [
         'warn',

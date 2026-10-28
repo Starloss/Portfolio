@@ -21,30 +21,34 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      # pnpm tiene que existir antes de setup-node con cache: 'pnpm'. La versión sale de packageManager.
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+
       - name: Set up Node.js ${{ matrix.node-version }}
         uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node-version }}
           cache: 'pnpm'
 
-      - name: Enable Corepack
-        run: corepack enable
-
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile || pnpm install
+        run: pnpm install --frozen-lockfile
 
       - name: Lint
         run: pnpm run lint
 
       - name: Run tests
-        run: pnpm run test -- --coverage
+        run: pnpm run test --coverage
 
+      # Solo informa: el mínimo de cobertura lo exige vitest (thresholds). Sin el secreto
+      # CODECOV_TOKEN, Codecov rechaza la subida y el paso se salta sin romper el job.
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v4
+        uses: codecov/codecov-action@b9fd7d16f6d7d1b5d2bec1a2887e65ceed900238 # v4.6.0
         with:
+          token: ${{ secrets.CODECOV_TOKEN }}
           files: coverage/lcov.info
           flags: node-${{ matrix.node-version }}
-          fail_ci_if_error: true
+          fail_ci_if_error: false
 
       - name: Upload coverage report
         if: always()
@@ -55,3 +59,74 @@ jobs:
 
       - name: Build
         run: pnpm run build
+
+  # Gate de Lighthouse móvil: ≥90 en rendimiento y accesibilidad, más presupuestos de peso.
+  # Va en su propio job para no correr en paralelo con otros pasos pesados en la misma máquina.
+  lighthouse:
+    name: Lighthouse CI
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Set up Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22.x
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build
+        run: pnpm run build
+
+      - name: Lighthouse CI
+        run: pnpm dlx @lhci/cli@0.15.1 autorun
+
+      - name: Upload Lighthouse reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lighthouse
+          path: .lighthouseci
+
+  e2e:
+    name: Playwright
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Set up Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22.x
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Chromium
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Build
+        run: pnpm run build
+
+      - name: Playwright
+        run: pnpm run test:e2e
+
+      - name: Upload Playwright traces
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright
+          path: |
+            playwright-report
+            test-results

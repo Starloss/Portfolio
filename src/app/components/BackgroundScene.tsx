@@ -414,6 +414,8 @@ export const BackgroundScene: React.FC = () => {
     const lastCityProgress = useRef(0);
 
     useEffect(() => {
+        if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return;
+
         const clamp = (v: number) => (v < 0 ? 0 : v > 1 ? 1 : v);
         const onScroll = () => {
             if (ticking.current) return;

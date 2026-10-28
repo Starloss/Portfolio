@@ -1,42 +1,35 @@
 import React from 'react';
 import { describe, it, expect } from 'vitest';
-import { render, screen, within } from '@testing-library/react';
+import { screen, within } from '@testing-library/react';
 import { SkillsSection } from '@app/features/skills/SkillsSection';
-import { SKILL_CATEGORIES } from '@app/features/skills/data';
 import { ExperienceSection } from '@app/features/experience/ExperienceSection';
-import { EXPERIENCE } from '@app/features/experience/data';
-import { I18nProvider } from '@lib/i18n';
+
+import { renderWithProviders } from './render';
 
 describe('Secciones adicionales', () => {
-  it('renderiza SkillsSection con todas las categorías', () => {
-    render(
-      <I18nProvider>
-        <SkillsSection />
-      </I18nProvider>,
-    );
-    SKILL_CATEGORIES.forEach((cat) => {
-      expect(screen.getByRole('heading', { name: cat.name })).toBeInTheDocument();
+    it('renderiza SkillsSection con todas las categorías', () => {
+        renderWithProviders(<SkillsSection />);
+        for (const name of ['Front', 'Back', 'DevOps', 'Habilidades blandas']) {
+            expect(screen.getByRole('heading', { name })).toBeInTheDocument();
+            const list = screen.getByRole('list', { name: `skills de ${name}` });
+            expect(within(list).getAllByRole('listitem').length).toBeGreaterThan(0);
+        }
+        expect(screen.getByText('Liderazgo')).toBeInTheDocument();
     });
-    // Cada categoría tiene su lista
-    SKILL_CATEGORIES.forEach((cat) => {
-      const list = screen.getByRole('list', { name: new RegExp(`skills de ${cat.name}`, 'i') });
-      const pills = within(list).getAllByRole('listitem');
-      expect(pills.length).toBeGreaterThan(0);
-    });
-  });
 
-  it('renderiza ExperienceSection con todas las experiencias', () => {
-    render(
-      <I18nProvider>
-        <ExperienceSection />
-      </I18nProvider>,
-    );
-    const expList = screen.getByRole('list', { name: /lista de experiencias/i });
-    const allItems = within(expList).getAllByRole('listitem');
-    const topLevel = allItems.filter((li) => li.parentElement === expList);
-    expect(topLevel.length).toBe(EXPERIENCE.length);
-    EXPERIENCE.forEach((e) => {
-      expect(screen.getByText(new RegExp(e.company, 'i'))).toBeInTheDocument();
+    it('renderiza ExperienceSection con todas las Experiencias, de la más reciente a la más antigua', () => {
+        renderWithProviders(<ExperienceSection />, 'en');
+        const expList = screen.getByRole('list', { name: /lista de experiencias/i });
+        const topLevel = within(expList)
+            .getAllByRole('listitem')
+            .filter((li) => li.parentElement === expList);
+        expect(topLevel.map((li) => li.querySelector('h3')?.textContent)).toEqual([
+            'Senior Developer · XHype',
+            'Lead Developer · CORE Care and Health Systems',
+            'Lead Developer · Wocoon',
+            'Software Developer · Daxos',
+            'Frontend Developer · 300 Dev',
+        ]);
+        expect(within(topLevel[1]).getByText('Oct 2022 – Present')).toBeInTheDocument();
     });
-  });
 });

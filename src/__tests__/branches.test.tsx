@@ -3,17 +3,24 @@ import React from 'react';
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { render } from '@testing-library/react';
 import { ThemeProvider, useTheme } from '@lib/theme';
-import { I18nProvider } from '@lib/i18n';
 import { BackgroundScene } from '@app/components/BackgroundScene';
 import { Home } from '@app/pages/Home';
+
+import { renderWithProviders } from './render';
 
 // Test para forzar rama catch de localStorage.getItem lanzando excepción
 describe('ThemeProvider ramas extra', () => {
     it('maneja excepción al leer localStorage', () => {
         const getItemOrig = window.localStorage.getItem.bind(window.localStorage);
+        const matchMediaOrig = window.matchMedia;
         (window.localStorage as any).getItem = () => {
             throw new Error('fail');
         };
+        // Sin preferencia guardada, el tema sale de la media query: aquí, oscuro.
+        window.matchMedia = ((query: string) => ({
+            ...matchMediaOrig(query),
+            matches: true,
+        })) as any;
         const Consumer: React.FC = () => {
             const { theme } = useTheme();
             return <span data-testid="t">{theme}</span>;
@@ -27,6 +34,7 @@ describe('ThemeProvider ramas extra', () => {
         expect(document.documentElement.classList.contains('dark')).toBe(true);
         // restaurar
         (window.localStorage as any).getItem = getItemOrig;
+        window.matchMedia = matchMediaOrig;
     });
 });
 
@@ -41,9 +49,7 @@ describe('BackgroundScene scroll throttling', () => {
         window.localStorage.setItem('theme', 'dark');
         render(
             <ThemeProvider>
-                <I18nProvider>
-                    <BackgroundScene />
-                </I18nProvider>
+                <BackgroundScene />
             </ThemeProvider>,
         );
         Object.defineProperty(window, 'scrollY', { value: 10, configurable: true });
@@ -73,16 +79,10 @@ describe('Home IntersectionObserver no intersect', () => {
         (window as any).IntersectionObserver = MockIO;
     });
     it('mantiene id activo inicial cuando no intersecta', () => {
-        render(
-            <ThemeProvider>
-                <I18nProvider>
-                    <Home />
-                </I18nProvider>
-            </ThemeProvider>,
-        );
-        // Activo por defecto en estado inicial (about) sin cambiar
+        renderWithProviders(<Home />);
+        // Activo por defecto en estado inicial (skills) sin cambiar
         expect(document.querySelector('[aria-current="page"]')?.getAttribute('href')).toBe(
-            '#about',
+            '#skills',
         );
     });
 });
