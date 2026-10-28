@@ -101,18 +101,21 @@ const CvDocument: React.FC<{ cv: CvData }> = ({ cv }) => (
 
             <Text style={s.heading}>{cv.headings.experience}</Text>
             {cv.experiences.map((e) => (
-                <View key={e.company} style={s.item} wrap={false}>
-                    <View style={s.row}>
-                        <Text style={s.strong}>
-                            {e.role} · {e.company}
+                <View key={e.company} style={s.item}>
+                    <View wrap={false}>
+                        <View style={s.row}>
+                            <Text style={s.strong}>
+                                {e.role} · {e.company}
+                            </Text>
+                            <Text style={s.italic}>{e.period}</Text>
+                        </View>
+                        <Text style={s.muted}>
+                            {e.location}
+                            {e.projects.length > 0 ? ` · ${e.projects.join(', ')}` : ''}
                         </Text>
-                        <Text style={s.italic}>{e.period}</Text>
+                        {e.achievements[0] && <Bullet>{e.achievements[0]}</Bullet>}
                     </View>
-                    <Text style={s.muted}>
-                        {e.location}
-                        {e.projects.length > 0 ? ` · ${e.projects.join(', ')}` : ''}
-                    </Text>
-                    {e.achievements.map((a) => (
+                    {e.achievements.slice(1).map((a) => (
                         <Bullet key={a}>{a}</Bullet>
                     ))}
                 </View>

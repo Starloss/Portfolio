@@ -6,6 +6,8 @@ import { MemoryRouter } from 'react-router-dom';
 import { AppRoutes } from '@app/App';
 import { ThemeProvider } from '@lib/theme';
 
+import { CONTENT } from '@/content';
+
 const renderAt = (url: string) =>
     render(
         <MemoryRouter initialEntries={[url]}>
@@ -160,6 +162,29 @@ describe('Galería del Caso de estudio', () => {
 });
 
 describe('Navegación desde un Caso de estudio', () => {
+    it.each([false, true])(
+        'omite anterior y siguiente para un Proyecto no destacado (sin destacados: %s)',
+        (noFeaturedProjects) => {
+            const originalProjects = CONTENT.projects;
+            CONTENT.projects = originalProjects.map((p) => ({
+                ...p,
+                featured: !noFeaturedProjects && p.id !== 'superwallet' && p.featured,
+            }));
+            try {
+                renderAt('/en/projects/superwallet');
+                expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('SuperWallet');
+                expect(
+                    screen.queryByRole('link', { name: /Previous project/ }),
+                ).not.toBeInTheDocument();
+                expect(
+                    screen.queryByRole('link', { name: /Next project/ }),
+                ).not.toBeInTheDocument();
+            } finally {
+                CONTENT.projects = originalProjects;
+            }
+        },
+    );
+
     it('el menú lleva a las secciones de la Home del mismo idioma', async () => {
         renderAt('/en/projects/be-booking-engine');
         await userEvent.click(screen.getByRole('button', { name: 'Open menu' }));
@@ -178,5 +203,7 @@ describe('Navegación desde un Caso de estudio', () => {
         expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Wedding Invitation');
         await userEvent.click(screen.getByRole('link', { name: /Next project/ }));
         expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('SuperWallet');
+        await userEvent.click(screen.getByRole('link', { name: /Previous project/ }));
+        expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Wedding Invitation');
     });
 });

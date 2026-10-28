@@ -70,6 +70,7 @@ export function resolveContent(locale: Locale, today: Date, content: Content = C
         return {
             id: p.id,
             title: p.title[locale],
+            experienceId: p.experienceId,
             company: companyOf(p.experienceId),
             featured: p.featured,
             period: formatPeriod(p.start, p.end, locale),

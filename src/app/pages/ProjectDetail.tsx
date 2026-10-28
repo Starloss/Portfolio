@@ -48,8 +48,11 @@ const CaseStudyPage: React.FC<{ project: ResolvedProject }> = ({ project }) => {
 
     const projects = content.featuredProjects;
     const index = projects.findIndex((p) => p.id === project.id);
-    const previousProject = projects[(index - 1 + projects.length) % projects.length] ?? project;
-    const nextProject = projects[(index + 1) % projects.length] ?? project;
+    const isFeatured = index >= 0;
+    const previousProject = isFeatured
+        ? projects[(index - 1 + projects.length) % projects.length]
+        : undefined;
+    const nextProject = isFeatured ? projects[(index + 1) % projects.length] : undefined;
 
     return (
         <>
@@ -208,17 +211,19 @@ const CaseStudyPage: React.FC<{ project: ResolvedProject }> = ({ project }) => {
                                 direction: 'next',
                                 label: `${t('project_next_project')} →`,
                             },
-                        ].map(({ p, direction, label }) => (
-                            <Link
-                                key={direction}
-                                to={localizedPath(locale, projectPath(p.id))}
-                                state={{ direction }}
-                                className="inline-flex items-center justify-between gap-2 rounded-xl border border-slate-300 bg-white/90 px-4 py-3 text-sm text-slate-700 shadow-sm backdrop-blur transition hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-900/85 dark:text-slate-200 dark:hover:bg-slate-800"
-                            >
-                                <span>{label}</span>
-                                <span className="font-semibold text-brand-500">{p.title}</span>
-                            </Link>
-                        ))}
+                        ].map(({ p, direction, label }) =>
+                            p ? (
+                                <Link
+                                    key={direction}
+                                    to={localizedPath(locale, projectPath(p.id))}
+                                    state={{ direction }}
+                                    className="inline-flex items-center justify-between gap-2 rounded-xl border border-slate-300 bg-white/90 px-4 py-3 text-sm text-slate-700 shadow-sm backdrop-blur transition hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-900/85 dark:text-slate-200 dark:hover:bg-slate-800"
+                                >
+                                    <span>{label}</span>
+                                    <span className="font-semibold text-brand-500">{p.title}</span>
+                                </Link>
+                            ) : null,
+                        )}
                     </div>
                 </div>
 

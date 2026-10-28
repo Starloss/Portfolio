@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 
 import { cvData } from '@/build/cv/cv-data';
+import { CONTENT } from '@/content';
 
 const TODAY = new Date(2026, 9, 27);
 const SITE = 'https://www.diegorangel.dev';
@@ -48,6 +49,22 @@ describe('Datos del CV', () => {
             'https://www.diegorangel.dev/en/projects/wedding-invitation',
         ]);
         expect(projects[2].title).toBe('Wedding Invitation');
+    });
+
+    it('asocia los Proyectos a su Experiencia aunque la Empresa se repita', () => {
+        const originalExperiences = CONTENT.experiences;
+        CONTENT.experiences = [
+            ...originalExperiences,
+            { ...originalExperiences[0], id: 'xhype-return', start: '2026-05' },
+        ];
+        try {
+            const xhype = cvData('en', TODAY, SITE).experiences.filter(
+                (e) => e.company === 'XHype',
+            );
+            expect(xhype.map((e) => e.projects)).toEqual([[], ['SuperWallet']]);
+        } finally {
+            CONTENT.experiences = originalExperiences;
+        }
     });
 
     it('incluye la Formación y las skills', () => {

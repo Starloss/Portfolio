@@ -47,7 +47,7 @@ export function cvData(locale: Locale, today: Date, siteUrl: string) {
             location: e.location,
             period: e.period,
             achievements: e.achievements,
-            projects: content.projects.filter((p) => p.company === e.company).map((p) => p.title),
+            projects: content.projects.filter((p) => p.experienceId === e.id).map((p) => p.title),
         })),
         featuredProjects: content.featuredProjects.map((p) => ({
             title: p.title,
