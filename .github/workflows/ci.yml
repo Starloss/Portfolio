@@ -40,12 +40,15 @@ jobs:
       - name: Run tests
         run: pnpm run test -- --coverage
 
+      # Solo informa: el mínimo de cobertura lo exige vitest (thresholds). Sin el secreto
+      # CODECOV_TOKEN, Codecov rechaza la subida y el paso se salta sin romper el job.
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4
         with:
+          token: ${{ secrets.CODECOV_TOKEN }}
           files: coverage/lcov.info
           flags: node-${{ matrix.node-version }}
-          fail_ci_if_error: true
+          fail_ci_if_error: false
 
       - name: Upload coverage report
         if: always()
