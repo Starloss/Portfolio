@@ -16,26 +16,22 @@ import { OG_SIZE, type OgCard } from '../artifacts';
 
 import { woffToSfnt } from './woff';
 
-const FONTS = [
-    { pkg: 'space-grotesk', file: 'space-grotesk-latin-700-normal.woff' },
-    { pkg: 'inter', file: 'inter-latin-600-normal.woff' },
-];
+const FONT = { pkg: 'space-grotesk', file: 'space-grotesk-latin-700-normal.woff' };
 
-let fontFiles: string[] | null = null;
+let fontFile: string | null = null;
 
-// resvg solo carga fuentes desde archivos TTF/OTF: se convierten una vez a una carpeta temporal.
-function loadFonts(): string[] {
-    if (fontFiles) return fontFiles;
-    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'portfolio-og-'));
-    fontFiles = FONTS.map(({ pkg, file }) => {
-        const woff = fs.readFileSync(
-            path.resolve(process.cwd(), 'node_modules', '@fontsource', pkg, 'files', file),
-        );
-        const target = path.join(dir, file.replace(/\.woff$/, '.ttf'));
-        fs.writeFileSync(target, woffToSfnt(woff));
-        return target;
-    });
-    return fontFiles;
+// resvg solo carga fuentes desde archivos TTF/OTF: el WOFF de Fontsource se convierte una vez y se
+// deja en una carpeta temporal fija, que cada build sobrescribe.
+function loadFont(): string {
+    if (fontFile) return fontFile;
+    const dir = path.join(os.tmpdir(), 'portfolio-og-fonts');
+    fs.mkdirSync(dir, { recursive: true });
+    const woff = fs.readFileSync(
+        path.resolve(process.cwd(), 'node_modules', '@fontsource', FONT.pkg, 'files', FONT.file),
+    );
+    fontFile = path.join(dir, FONT.file.replace(/\.woff$/, '.ttf'));
+    fs.writeFileSync(fontFile, woffToSfnt(woff));
+    return fontFile;
 }
 
 const MARGIN = 64;
@@ -142,8 +138,8 @@ export function ogSvg(card: OgCard): string {
             <text
                 x={MARGIN + l.chip.padX}
                 y={l.chip.top + l.chip.height / 2 + l.chip.size * 0.36}
-                fontFamily="Inter"
-                fontWeight={600}
+                fontFamily="Space Grotesk"
+                fontWeight={700}
                 fontSize={l.chip.size}
                 style={{ fill: '#ffffff' }}
             >
@@ -153,8 +149,8 @@ export function ogSvg(card: OgCard): string {
                 <text
                     x={MARGIN}
                     y={l.detail.base}
-                    fontFamily="Inter"
-                    fontWeight={600}
+                    fontFamily="Space Grotesk"
+                    fontWeight={700}
                     fontSize={l.detail.size}
                     style={{ fill: INK }}
                 >
@@ -167,7 +163,11 @@ export function ogSvg(card: OgCard): string {
 
 export async function renderOgImage(card: OgCard): Promise<Buffer> {
     const resvg = new Resvg(ogSvg(card), {
-        font: { fontFiles: loadFonts(), loadSystemFonts: false, defaultFontFamily: 'Inter' },
+        font: {
+            fontFiles: [loadFont()],
+            loadSystemFonts: false,
+            defaultFontFamily: 'Space Grotesk',
+        },
     });
     return Buffer.from(resvg.render().asPng());
 }

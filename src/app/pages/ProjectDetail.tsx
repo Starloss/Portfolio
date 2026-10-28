@@ -31,7 +31,7 @@ export const ProjectDetail: React.FC = () => {
                 </h1>
                 <Link
                     to={localizedPath(locale, '/')}
-                    className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-slate-300 bg-white/80 text-slate-700 hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-900/70 dark:text-slate-200 dark:hover:bg-slate-800 transition"
+                    className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-slate-300 bg-white/90 text-slate-700 hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-900/80 dark:text-slate-200 dark:hover:bg-slate-800 transition"
                 >
                     <span aria-hidden="true">←</span>
                     {t('project_go_back')}
@@ -65,7 +65,7 @@ const CaseStudyPage: React.FC<{ project: ResolvedProject }> = ({ project }) => {
             <main className="max-w-5xl mx-auto px-6 md:px-8 py-10 pb-28 md:pb-10 space-y-8">
                 <Link
                     to={`${localizedPath(locale, '/')}#projects`}
-                    className="inline-flex items-center gap-2 text-sm px-4 py-2 rounded-full border border-slate-300 bg-white/80 text-slate-700 hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-900/70 dark:text-slate-200 dark:hover:bg-slate-800 transition"
+                    className="inline-flex items-center gap-2 text-sm px-4 py-2 rounded-full border border-slate-300 bg-white/90 text-slate-700 hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-900/80 dark:text-slate-200 dark:hover:bg-slate-800 transition"
                 >
                     <span aria-hidden="true">←</span>
                     {t('project_go_back')}
@@ -174,13 +174,13 @@ const CaseStudyPage: React.FC<{ project: ResolvedProject }> = ({ project }) => {
                                     href={project.repositoryUrl}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="inline-flex items-center gap-2 rounded-full border border-slate-300 bg-white/80 px-3 py-1.5 text-sm font-medium text-slate-700 transition hover:border-slate-400 hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-900/70 dark:text-slate-200 dark:hover:bg-slate-800"
+                                    className="inline-flex items-center gap-2 rounded-full border border-slate-300 bg-white/90 px-3 py-1.5 text-sm font-medium text-slate-700 transition hover:border-slate-400 hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-900/80 dark:text-slate-200 dark:hover:bg-slate-800"
                                 >
                                     <FiGithub className="h-4 w-4" />
                                     {t('project_repository_view')}
                                 </a>
                             ) : (
-                                <span className="inline-flex items-center gap-2 rounded-full border border-slate-300 bg-white/80 px-3 py-1.5 text-sm font-medium text-slate-400 cursor-default select-none dark:border-slate-700 dark:bg-slate-900/70 dark:text-slate-500">
+                                <span className="inline-flex items-center gap-2 rounded-full border border-slate-300 bg-white/90 px-3 py-1.5 text-sm font-medium text-slate-400 cursor-default select-none dark:border-slate-700 dark:bg-slate-900/80 dark:text-slate-500">
                                     <FiGithub className="h-4 w-4" />
                                     {t('project_repository_private')}
                                 </span>

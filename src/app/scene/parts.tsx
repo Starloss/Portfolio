@@ -30,7 +30,7 @@ export const Stars: React.FC<{ count: number; groups: number; animate: boolean }
     groups,
     animate,
 }) => (
-    <g data-part="stars">
+    <g data-part="stars" className="scene-fade-in">
         {Array.from({ length: groups }, (_, g) => (
             <g
                 key={g}
@@ -76,9 +76,11 @@ const Macaw: React.FC<{ x: number; y: number; s: number }> = ({ x, y, s }) => (
 
 /** Pareja de guacamayas en el cielo a la derecha, fuera de la franja del Hero (solo de Día). */
 export const Macaws: React.FC<{ animate: boolean }> = ({ animate }) => (
-    <g data-part="macaws" data-anim={animate ? 'macaws' : undefined}>
-        <Macaw x={VIEW.width * 0.74} y={210} s={1.5} />
-        <Macaw x={VIEW.width * 0.79} y={236} s={1.3} />
+    <g data-part="macaws" className="scene-fade-in">
+        <g data-anim={animate ? 'macaws' : undefined}>
+            <Macaw x={VIEW.width * 0.74} y={210} s={1.5} />
+            <Macaw x={VIEW.width * 0.79} y={236} s={1.3} />
+        </g>
     </g>
 );
 
@@ -98,6 +100,7 @@ const Humboldt: React.FC<{ c: ScenePalette; night: boolean }> = ({ c, night }) =
             {night && (
                 <circle
                     data-part="halo"
+                    className="scene-fade-in"
                     cx={0}
                     cy={-h / 2}
                     r={haloRadius}
@@ -141,7 +144,7 @@ const Humboldt: React.FC<{ c: ScenePalette; night: boolean }> = ({ c, night }) =
                 x1={0}
                 y1={-h - 8}
                 x2={0}
-                y2={-h - 8 - antenna + 8}
+                y2={-h - antenna}
                 style={{ stroke: c.humboldtShade }}
                 strokeWidth={1}
             />
@@ -187,7 +190,7 @@ function cabinTrip(from: number, to: number): React.CSSProperties {
     } as React.CSSProperties;
 }
 
-const Telepherique: React.FC<PartProps & { stillCabins: boolean }> = ({
+const CableCar: React.FC<PartProps & { stillCabins: boolean }> = ({
     c,
     night,
     animate,
@@ -255,7 +258,7 @@ export const Avila: React.FC<PartProps & { withFarRidge?: boolean; stillCabins?:
     <g data-part="avila">
         {withFarRidge && <FarRidge c={c} />}
         <path d={RIDGE_PATHS.mid} style={{ fill: c.ridgeMid }} />
-        <Telepherique c={c} night={night} animate={animate} stillCabins={stillCabins} />
+        <CableCar c={c} night={night} animate={animate} stillCabins={stillCabins} />
         <path d={RIDGE_PATHS.near} style={{ fill: c.ridgeNear }} />
         <Humboldt c={c} night={night} />
     </g>
@@ -291,7 +294,7 @@ const Windows: React.FC<{ paths: string[]; animate: boolean; offset: number }> =
     animate,
     offset,
 }) => (
-    <g data-part="windows">
+    <g data-part="windows" className="scene-fade-in">
         {paths.map((d, g) => (
             <path
                 key={g}
@@ -323,53 +326,42 @@ export const City: React.FC<PartProps & { withTowers?: boolean }> = ({
 // marco abierto. La torre Oeste lleva el helipuerto.
 const TOWER_WIDTH = 24;
 // Ventanas de Noche de una torre centrada en x: un grupo por torre.
-const towerWindows = (alto: number, x: number) => {
+const towerWindows = (height: number, x: number) => {
     let d = '';
-    for (let i = 0; i < Math.floor(alto / 9); i++) {
-        if ((i * 7) % 3) d += `M${x - 8} ${-alto + 10 + i * 9}h2v2h-2Z`;
-        if ((i * 5) % 4) d += `M${x + 5} ${-alto + 13 + i * 9}h2v2h-2Z`;
+    for (let i = 0; i < Math.floor(height / 9); i++) {
+        if ((i * 7) % 3) d += `M${x - 8} ${-height + 10 + i * 9}h2v2h-2Z`;
+        if ((i * 5) % 4) d += `M${x + 5} ${-height + 13 + i * 9}h2v2h-2Z`;
     }
     return d;
 };
 
 export const Towers: React.FC<PartProps> = ({ c, night, animate }) => {
-    const alto = TOWERS.height;
+    const h = TOWERS.height;
     const w = TOWER_WIDTH;
     const tower = (x: number, helipad: boolean, behind: boolean) => (
         <g transform={`translate(${x},0)`} opacity={behind ? 0.92 : 1}>
-            <rect x={-w / 2} y={-alto} width={w} height={alto} style={{ fill: c.towers }} />
-            <rect x={-w / 2} y={-alto} width={4} height={alto} style={{ fill: c.towersLight }} />
-            <rect x={w / 2 - 4} y={-alto} width={4} height={alto} style={{ fill: c.towersLight }} />
-            <rect
-                x={-1.5}
-                y={-alto + 6}
-                width={3}
-                height={alto - 6}
-                style={{ fill: c.towersLight }}
-            />
-            <rect x={-w / 2 + 2} y={-alto - 9} width={2.5} height={9} style={{ fill: c.towers }} />
-            <rect x={w / 2 - 4.5} y={-alto - 9} width={2.5} height={9} style={{ fill: c.towers }} />
+            <rect x={-w / 2} y={-h} width={w} height={h} style={{ fill: c.towers }} />
+            <rect x={-w / 2} y={-h} width={4} height={h} style={{ fill: c.towersLight }} />
+            <rect x={w / 2 - 4} y={-h} width={4} height={h} style={{ fill: c.towersLight }} />
+            <rect x={-1.5} y={-h + 6} width={3} height={h - 6} style={{ fill: c.towersLight }} />
+            <rect x={-w / 2 + 2} y={-h - 9} width={2.5} height={9} style={{ fill: c.towers }} />
+            <rect x={w / 2 - 4.5} y={-h - 9} width={2.5} height={9} style={{ fill: c.towers }} />
             <rect
                 x={-w / 2 + 2}
-                y={-alto - 10}
+                y={-h - 10}
                 width={w - 4}
                 height={2.5}
                 style={{ fill: c.towers }}
             />
             {helipad && (
-                <ellipse
-                    cx={0}
-                    cy={-alto - 11}
-                    rx={w / 2 + 3}
-                    ry={2.2}
-                    style={{ fill: c.towers }}
-                />
+                <ellipse cx={0} cy={-h - 11} rx={w / 2 + 3} ry={2.2} style={{ fill: c.towers }} />
             )}
             {helipad && night && (
                 <circle
                     data-part="beacon"
+                    className="scene-fade-in"
                     cx={w / 2 + 2}
-                    cy={-alto - 12}
+                    cy={-h - 12}
                     r={1.6}
                     style={{ fill: NIGHT_LIGHTS.beacon }}
                 />
@@ -385,7 +377,7 @@ export const Towers: React.FC<PartProps> = ({ c, night, animate }) => {
             {tower(-14, true, false)}
             {night && (
                 <Windows
-                    paths={[towerWindows(alto, -14), towerWindows(alto, 14)]}
+                    paths={[towerWindows(h, -14), towerWindows(h, 14)]}
                     animate={animate}
                     offset={0.4}
                 />

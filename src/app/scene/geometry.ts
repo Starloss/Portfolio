@@ -26,10 +26,12 @@ const ridgePath = (ys: readonly number[]) =>
 
 export const RIDGE_PATHS = { near: ridgePath(NEAR), mid: ridgePath(MID), far: ridgePath(FAR) };
 
+const AZIMUTH_STEP = (AZIMUTH[1] - AZIMUTH[0]) / (FAR.length - 1);
 const crestAt = (azimuth: number) =>
-    FAR[Math.max(0, Math.min(FAR.length - 1, Math.round((azimuth - AZIMUTH[0]) * 2)))];
+    FAR[Math.max(0, Math.min(FAR.length - 1, Math.round((azimuth - AZIMUTH[0]) / AZIMUTH_STEP)))];
 
-// Los Hitos se dibujan unas 3–4 veces su tamaño angular real para que se lean.
+// Escala de las formas de los Hitos (valor del prototipo): así quedan unas 3–4 veces su tamaño
+// angular real, para que se lean.
 export const LANDMARK_SCALE = 1.6;
 
 const [humboldtAz] = LANDMARK_ANGLES.humboldt;

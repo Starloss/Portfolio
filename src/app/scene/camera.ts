@@ -163,7 +163,7 @@ export function heroSink(
     return Math.max(0, column.bottom + HERO_CLEARANCE - screenTop);
 }
 
-const MOON_SIZE = 52;
+export const MOON_SIZE = 52;
 const MOON_MARGIN = 24;
 
 /**

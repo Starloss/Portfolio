@@ -10,6 +10,7 @@ import {
     cloudsAt,
     heroSink,
     layerOffset,
+    MOON_SIZE,
     moonPosition,
     sceneFrame,
     toScreen,
@@ -21,7 +22,7 @@ import {
 } from './camera';
 import { useDocumentHidden, useSceneCovered, useViewport } from './environment';
 import { skyline } from './geometry';
-import { DAY, NIGHT, paletteVars, VARS } from './palette';
+import { DAY, NIGHT, NIGHT_LIGHTS, paletteVars, VARS } from './palette';
 import { Avila, CabinShape, City, FarRidge, HaloGradient, Macaws, Stars, Towers } from './parts';
 import './scene.css';
 
@@ -211,9 +212,15 @@ export const Scene: React.FC<{ height?: number }> = ({ height }) => {
                 )}
                 {night && moon && (
                     <div
-                        className="scene-moon"
+                        className="scene-moon scene-fade-in"
                         data-part="moon"
-                        style={{ left: moon.x - 26, top: moon.y - 26 }}
+                        style={{
+                            left: moon.x - MOON_SIZE / 2,
+                            top: moon.y - MOON_SIZE / 2,
+                            width: MOON_SIZE,
+                            height: MOON_SIZE,
+                            background: NIGHT_LIGHTS.moon,
+                        }}
                     />
                 )}
             </div>

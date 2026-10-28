@@ -43,10 +43,7 @@
 
 .scene-moon {
     position: absolute;
-    width: 52px;
-    height: 52px;
     border-radius: 50%;
-    background: #f4f1e4;
     box-shadow: 0 0 28px rgba(255, 241, 196, 0.45);
 }
 
@@ -64,6 +61,17 @@
 
 .scene-cabin > svg {
     display: block;
+}
+
+/* Lo exclusivo de Día o de Noche aparece con el mismo fundido que el cambio de colores. */
+.scene-fade-in {
+    animation: scene-fade-in 0.6s ease both;
+}
+
+@keyframes scene-fade-in {
+    from {
+        opacity: 0;
+    }
 }
 
 /* "Más vida": grupos animados, nunca nodos sueltos. */
@@ -150,7 +158,8 @@
 
 /* Red de seguridad: con prefers-reduced-motion no se mueve nada. */
 @media (prefers-reduced-motion: reduce) {
-    .scene [data-anim] {
+    .scene [data-anim],
+    .scene .scene-fade-in {
         animation: none;
     }
     .scene,
