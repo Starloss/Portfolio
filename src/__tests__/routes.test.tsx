@@ -80,7 +80,7 @@ describe('Home con el contenido nuevo', () => {
 
     it('los enlaces a Proyectos conservan el idioma', () => {
         renderAt('/en');
-        const projects = screen.getByRole('list', { name: 'projects list' });
+        const projects = screen.getByRole('region', { name: 'Featured projects' });
         expect(
             within(projects).getAllByRole('link', { name: /Wedding Invitation/ })[0],
         ).toHaveAttribute('href', '/en/projects/wedding-invitation');

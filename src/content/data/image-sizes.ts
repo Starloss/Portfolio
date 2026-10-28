@@ -1,0 +1,20 @@
+// GENERADO por scripts/images.ts. No editar a mano.
+// Ancho y alto del WebP más grande de cada imagen, por su ruta sin extensión.
+export const IMAGE_SIZES: Record<string, { width: number; height: number } | undefined> = {
+    '/projects/superwallet-1': { width: 1280, height: 634 },
+    '/projects/superwallet-13': { width: 1280, height: 634 },
+    '/projects/superwallet-14': { width: 1280, height: 635 },
+    '/projects/superwallet-2': { width: 1280, height: 632 },
+    '/projects/superwallet-4': { width: 1280, height: 635 },
+    '/projects/superwallet-5': { width: 1280, height: 631 },
+    '/projects/superwallet-6': { width: 1280, height: 635 },
+    '/projects/superwallet-7': { width: 1280, height: 635 },
+    '/projects/wedding-invitation-1': { width: 371, height: 793 },
+    '/projects/wedding-invitation-11': { width: 1280, height: 635 },
+    '/projects/wedding-invitation-13': { width: 1280, height: 635 },
+    '/projects/wedding-invitation-18': { width: 1280, height: 635 },
+    '/projects/wedding-invitation-19': { width: 1280, height: 634 },
+    '/projects/wedding-invitation-3': { width: 374, height: 791 },
+    '/projects/wedding-invitation-4': { width: 371, height: 794 },
+    '/projects/wedding-invitation-8': { width: 369, height: 789 },
+};

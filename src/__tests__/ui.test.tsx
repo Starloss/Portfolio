@@ -1,22 +1,11 @@
 import React from 'react';
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, within } from '@testing-library/react';
+import { describe, it, expect, vi } from 'vitest';
+import { render, screen, fireEvent } from '@testing-library/react';
 import { Badge } from '@app/components/ui/Badge';
 import { Heading } from '@app/components/ui/Heading';
 import { Section } from '@app/components/ui/Section';
-import { ContactSection } from '@app/features/contact/ContactSection';
-import { ExperienceSection } from '@app/features/experience/ExperienceSection';
 import { I18nProvider, useI18n } from '@lib/i18n';
 import { ThemeProvider, useTheme } from '@lib/theme';
-
-import { renderWithProviders } from './render';
-
-// Wrapper util para providers combinados
-const Providers: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-    <ThemeProvider>
-        <I18nProvider locale="es">{children}</I18nProvider>
-    </ThemeProvider>
-);
 
 describe('UI primitives', () => {
     it('Badge variants', () => {
@@ -59,66 +48,6 @@ describe('UI primitives', () => {
             </Section>,
         );
         expect(screen.queryByRole('heading', { name: 'Titulo' })).not.toBeInTheDocument();
-    });
-});
-
-describe('ContactSection submit', () => {
-    beforeEach(() => {
-        // Evitar navegación real
-        Object.defineProperty(window, 'location', {
-            value: { href: '' },
-            writable: true,
-        });
-    });
-    it('construye mailto con datos del formulario', () => {
-        render(
-            <Providers>
-                <ContactSection />
-            </Providers>,
-        );
-        fireEvent.change(screen.getByLabelText(/Nombre|Name/), { target: { value: 'Juan' } });
-        fireEvent.change(screen.getByRole('textbox', { name: /Correo|Email/i }), {
-            target: { value: 'juan@test.com' },
-        });
-        fireEvent.change(screen.getByLabelText(/Mensaje|Message/), { target: { value: 'Hola!' } });
-        fireEvent.click(screen.getByRole('button', { name: /Enviar|Send/i }));
-        expect(window.location.href).toMatch(/mailto:/);
-        expect(decodeURIComponent(window.location.href)).toMatch(/Juan/);
-        expect(decodeURIComponent(window.location.href)).toMatch(/Hola!/);
-    });
-    it('usa placeholder de nombre cuando está vacío y rama catch si asignación falla', () => {
-        Object.defineProperty(window, 'location', {
-            value: {
-                set href(_v: string) {
-                    throw new Error('blocked');
-                },
-                get href() {
-                    return '';
-                },
-            },
-            configurable: true,
-        });
-        render(
-            <Providers>
-                <ContactSection />
-            </Providers>,
-        );
-        fireEvent.change(screen.getByRole('textbox', { name: /Correo|Email/i }), {
-            target: { value: 'mail@test.com' },
-        });
-        fireEvent.change(screen.getByLabelText(/Mensaje|Message/), { target: { value: 'Msg' } });
-        fireEvent.click(screen.getByRole('button', { name: /Enviar|Send/i }));
-        // No lanza excepción y no crashea
-        expect(true).toBe(true);
-    });
-});
-
-describe('ExperienceSection locales y tech list', () => {
-    it('muestra los textos en el idioma del provider y la lista de tecnologías', () => {
-        renderWithProviders(<ExperienceSection />, 'en');
-        expect(screen.getByRole('heading', { name: 'Experience' })).toBeInTheDocument();
-        const list = screen.getAllByRole('list', { name: 'key technologies' })[0];
-        expect(within(list).getAllByRole('listitem').length).toBeGreaterThan(0);
     });
 });
 

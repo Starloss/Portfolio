@@ -1,7 +1,6 @@
-// Features de motion que se cargan aparte, después del primer render. domMin trae el renderer
-// del DOM, que los componentes `m` necesitan para seguir valores ligados al scroll, y las
-// animaciones, sin los gestos de domAnimation: el presupuesto de JS de Lighthouse cuenta
-// también este chunk.
-import { domMin } from 'motion/react';
+// Features de motion que se cargan aparte, después del primer render. domAnimation trae el
+// renderer del DOM (para los valores ligados al scroll de la Escena) y las animaciones con
+// whileInView de los bloques del Home. El presupuesto de JS de Lighthouse cuenta este chunk.
+import { domAnimation } from 'motion/react';
 
-export default domMin;
+export default domAnimation;

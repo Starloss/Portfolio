@@ -1,7 +1,7 @@
 import type { GalleryImage, Localized, Project } from '../types';
 
 const gallery = (prefix: string, items: [string, string, string][]): GalleryImage[] =>
-    items.map(([n, es, en]) => ({ src: `/projects/${prefix}-${n}.jpg`, alt: { es, en } }));
+    items.map(([n, es, en]) => ({ src: `/projects/${prefix}-${n}`, alt: { es, en } }));
 
 const text = (es: string, en: string): Localized => ({ es, en });
 

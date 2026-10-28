@@ -40,35 +40,34 @@ export const MainHeader: React.FC<MainHeaderProps> = ({ activeId, isHome = false
     }, [menuOpen]);
 
     const navItems: { id: string; label: string }[] = [
-        { id: 'skills', label: t('skills_title') },
         { id: 'experience', label: t('experience_title') },
         { id: 'projects', label: t('projects_title') },
+        { id: 'skills', label: t('skills_title') },
         { id: 'contact', label: t('contact_title') },
     ];
 
-    const linkBase =
-        'transition-colors focus:outline-none focus:ring-2 focus:ring-brand-500 rounded px-1';
-    const linkInactive = 'text-slate-700 dark:text-slate-300 hover:text-brand-600/90';
+    const linkBase = 'transition-colors rounded px-1';
+    const linkInactive = 'text-ink hover:text-primary';
     const linkActive =
-        'text-brand-700 dark:text-brand-300 font-semibold bg-brand-100/70 dark:bg-brand-400/10 px-2 py-1 rounded-full';
+        'text-primary font-semibold border border-line bg-surface px-2 py-1 rounded-full';
 
     const buildHref = (id: string) => (isHome ? `#${id}` : `${localizedPath(locale, '/')}#${id}`);
 
     const controlButtonClass =
-        'h-9 min-w-9 px-2.5 inline-flex items-center justify-center rounded-xl border border-slate-300/90 bg-white/80 text-slate-700 shadow-sm hover:bg-white hover:border-brand-300 hover:text-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-500 transition dark:border-slate-700 dark:bg-slate-900/70 dark:text-slate-100 dark:hover:bg-slate-800 dark:hover:border-brand-400';
+        'h-9 min-w-9 px-2.5 inline-flex items-center justify-center rounded-xl border border-line bg-surface text-ink hover:border-primary hover:text-primary transition';
 
     return (
         <header
-            className={`sticky top-0 z-50 px-4 md:px-6 py-3 bg-slate-100/90 dark:bg-slate-900/80 border-b border-slate-200/70 dark:border-slate-800 transition-colors ${scrolled ? 'shadow-sm' : ''}`}
+            className={`sticky top-0 z-50 px-4 md:px-6 py-3 bg-surface border-b border-line transition-colors ${scrolled ? 'shadow-sm' : ''}`}
         >
-            <div className="max-w-5xl mx-auto w-full flex items-center gap-4">
+            <div className="max-w-[860px] mx-auto w-full flex items-center gap-4">
                 <div className="flex-1 flex items-center gap-4">
                     <div className="md:hidden flex items-center">
                         <button
                             onClick={() => setMenuOpen((open) => !open)}
                             aria-expanded={menuOpen}
                             aria-label={menuOpen ? t('nav_menu_close') : t('nav_menu_open')}
-                            className="p-2 rounded bg-slate-800 text-slate-100 hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-brand-500 dark:bg-slate-700 dark:hover:bg-slate-600"
+                            className={controlButtonClass}
                         >
                             <span className="sr-only">
                                 {menuOpen ? t('nav_menu_close') : t('nav_menu_open')}
@@ -141,15 +140,12 @@ export const MainHeader: React.FC<MainHeaderProps> = ({ activeId, isHome = false
                         {LOCALES.map((l, i) => (
                             <React.Fragment key={l}>
                                 {i > 0 && (
-                                    <span aria-hidden="true" className="px-1 text-slate-400">
+                                    <span aria-hidden="true" className="px-1 text-muted">
                                         /
                                     </span>
                                 )}
                                 {l === locale ? (
-                                    <span
-                                        aria-current="true"
-                                        className="px-1.5 py-1 text-brand-700 dark:text-brand-300"
-                                    >
+                                    <span aria-current="true" className="px-1.5 py-1 text-primary">
                                         {l.toUpperCase()}
                                     </span>
                                 ) : (
@@ -168,7 +164,7 @@ export const MainHeader: React.FC<MainHeaderProps> = ({ activeId, isHome = false
                     <a
                         href={cvPath(locale)}
                         download
-                        className="text-xs px-3 h-9 inline-flex items-center rounded-xl border transition focus:outline-none focus:ring-2 focus:ring-brand-500 border-brand-400 bg-brand-500 text-white hover:bg-brand-400"
+                        className="text-xs font-semibold px-3 h-9 inline-flex items-center rounded-xl border transition-opacity border-primary bg-primary text-on-primary hover:opacity-90"
                     >
                         {t('cv_button')}
                     </a>

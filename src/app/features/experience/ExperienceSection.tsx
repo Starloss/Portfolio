@@ -1,57 +1,60 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import { useI18n } from '@lib/i18n';
+import { localizedPath, projectPath } from '@lib/locale-path';
 
+import { Block } from '../../components/Block';
+
+// El Home muestra los 2 Logros más importantes de cada Experiencia; el CV los muestra todos.
+const HOME_ACHIEVEMENTS = 2;
+
+/**
+ * Línea de tiempo de la Trayectoria, de la más reciente a la más antigua. La línea es el cable
+ * del Teleférico y cada Experiencia una estación; se dibuja con pseudo-elementos para que la
+ * lista siga siendo válida.
+ */
 export const ExperienceSection: React.FC = () => {
-    const { t, content } = useI18n();
+    const { t, locale, content } = useI18n();
     return (
-        <section id="experience" className="space-y-6" aria-label={t('experience_aria')}>
-            <h2 className="text-2xl font-semibold flex items-center gap-3 text-slate-800 dark:text-white">
-                {t('experience_title')}{' '}
-                <span className="h-px grow bg-slate-300 dark:bg-slate-700" />
-            </h2>
-            <ul className="space-y-8" aria-label="lista de experiencias">
+        <Block id="experience" title={t('experience_title')}>
+            <ol
+                aria-label={t('experience_list_aria')}
+                className="relative space-y-8 pl-7 before:absolute before:bottom-2 before:left-[7px] before:top-2 before:w-0.5 before:rounded-full before:bg-muted before:content-['']"
+            >
                 {content.experiences.map((item) => {
+                    const project = content.projects.find((p) => p.experienceId === item.id);
                     return (
                         <li
-                            id={`experience-${item.id}`}
                             key={item.id}
-                            className="group rounded-lg border border-slate-300 dark:border-slate-800 p-5 bg-white/70 dark:bg-slate-900/40"
+                            id={`experience-${item.id}`}
+                            className="relative scroll-mt-24 before:absolute before:-left-7 before:top-1.5 before:h-4 before:w-4 before:rounded-full before:border-2 before:border-primary before:bg-page before:content-['']"
                         >
-                            <div className="flex flex-col gap-1 md:flex-row md:items-baseline md:justify-between">
-                                <h3 className="text-lg font-semibold text-brand-400">
-                                    {item.role} · {item.company}
-                                </h3>
-                                <span className="text-xs text-slate-500 dark:text-slate-400">
-                                    {item.period}
-                                </span>
-                            </div>
-                            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                                {item.location}
+                            <p className="text-xs text-muted">
+                                {item.period} · {item.location}
                             </p>
-                            {item.tech.length > 0 && (
-                                <ul
-                                    className="flex flex-wrap gap-1.5 mt-3"
-                                    aria-label={t('experience_tech_aria')}
-                                >
-                                    {item.tech.map((tch) => (
-                                        <li
-                                            key={tch}
-                                            className="text-[10px] uppercase tracking-wide bg-slate-200 text-slate-700 dark:bg-slate-800/80 dark:text-slate-300 px-2 py-1 rounded-full"
-                                        >
-                                            {tch}
-                                        </li>
-                                    ))}
-                                </ul>
-                            )}
-                            <ul className="mt-3 list-disc pl-5 space-y-1 text-sm text-slate-600 dark:text-slate-300">
-                                {item.achievements.map((b) => (
-                                    <li key={b}>{b}</li>
+                            <h3 className="mt-1 text-lg text-ink">
+                                {item.role} · {item.company}
+                            </h3>
+                            <ul
+                                aria-label={t('experience_achievements_aria')}
+                                className="mt-2 list-disc space-y-1 pl-5 text-sm text-ink"
+                            >
+                                {item.achievements.slice(0, HOME_ACHIEVEMENTS).map((a) => (
+                                    <li key={a}>{a}</li>
                                 ))}
                             </ul>
+                            {project && (
+                                <Link
+                                    to={localizedPath(locale, projectPath(project.id))}
+                                    className="mt-3 inline-block text-sm font-semibold text-primary hover:underline underline-offset-4"
+                                >
+                                    {t('experience_project').replace('{title}', project.title)}
+                                </Link>
+                            )}
                         </li>
                     );
                 })}
-            </ul>
-        </section>
+            </ol>
+        </Block>
     );
 };
