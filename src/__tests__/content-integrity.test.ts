@@ -95,6 +95,28 @@ describe('validateContent', () => {
         ]);
     });
 
+    it('falla si un Caso de estudio no tiene portada: ni capturas ni diagrama', () => {
+        const c = clone();
+        c.projects[1].caseStudy.gallery = [];
+        delete c.projects[1].caseStudy.diagram;
+        expect(validateContent(c, { fileExists: ok, imageSize: sized })).toEqual([
+            'projects[1] ("be-booking-engine"): el Caso de estudio no tiene portada (ni capturas ni diagrama)',
+        ]);
+    });
+
+    it('falla si al diagrama le faltan pasos o un texto en algún idioma', () => {
+        const c = clone();
+        const diagram = c.projects[1].caseStudy.diagram!;
+        diagram.steps = [];
+        diagram.alt.en = '';
+        diagram.noScreenshots.es = '';
+        expect(validateContent(c, { fileExists: ok, imageSize: sized })).toEqual([
+            'Falta "en" en projects[1].caseStudy.diagram.alt',
+            'Falta "es" en projects[1].caseStudy.diagram.noScreenshots',
+            'projects[1] ("be-booking-engine"): el diagrama no tiene pasos',
+        ]);
+    });
+
     it('falla si un Proyecto de trabajo apunta a una Experiencia inexistente', () => {
         const c = clone();
         c.projects[1].experienceId = 'nadie';

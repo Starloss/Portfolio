@@ -1,6 +1,7 @@
 import React from 'react';
 import { afterEach, describe, it, expect, vi } from 'vitest';
 import { render, screen, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { AppRoutes } from '@app/App';
 import { ThemeProvider } from '@lib/theme';
@@ -131,6 +132,15 @@ describe('Proyectos destacados', () => {
         expect(img).toHaveAttribute('width', '1280');
         expect(img).toHaveAttribute('loading', 'lazy');
     });
+
+    it('la tarjeta de BE, sin capturas, muestra el diagrama del ciclo de una reserva', () => {
+        renderAt('/en');
+        const [, be] = within(section(/Featured projects/)).getAllByRole('link');
+        const diagram = within(be).getByRole('img', {
+            name: "A booking's lifecycle: booking, interpreter assignment, service, report and billing",
+        });
+        expect(diagram).toHaveTextContent('Interpreter assignment');
+    });
 });
 
 describe('Skills', () => {
@@ -203,5 +213,25 @@ describe('Entrada de los bloques', () => {
         renderAt('/');
         expect(section(/Impacto/).style.opacity).toBe('');
         expect(section(/Contacto/).style.transform).toBe('');
+    });
+
+    it('al volver de un Caso de estudio, Proyectos destacados ya está visible y en pantalla', async () => {
+        reduceMotion(false);
+        // jsdom no implementa scrollIntoView: se registra a qué elemento se llevó la pantalla.
+        const scrolled: Element[] = [];
+        Element.prototype.scrollIntoView = function (this: Element) {
+            scrolled.push(this);
+        };
+        try {
+            renderAt('/projects/superwallet');
+            await userEvent.click(screen.getByRole('link', { name: '← Proyectos' }));
+            const projects = section(/Proyectos destacados/);
+            // Sin el fundido de entrada: el morph inverso necesita la tarjeta visible desde el primer cuadro.
+            expect(projects.style.opacity).toBe('');
+            expect(scrolled).toContain(projects);
+            expect(section(/Impacto/).style.opacity).toBe('0');
+        } finally {
+            delete (Element.prototype as Partial<Element>).scrollIntoView;
+        }
     });
 });

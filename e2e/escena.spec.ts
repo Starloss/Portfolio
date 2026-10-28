@@ -76,12 +76,20 @@ test('con prefers-reduced-motion la Escena no se mueve al hacer scroll', async (
     expect(await page.locator('.scene [data-anim]').count()).toBe(0);
 });
 
-test('en un Caso de estudio la Escena queda fija sobre las nubes', async ({ page }) => {
+test('en un Caso de estudio la Escena queda fija, como en Proyectos destacados del Home', async ({
+    page,
+}) => {
+    const viewport = page.viewportSize()!;
+    // La altura del Viaje de cámara al llegar a Proyectos destacados.
+    await page.goto('/#projects');
+    await page.waitForTimeout(400);
+    const home = await avilaTop(page);
+
     await page.goto('/projects/superwallet');
     await page.waitForTimeout(400);
-    const viewport = page.viewportSize()!;
     const top = await avilaTop(page);
-    expect(top).toBeCloseTo(0.55 * viewport.height, 0);
+    // El paisaje casi no cambia entre las dos páginas, así la transición no lo mueve.
+    expect(Math.abs(top - home)).toBeLessThan(0.05 * viewport.height);
 
     await page.evaluate(() => window.scrollTo({ top: 800, behavior: 'instant' }));
     await page.waitForTimeout(400);

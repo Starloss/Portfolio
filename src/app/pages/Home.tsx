@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useState } from 'react';
+import { useLocation } from 'react-router-dom';
 import { currentYear } from '@lib/date';
 
 import { Hero } from '../components/Hero';
@@ -39,24 +40,24 @@ export const Home: React.FC = () => {
         return () => observer.disconnect();
     }, []);
 
-    useEffect(() => {
-        if (typeof window === 'undefined') return;
+    // Al llegar con un ancla (p. ej. "← Proyectos"), el salto es instantáneo y antes de pintar: la
+    // View Transition de vuelta toma el Home ya ubicado en el bloque.
+    const { hash } = useLocation();
+    const [initialHash] = useState(hash);
+    useLayoutEffect(() => {
+        const id = initialHash.replace('#', '');
+        if (id)
+            document.getElementById(id)?.scrollIntoView?.({ behavior: 'instant', block: 'start' });
+    }, [initialHash]);
 
+    useEffect(() => {
         const scrollToHashSection = () => {
             const id = window.location.hash.replace('#', '');
             if (!id) return;
             document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
         };
-
-        const rafId = window.requestAnimationFrame(() => {
-            window.setTimeout(scrollToHashSection, 0);
-        });
-
         window.addEventListener('hashchange', scrollToHashSection);
-        return () => {
-            window.cancelAnimationFrame(rafId);
-            window.removeEventListener('hashchange', scrollToHashSection);
-        };
+        return () => window.removeEventListener('hashchange', scrollToHashSection);
     }, []);
 
     return (

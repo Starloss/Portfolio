@@ -63,7 +63,7 @@ export const MainHeader: React.FC<MainHeaderProps> = ({ activeId, isHome = false
 
     return (
         <header
-            className={`sticky top-0 z-50 px-4 md:px-6 py-3 bg-surface border-b border-line transition-colors ${scrolled ? 'shadow-sm' : ''}`}
+            className={`sticky top-0 z-50 [view-transition-name:barra] px-4 md:px-6 py-3 bg-surface border-b border-line transition-colors ${scrolled ? 'shadow-sm' : ''}`}
         >
             <div className="max-w-[860px] mx-auto w-full flex items-center gap-4">
                 <div className="flex-1 flex items-center gap-4">

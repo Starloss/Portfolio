@@ -1,5 +1,6 @@
-import React, { useId } from 'react';
+import React, { useId, useState } from 'react';
 import { m } from 'motion/react';
+import { useLocation } from 'react-router-dom';
 import { usePrefersReducedMotion } from '@lib/motion';
 
 interface BlockProps {
@@ -11,15 +12,19 @@ interface BlockProps {
 /**
  * Un bloque del Home sobre la Escena: superficie translúcida sin blur, con su título. Entra con
  * un fundido y un desplazamiento corto la primera vez que aparece; con reduced-motion, sin animar.
+ * Si se llega a la página apuntando a este bloque (p. ej. "← Proyectos"), ya está visible: el
+ * morph de vuelta desde el Caso de estudio necesita la tarjeta en su lugar desde el primer cuadro.
  */
 export const Block: React.FC<BlockProps> = ({ id, title, children }) => {
     const reduce = usePrefersReducedMotion();
+    const { hash } = useLocation();
+    const [arrivedHere] = useState(() => hash === `#${id}`);
     const headingId = useId();
     return (
         <m.section
             id={id}
             aria-labelledby={headingId}
-            initial={reduce ? false : { opacity: 0, y: 16 }}
+            initial={reduce || arrivedHere ? false : { opacity: 0, y: 16 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, amount: 0.15 }}
             transition={{ duration: 0.4, ease: 'easeOut' }}

@@ -95,6 +95,11 @@ export function resolveContent(locale: Locale, today: Date, content: Content = C
                     alt: g.alt[locale],
                     ...(g.caption ? { caption: g.caption[locale] } : {}),
                 })),
+                diagram: cs.diagram && {
+                    steps: cs.diagram.steps.map((s) => s[locale]),
+                    alt: cs.diagram.alt[locale],
+                    noScreenshots: cs.diagram.noScreenshots[locale],
+                },
             },
         };
     });

@@ -179,8 +179,25 @@ export const PROJECTS: Project[] = [
                     ),
                 },
             ],
-            // Sin capturas: no hay permiso de CORE. El diagrama propio llega en la Fase 4.
+            // Sin capturas hasta tener el permiso por escrito de CORE: la portada es el diagrama.
             gallery: [],
+            diagram: {
+                steps: [
+                    text('Reserva', 'Booking'),
+                    text('Asignación de intérprete', 'Interpreter assignment'),
+                    text('Servicio', 'Service'),
+                    text('Reporte', 'Report'),
+                    text('Facturación', 'Billing'),
+                ],
+                alt: text(
+                    'Ciclo de una reserva: reserva, asignación de intérprete, servicio, reporte y facturación',
+                    "A booking's lifecycle: booking, interpreter assignment, service, report and billing",
+                ),
+                noScreenshots: text(
+                    'Sin capturas: el sistema es interno. El diagrama resume el ciclo de una reserva.',
+                    "No screenshots: the system is internal. The diagram summarizes a booking's lifecycle.",
+                ),
+            },
         },
     },
     {

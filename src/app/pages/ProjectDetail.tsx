@@ -1,390 +1,241 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { FiExternalLink, FiGithub } from 'react-icons/fi';
-import { Link, useLocation, useParams } from 'react-router-dom';
+import React, { useId } from 'react';
+import { FiArrowUpRight } from 'react-icons/fi';
+import { Link, useParams } from 'react-router-dom';
 import { currentYear } from '@lib/date';
 import { useI18n } from '@lib/i18n';
 import { localizedPath, projectPath } from '@lib/locale-path';
 
+import { Chip } from '../components/Block';
 import { MainHeader } from '../components/MainHeader';
-import { Badge } from '../components/ui/Badge';
-import { useCoverScene } from '../scene/environment';
+import { Morph, coverTransition, titleTransition } from '../components/Morph';
+import { Gallery } from '../features/projects/Gallery';
+import { ProjectCover } from '../features/projects/ProjectCover';
 import { Scene } from '../scene/Scene';
 
-import { responsiveImage } from '@/content/images';
 import type { ResolvedProject } from '@/content';
 
-// La Escena del Caso de estudio queda fija "sobre las nubes", donde viven los Proyectos en el Home.
-const CASE_STUDY_CAMERA_HEIGHT = 1;
+// La Escena del Caso de estudio queda fija a la altura que tiene el Viaje de cámara del Home al
+// llegar a Proyectos destacados (medida en escritorio de 1280 × 800: progreso 0,66), para que la
+// transición entre las dos páginas no cambie el paisaje.
+const CASE_STUDY_CAMERA_HEIGHT = 0.22;
 
-const headingClass = 'text-xl font-semibold text-slate-800 dark:text-white';
-const textClass = 'text-slate-700 dark:text-slate-300 leading-relaxed';
+// La portada ocupa el ancho del relato: hasta ~780 px en escritorio, toda la pantalla en móvil.
+const COVER_SIZES = '(min-width: 900px) 780px, 100vw';
+
+const linkClass =
+    'inline-flex items-center rounded-full border px-3 py-1.5 text-sm font-semibold transition-colors';
+
+// "↗" como ícono: la fuente lo muestra como emoji en Windows y el lector de pantalla lo leería.
+const ExternalArrow: React.FC = () => (
+    <FiArrowUpRight aria-hidden="true" className="ml-1 h-4 w-4" />
+);
+
+const BackLink: React.FC = () => {
+    const { t, locale } = useI18n();
+    return (
+        <Link
+            to={`${localizedPath(locale, '/')}#projects`}
+            className="text-sm font-semibold text-primary hover:underline underline-offset-4"
+        >
+            {t('project_back')}
+        </Link>
+    );
+};
 
 export const ProjectDetail: React.FC = () => {
     const { id } = useParams<{ id: string }>();
-    const { t, locale, content } = useI18n();
+    const { t, content } = useI18n();
     const project = content.projects.find((p) => p.id === id);
 
     if (!project) {
         return (
-            <main className="min-h-screen px-6 py-14 max-w-3xl mx-auto space-y-4">
-                <h1 className="text-3xl font-bold text-slate-800 dark:text-white">
-                    {t('project_not_found')}
-                </h1>
-                <Link
-                    to={localizedPath(locale, '/')}
-                    className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-slate-300 bg-white/90 text-slate-700 hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-900/80 dark:text-slate-200 dark:hover:bg-slate-800 transition"
-                >
-                    <span aria-hidden="true">←</span>
-                    {t('project_go_back')}
-                </Link>
+            <main className="mx-auto max-w-3xl space-y-4 px-4 py-14">
+                <h1 className="text-3xl text-ink">{t('project_not_found')}</h1>
+                <BackLink />
             </main>
         );
     }
     return <CaseStudyPage key={project.id} project={project} />;
 };
 
-const CaseStudyPage: React.FC<{ project: ResolvedProject }> = ({ project }) => {
-    const location = useLocation();
-    const { t, locale, content } = useI18n();
-    const navState = location.state as { direction?: 'prev' | 'next' } | null;
-    const projectTransitionClass =
-        (navState?.direction ?? 'next') === 'next' ? 'project-enter-next' : 'project-enter-prev';
+/** Caso de estudio · B · Ficha lateral: la ficha a la izquierda y el relato a la derecha. */
+const CaseStudyPage: React.FC<{ project: ResolvedProject }> = ({ project }) => (
+    <>
+        <Scene height={CASE_STUDY_CAMERA_HEIGHT} />
+        <MainHeader activeId="projects" />
+        <main className="mx-auto max-w-[1120px] px-4 pb-10">
+            <div className="grid gap-8 rounded-2xl border border-line bg-surface p-5 md:p-8 min-[900px]:grid-cols-[300px_minmax(0,1fr)]">
+                <Sheet project={project} />
+                <Story project={project} />
+            </div>
+        </main>
+        <footer className="pb-10 text-center text-xs text-ink">© {currentYear()}</footer>
+    </>
+);
+
+const Sheet: React.FC<{ project: ResolvedProject }> = ({ project }) => {
+    const { t } = useI18n();
+    const titleId = useId();
+    const impactId = useId();
     const cs = project.caseStudy;
-
-    const projects = content.featuredProjects;
-    const index = projects.findIndex((p) => p.id === project.id);
-    const isFeatured = index >= 0;
-    const previousProject = isFeatured
-        ? projects[(index - 1 + projects.length) % projects.length]
-        : undefined;
-    const nextProject = isFeatured ? projects[(index + 1) % projects.length] : undefined;
-
     return (
-        <>
-            <Scene height={CASE_STUDY_CAMERA_HEIGHT} />
-            <MainHeader activeId="projects" />
-            <main className="max-w-5xl mx-auto px-6 md:px-8 py-10 pb-28 md:pb-10 space-y-8">
-                <Link
-                    to={`${localizedPath(locale, '/')}#projects`}
-                    className="inline-flex items-center gap-2 text-sm px-4 py-2 rounded-full border border-slate-300 bg-white/90 text-slate-700 hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-900/80 dark:text-slate-200 dark:hover:bg-slate-800 transition"
-                >
-                    <span aria-hidden="true">←</span>
-                    {t('project_go_back')}
-                </Link>
-
-                <section
-                    className={`relative space-y-6 rounded-2xl border border-line bg-surface p-6 md:p-8 ${projectTransitionClass}`}
-                >
-                    <Badge variant="outline" className="absolute right-6 top-6">
-                        {project.company ?? t('project_personal')}
-                    </Badge>
-                    <h1 className="text-3xl md:text-4xl font-bold text-slate-800 dark:text-white">
+        <aside
+            aria-labelledby={titleId}
+            className="space-y-5 self-start min-[900px]:sticky min-[900px]:top-24"
+        >
+            <BackLink />
+            <div className="space-y-2">
+                <p className="text-xs font-semibold text-amber">
+                    {project.company
+                        ? `${t('project_work')} · ${project.company}`
+                        : t('project_personal')}
+                </p>
+                <Morph name={titleTransition(project.id)}>
+                    <h1 id={titleId} className="text-3xl text-ink md:text-4xl">
                         {project.title}
                     </h1>
-                    <p className={textClass}>{cs.summary}</p>
-                    <p className="text-sm text-slate-600 dark:text-slate-400">
-                        <span className="font-semibold text-slate-700 dark:text-slate-300">
-                            {t('project_period')}:
-                        </span>{' '}
-                        {project.period}
-                    </p>
-
-                    <div className="space-y-2" aria-label={t('project_role_aria')}>
-                        <h2 className={headingClass}>{t('project_role_title')}</h2>
-                        <p className={textClass}>{cs.role}</p>
-                    </div>
-
-                    <div className="space-y-2">
-                        <h2 className={headingClass}>{t('project_context_title')}</h2>
-                        {cs.context.map((paragraph) => (
-                            <p key={paragraph} className={textClass}>
-                                {paragraph}
-                            </p>
-                        ))}
-                    </div>
-
-                    <div className="space-y-2">
-                        <h2 className={headingClass}>{t('project_problem_title')}</h2>
-                        <p className={textClass}>{cs.problem}</p>
-                    </div>
-
-                    <div className="space-y-3">
-                        <h2 className={headingClass}>{t('project_decisions_title')}</h2>
-                        <ol className="space-y-3">
-                            {cs.decisions.map((d, i) => (
-                                <li key={d.title} className="flex gap-3">
-                                    <span className="font-bold text-primary" aria-hidden="true">
-                                        {String(i + 1).padStart(2, '0')}
-                                    </span>
-                                    <div>
-                                        <h3 className="font-semibold text-slate-800 dark:text-white">
-                                            {d.title}
-                                        </h3>
-                                        <p className={textClass}>{d.explanation}</p>
-                                    </div>
-                                </li>
-                            ))}
-                        </ol>
-                    </div>
-
-                    <div className="space-y-3">
-                        <h2 className={headingClass}>{t('project_impact_title')}</h2>
-                        <ul className="grid gap-3 sm:grid-cols-3">
-                            {cs.impact.map((item) => (
-                                <li
-                                    key={item.text}
-                                    className="rounded-xl border border-slate-300 dark:border-slate-700 p-4"
-                                >
-                                    {item.metric && (
-                                        <span className="block text-2xl font-bold text-primary">
-                                            {item.metric}
-                                        </span>
-                                    )}
-                                    <span className="text-sm text-slate-700 dark:text-slate-300">
-                                        {item.text}
-                                    </span>
-                                </li>
-                            ))}
-                        </ul>
-                    </div>
-
-                    {cs.gallery.length > 0 && <Gallery project={project} />}
-
-                    <div className="space-y-3">
-                        <h2 className={headingClass}>{t('project_stack')}</h2>
-                        <ul className="flex flex-wrap gap-2" aria-label={t('tech_aria')}>
-                            {project.tech.map((item) => (
-                                <li
-                                    key={item}
-                                    className="text-[10px] uppercase tracking-wide bg-slate-200 text-slate-700 dark:bg-slate-800/80 dark:text-slate-300 px-2 py-1 rounded-full"
-                                >
-                                    {item}
-                                </li>
-                            ))}
-                        </ul>
-                    </div>
-
-                    <div className="space-y-3">
-                        <h2 className={headingClass}>{t('project_repository_title')}</h2>
-                        <div
-                            className="flex flex-wrap gap-3"
-                            aria-label={t('project_repository_aria')}
+                </Morph>
+                <p className="text-ink">{cs.summary}</p>
+                <p className="text-sm text-muted">
+                    {project.period} · {cs.role}
+                </p>
+            </div>
+            <ul className="flex flex-wrap gap-1.5" aria-label={t('tech_aria')}>
+                {project.tech.map((tech) => (
+                    <Chip key={tech}>{tech}</Chip>
+                ))}
+            </ul>
+            {(project.liveUrl || project.repositoryUrl) && (
+                <div className="flex flex-wrap gap-2">
+                    {project.liveUrl && (
+                        <a
+                            href={project.liveUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className={`${linkClass} border-primary bg-primary text-on-primary hover:opacity-90`}
                         >
-                            {project.repositoryUrl ? (
-                                <a
-                                    href={project.repositoryUrl}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="inline-flex items-center gap-2 rounded-full border border-slate-300 bg-white/90 px-3 py-1.5 text-sm font-medium text-slate-700 transition hover:border-slate-400 hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-900/80 dark:text-slate-200 dark:hover:bg-slate-800"
-                                >
-                                    <FiGithub className="h-4 w-4" />
-                                    {t('project_repository_view')}
-                                </a>
-                            ) : (
-                                <span className="inline-flex items-center gap-2 rounded-full border border-slate-300 bg-white/90 px-3 py-1.5 text-sm font-medium text-muted cursor-default select-none dark:border-slate-700 dark:bg-slate-900/80">
-                                    <FiGithub className="h-4 w-4" />
-                                    {t('project_repository_private')}
+                            {t('project_demo')}
+                            <ExternalArrow />
+                        </a>
+                    )}
+                    {project.repositoryUrl && (
+                        <a
+                            href={project.repositoryUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className={`${linkClass} border-line text-ink hover:border-primary`}
+                        >
+                            {t('project_repository')}
+                            <ExternalArrow />
+                        </a>
+                    )}
+                </div>
+            )}
+            <section aria-labelledby={impactId} className="space-y-3">
+                <h2 id={impactId} className="text-lg text-ink">
+                    {t('project_impact_title')}
+                </h2>
+                <ul className="space-y-3">
+                    {cs.impact.map((item) => (
+                        <li key={item.text} className="rounded-xl border border-line p-3">
+                            {item.metric && (
+                                <span className="block font-display text-2xl font-bold text-primary">
+                                    {item.metric}
                                 </span>
                             )}
-                            {project.liveUrl && (
-                                <a
-                                    href={project.liveUrl}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="inline-flex items-center gap-2 rounded-full border border-primary bg-surface px-3 py-1.5 text-sm font-medium text-primary transition-colors hover:border-ink"
-                                >
-                                    <FiExternalLink className="h-4 w-4" />
-                                    {t('project_live_url_view')}
-                                </a>
-                            )}
-                        </div>
-                    </div>
-                </section>
-
-                <div
-                    className={`fixed bottom-4 left-0 right-0 z-40 px-4 md:static md:px-0 ${projectTransitionClass}`}
-                >
-                    <div className="mx-auto grid max-w-5xl gap-3 md:grid-cols-2">
-                        {[
-                            {
-                                p: previousProject,
-                                direction: 'prev',
-                                label: `← ${t('project_prev_project')}`,
-                            },
-                            {
-                                p: nextProject,
-                                direction: 'next',
-                                label: `${t('project_next_project')} →`,
-                            },
-                        ].map(({ p, direction, label }) =>
-                            p ? (
-                                <Link
-                                    key={direction}
-                                    to={localizedPath(locale, projectPath(p.id))}
-                                    state={{ direction }}
-                                    className="inline-flex items-center justify-between gap-2 rounded-xl border border-slate-300 bg-white/90 px-4 py-3 text-sm text-slate-700 shadow-sm transition hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-900/85 dark:text-slate-200 dark:hover:bg-slate-800"
-                                >
-                                    <span>{label}</span>
-                                    <span className="font-semibold text-primary">{p.title}</span>
-                                </Link>
-                            ) : null,
-                        )}
-                    </div>
-                </div>
-
-                <footer className="text-center text-xs text-slate-900 dark:text-slate-300 pb-10">
-                    © {currentYear()}
-                </footer>
-            </main>
-        </>
+                            <span className="text-sm text-ink">{item.text}</span>
+                        </li>
+                    ))}
+                </ul>
+            </section>
+            <nav aria-label={t('project_index_aria')}>
+                <ul className="space-y-1 text-sm">
+                    {[
+                        ['context', t('project_context_title')],
+                        ['decisions', t('project_decisions_title')],
+                        ['gallery', t('project_gallery_title')],
+                    ].map(([id, label]) => (
+                        <li key={id}>
+                            <a
+                                href={`#${id}`}
+                                className="text-primary hover:underline underline-offset-4"
+                            >
+                                {label}
+                            </a>
+                        </li>
+                    ))}
+                </ul>
+            </nav>
+        </aside>
     );
 };
 
-const Gallery: React.FC<{ project: ResolvedProject }> = ({ project }) => {
+const headingClass = 'scroll-mt-24 text-2xl text-ink';
+const textClass = 'leading-relaxed text-ink';
+
+const Story: React.FC<{ project: ResolvedProject }> = ({ project }) => {
     const { t } = useI18n();
-    const images = project.caseStudy.gallery;
-    const [index, setIndex] = useState(0);
-    const [isOpen, setIsOpen] = useState(false);
-    useCoverScene(isOpen);
-    const thumbnailRefs = useRef<Array<HTMLButtonElement | null>>([]);
-    const AUTOPLAY_MS = 4000;
-
-    const next = () => setIndex((i) => (i + 1) % images.length);
-    const prev = () => setIndex((i) => (i - 1 + images.length) % images.length);
-
-    useEffect(() => {
-        if (isOpen || images.length <= 1) return;
-        const intervalId = window.setInterval(next, AUTOPLAY_MS);
-        return () => window.clearInterval(intervalId);
-    }, [isOpen, images.length]);
-
-    useEffect(() => {
-        if (!isOpen) return;
-        const onKeyDown = (event: globalThis.KeyboardEvent) => {
-            if (event.key === 'Escape') setIsOpen(false);
-            if (event.key === 'ArrowRight') next();
-            if (event.key === 'ArrowLeft') prev();
-        };
-        window.addEventListener('keydown', onKeyDown);
-        return () => window.removeEventListener('keydown', onKeyDown);
-    }, [isOpen]);
-
-    useEffect(() => {
-        if (!isOpen) return;
-        thumbnailRefs.current[index]?.scrollIntoView?.({
-            behavior: 'smooth',
-            block: 'nearest',
-            inline: 'center',
-        });
-    }, [isOpen, index]);
-
-    const current = images[index];
-    const arrowClass =
-        'absolute top-1/2 -translate-y-1/2 px-3 py-2 rounded-lg bg-slate-900/70 text-white hover:bg-slate-900/85 transition';
-
+    const cs = project.caseStudy;
     return (
-        <div className="space-y-3">
-            <h2 className={headingClass}>{t('project_gallery_title')}</h2>
-            <div className="relative rounded-xl overflow-hidden border border-slate-300 dark:border-slate-700">
-                <button
-                    type="button"
-                    onClick={() => setIsOpen(true)}
-                    className="block w-full cursor-zoom-in"
-                >
-                    <img
-                        {...responsiveImage(current.src)}
-                        sizes="(min-width: 768px) 800px, 100vw"
-                        alt={current.alt}
-                        className="w-full h-[260px] md:h-[420px] object-contain bg-slate-200/70 dark:bg-slate-900"
-                    />
-                </button>
-                <button
-                    onClick={prev}
-                    aria-label={t('project_prev_image')}
-                    className={`left-3 ${arrowClass}`}
-                >
-                    ‹
-                </button>
-                <button
-                    onClick={next}
-                    aria-label={t('project_next_image')}
-                    className={`right-3 ${arrowClass}`}
-                >
-                    ›
-                </button>
-            </div>
-
-            {isOpen && (
-                <div
-                    className="fixed inset-0 z-[100] bg-slate-950/95 p-4 md:p-10"
-                    role="dialog"
-                    aria-modal="true"
-                    aria-label={`${project.title} · ${t('project_gallery_aria')}`}
-                >
-                    <button
-                        type="button"
-                        onClick={() => setIsOpen(false)}
-                        aria-label={t('project_close_gallery')}
-                        className="absolute right-5 top-5 z-[110] rounded-lg bg-slate-900/80 px-3 py-2 text-white hover:bg-slate-900"
-                    >
-                        ✕
-                    </button>
-                    <div className="relative mx-auto flex h-full max-w-6xl flex-col items-center justify-center gap-4">
-                        <img
-                            {...responsiveImage(current.src)}
-                            sizes="100vw"
-                            alt={current.alt}
-                            className="max-h-[70vh] w-auto max-w-full object-contain"
-                        />
-                        <p className="text-sm text-slate-200">
-                            {current.alt} · {index + 1}/{images.length}
-                        </p>
-                        <button
-                            onClick={prev}
-                            aria-label={t('project_prev_image')}
-                            className={`left-2 md:left-4 ${arrowClass}`}
-                        >
-                            ‹
-                        </button>
-                        <button
-                            onClick={next}
-                            aria-label={t('project_next_image')}
-                            className={`right-2 md:right-4 ${arrowClass}`}
-                        >
-                            ›
-                        </button>
-                        <div className="w-full overflow-x-auto rounded-xl border border-slate-700/70 bg-slate-900/40 p-2">
-                            <div className="mx-auto flex min-w-max items-center gap-2">
-                                {images.map((image, i) => (
-                                    <button
-                                        key={image.src}
-                                        type="button"
-                                        ref={(element) => {
-                                            thumbnailRefs.current[i] = element;
-                                        }}
-                                        onClick={() => setIndex(i)}
-                                        aria-label={image.alt}
-                                        aria-current={i === index ? 'true' : undefined}
-                                        className={`h-16 w-24 overflow-hidden rounded-lg border transition ${
-                                            i === index
-                                                ? 'border-primary ring-2 ring-primary'
-                                                : 'border-slate-600 hover:border-slate-400'
-                                        }`}
-                                    >
-                                        <img
-                                            {...responsiveImage(image.src)}
-                                            sizes="160px"
-                                            alt=""
-                                            loading="lazy"
-                                            className="h-full w-full object-cover"
-                                        />
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
-                    </div>
+        <article className="min-w-0 space-y-10">
+            <Morph name={coverTransition(project.id)}>
+                <div>
+                    <ProjectCover project={project} sizes={COVER_SIZES} />
                 </div>
-            )}
-        </div>
+            </Morph>
+
+            <section id="context" className="space-y-3 scroll-mt-24">
+                <h2 className={headingClass}>{t('project_context_title')}</h2>
+                {cs.context.map((paragraph) => (
+                    <p key={paragraph} className={textClass}>
+                        {paragraph}
+                    </p>
+                ))}
+                <h3 className="pt-2 text-lg text-ink">{t('project_problem_title')}</h3>
+                <p className={textClass}>{cs.problem}</p>
+            </section>
+
+            <section id="decisions" className="space-y-4 scroll-mt-24">
+                <h2 className={headingClass}>{t('project_decisions_title')}</h2>
+                <ol className="space-y-5">
+                    {cs.decisions.map((d, i) => (
+                        <li key={d.title} className="space-y-1">
+                            <h3 className="text-lg text-ink">
+                                <span className="mr-3 text-amber" aria-hidden="true">
+                                    {String(i + 1).padStart(2, '0')}
+                                </span>
+                                {d.title}
+                            </h3>
+                            <p className={textClass}>{d.explanation}</p>
+                        </li>
+                    ))}
+                </ol>
+            </section>
+
+            <Gallery project={project} />
+
+            <ProjectNavigation project={project} />
+        </article>
+    );
+};
+
+/** Anterior y siguiente en el orden de Proyectos destacados, en círculo. */
+const ProjectNavigation: React.FC<{ project: ResolvedProject }> = ({ project }) => {
+    const { t, locale, content } = useI18n();
+    const projects = content.featuredProjects;
+    const index = projects.findIndex((p) => p.id === project.id);
+    if (index < 0 || projects.length < 2) return null;
+    const previous = projects[(index - 1 + projects.length) % projects.length];
+    const next = projects[(index + 1) % projects.length];
+    const pill = `${linkClass} border-line text-ink hover:border-primary`;
+    return (
+        <nav aria-label={t('project_nav_aria')} className="flex flex-wrap justify-between gap-3">
+            <Link to={localizedPath(locale, projectPath(previous.id))} className={pill}>
+                ← {previous.title}
+            </Link>
+            <Link to={localizedPath(locale, projectPath(next.id))} className={pill}>
+                {next.title} →
+            </Link>
+        </nav>
     );
 };
