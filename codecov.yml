@@ -1,0 +1,12 @@
+# Codecov solo informa con el mismo criterio que Vitest (thresholds en vitest.config.ts):
+# el código nuevo de una PR tiene que estar cubierto al menos en un 80 %, y la cobertura total
+# no puede bajar más de 1 punto.
+coverage:
+  status:
+    project:
+      default:
+        target: auto
+        threshold: 1%
+    patch:
+      default:
+        target: 80%
