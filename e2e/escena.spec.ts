@@ -1,4 +1,31 @@
 import { expect, test, type Page } from '@playwright/test';
+import { DAY, NIGHT } from '../src/app/scene/palette';
+import { contrastRatio } from '../src/lib/contrast';
+
+for (const [colorScheme, palette] of [
+    ['light', DAY],
+    ['dark', NIGHT],
+] as const) {
+    test(`Hero: el texto sobre el cielo da ≥4,5:1 en ${colorScheme}`, async ({ page }) => {
+        await page.emulateMedia({ colorScheme, reducedMotion: 'reduce' });
+        await page.goto('/');
+
+        // Saludo, nombre y párrafos sin superficie; el rol tiene su propio bloque.
+        const text = page.locator('[data-hero-text] :is(h1, h1 span, p:not(:has(span)))');
+        await expect(text).toHaveCount(4);
+        const colors = await text.evaluateAll((elements) =>
+            elements.map((el) => ({ text: el.textContent, color: getComputedStyle(el).color })),
+        );
+
+        for (const { text, color } of colors) {
+            for (const sky of [palette.skyTop, palette.skyBottom]) {
+                expect(contrastRatio(color, sky), `${text} sobre ${sky}`).toBeGreaterThanOrEqual(
+                    4.5,
+                );
+            }
+        }
+    });
+}
 
 // Dónde está una capa de la Escena: su desplazamiento vertical es el de la cámara.
 const layerTop = (page: Page, layer: string) =>

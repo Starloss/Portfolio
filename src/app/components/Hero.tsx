@@ -11,7 +11,7 @@ export const Hero: React.FC = () => {
             {/* Columna de texto hasta la línea de ubicación: la Escena la mantiene sobre cielo libre. */}
             <div data-hero-text className="mx-auto w-fit max-w-full space-y-3">
                 <h1 className="text-4xl tracking-tight text-ink md:text-6xl">
-                    {hero.greeting} <span className="text-primary">{profile.name}</span>
+                    {hero.greeting} <span className="text-ink">{profile.name}</span>
                 </h1>
                 <p>
                     <span className="inline-block rounded-full border border-line bg-surface px-3 py-1.5 text-xs font-semibold text-ink md:text-sm">
