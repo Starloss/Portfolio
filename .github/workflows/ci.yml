@@ -38,7 +38,7 @@ jobs:
         run: pnpm run lint
 
       - name: Run tests
-        run: pnpm run test -- --coverage
+        run: pnpm run test --coverage
 
       # Solo informa: el mínimo de cobertura lo exige vitest (thresholds). Sin el secreto
       # CODECOV_TOKEN, Codecov rechaza la subida y el paso se salta sin romper el job.
