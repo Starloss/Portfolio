@@ -1,25 +1,47 @@
 /**** Tailwind Config ****/
 /** @type {import('tailwindcss').Config} */
+const plugin = require('tailwindcss/plugin');
+// Tokens de color de Día y de Noche (identidad Verde Ávila + ámbar): una sola fuente, también
+// usada por los tests de contraste.
+const tokens = require('./src/app/theme/tokens.json');
+
+const kebab = (key) => key.replace(/[A-Z]/g, (c) => `-${c.toLowerCase()}`);
+const vars = (mode) =>
+  Object.fromEntries(Object.entries(tokens[mode]).map(([k, v]) => [`--ui-${kebab(k)}`, v]));
+const color = (key) => `var(--ui-${kebab(key)})`;
+
 module.exports = {
   darkMode: 'class',
   content: ['./index.html', './src/**/*.{js,ts,jsx,tsx}'],
   theme: {
     extend: {
       colors: {
-        brand: {
-          50: '#eff6ff',
-          100: '#dbeafe',
-          200: '#bfdbfe',
-          300: '#93c5fd',
-          400: '#60a5fa',
-          500: '#3b82f6',
-          600: '#2563eb',
-          700: '#1d4ed8',
-          800: '#1e40af',
-          900: '#1e3a8a',
-        },
+        page: color('page'),
+        primary: color('primary'),
+        'on-primary': color('onPrimary'),
+        amber: color('amberText'),
+        'amber-decor': color('amberDecor'),
+        ink: color('text'),
+        muted: color('textMuted'),
+        surface: color('surface'),
+        line: color('border'),
+        'focus-inner': color('focusInner'),
+        'focus-outer': color('focusOuter'),
+      },
+      fontFamily: {
+        display: [
+          '"Space Grotesk"',
+          '"Space Grotesk Fallback"',
+          '"Space Grotesk Fallback Android"',
+          'system-ui',
+          'sans-serif',
+        ],
       },
     },
   },
-  plugins: [],
+  plugins: [
+    plugin(({ addBase }) => {
+      addBase({ ':root': vars('day'), '.dark': vars('night') });
+    }),
+  ],
 };

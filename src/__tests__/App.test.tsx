@@ -21,14 +21,11 @@ describe('App', () => {
                 <App />
             </ThemeProvider>,
         );
-        const projectList = screen.getByRole('list', { name: /lista de proyectos/i });
-        const items = within(projectList).getAllByRole('listitem');
-        expect(items.length).toBeGreaterThanOrEqual(2);
-        // Limitar búsqueda dentro de la lista para evitar coincidencias duplicadas en otras secciones
-        expect(within(projectList).getAllByText(/React/).length).toBeGreaterThan(0);
-        expect(within(projectList).getAllByText(/TypeScript|Angular|Ionic/).length).toBeGreaterThan(
-            0,
-        );
+        const projects = screen.getByRole('region', { name: 'Proyectos destacados' });
+        expect(within(projects).getAllByRole('link').length).toBeGreaterThanOrEqual(2);
+        // Limitar la búsqueda a la sección para evitar coincidencias en otras secciones
+        expect(within(projects).getAllByText(/React/).length).toBeGreaterThan(0);
+        expect(within(projects).getAllByText(/TypeScript|Angular|Ionic/).length).toBeGreaterThan(0);
     });
 
     it('muestra el footer con el año actual', () => {

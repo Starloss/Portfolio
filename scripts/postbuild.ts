@@ -10,6 +10,7 @@ import { buildSiteArtifacts, OG_SIZE, ogImages } from '@/build/artifacts';
 import { pngSize, renderOgImage } from '@/build/og/render';
 import { countPdfPages, renderCv } from '@/build/cv/render';
 import { CONTENT, LOCALES } from '@/content';
+import { IMAGE_SIZES } from '@/content/data/image-sizes';
 import { validateContent } from '@/content/validate';
 import { SITE_URL } from '@app/config/site';
 import { cvPath } from '@lib/locale-path';
@@ -25,6 +26,7 @@ function fail(message: string): never {
 
 const problems = validateContent(CONTENT, {
     fileExists: (src) => fs.existsSync(path.join(PUBLIC, src)),
+    imageSize: (src) => IMAGE_SIZES[src],
 });
 if (problems.length) fail(`el contenido no se puede publicar:\n  - ${problems.join('\n  - ')}`);
 

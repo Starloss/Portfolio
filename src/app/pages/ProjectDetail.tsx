@@ -10,6 +10,7 @@ import { Badge } from '../components/ui/Badge';
 import { useCoverScene } from '../scene/environment';
 import { Scene } from '../scene/Scene';
 
+import { responsiveImage } from '@/content/images';
 import type { ResolvedProject } from '@/content';
 
 // La Escena del Caso de estudio queda fija "sobre las nubes", donde viven los Proyectos en el Home.
@@ -72,7 +73,7 @@ const CaseStudyPage: React.FC<{ project: ResolvedProject }> = ({ project }) => {
                 </Link>
 
                 <section
-                    className={`relative space-y-6 rounded-2xl border border-slate-200/80 dark:border-slate-800/80 bg-slate-100/90 dark:bg-slate-900/80 p-6 md:p-8 ${projectTransitionClass}`}
+                    className={`relative space-y-6 rounded-2xl border border-line bg-surface p-6 md:p-8 ${projectTransitionClass}`}
                 >
                     <Badge variant="outline" className="absolute right-6 top-6">
                         {project.company ?? t('project_personal')}
@@ -112,7 +113,7 @@ const CaseStudyPage: React.FC<{ project: ResolvedProject }> = ({ project }) => {
                         <ol className="space-y-3">
                             {cs.decisions.map((d, i) => (
                                 <li key={d.title} className="flex gap-3">
-                                    <span className="font-bold text-brand-500" aria-hidden="true">
+                                    <span className="font-bold text-primary" aria-hidden="true">
                                         {String(i + 1).padStart(2, '0')}
                                     </span>
                                     <div>
@@ -135,7 +136,7 @@ const CaseStudyPage: React.FC<{ project: ResolvedProject }> = ({ project }) => {
                                     className="rounded-xl border border-slate-300 dark:border-slate-700 p-4"
                                 >
                                     {item.metric && (
-                                        <span className="block text-2xl font-bold text-brand-500">
+                                        <span className="block text-2xl font-bold text-primary">
                                             {item.metric}
                                         </span>
                                     )}
@@ -180,7 +181,7 @@ const CaseStudyPage: React.FC<{ project: ResolvedProject }> = ({ project }) => {
                                     {t('project_repository_view')}
                                 </a>
                             ) : (
-                                <span className="inline-flex items-center gap-2 rounded-full border border-slate-300 bg-white/90 px-3 py-1.5 text-sm font-medium text-slate-400 cursor-default select-none dark:border-slate-700 dark:bg-slate-900/80 dark:text-slate-500">
+                                <span className="inline-flex items-center gap-2 rounded-full border border-slate-300 bg-white/90 px-3 py-1.5 text-sm font-medium text-muted cursor-default select-none dark:border-slate-700 dark:bg-slate-900/80">
                                     <FiGithub className="h-4 w-4" />
                                     {t('project_repository_private')}
                                 </span>
@@ -190,7 +191,7 @@ const CaseStudyPage: React.FC<{ project: ResolvedProject }> = ({ project }) => {
                                     href={project.liveUrl}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="inline-flex items-center gap-2 rounded-full border border-brand-400/60 bg-brand-50/80 px-3 py-1.5 text-sm font-medium text-brand-700 transition hover:border-brand-500 hover:bg-brand-100 dark:border-brand-500/40 dark:bg-brand-900/20 dark:text-brand-300 dark:hover:bg-brand-900/40"
+                                    className="inline-flex items-center gap-2 rounded-full border border-primary bg-surface px-3 py-1.5 text-sm font-medium text-primary transition-colors hover:border-ink"
                                 >
                                     <FiExternalLink className="h-4 w-4" />
                                     {t('project_live_url_view')}
@@ -224,7 +225,7 @@ const CaseStudyPage: React.FC<{ project: ResolvedProject }> = ({ project }) => {
                                     className="inline-flex items-center justify-between gap-2 rounded-xl border border-slate-300 bg-white/90 px-4 py-3 text-sm text-slate-700 shadow-sm transition hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-900/85 dark:text-slate-200 dark:hover:bg-slate-800"
                                 >
                                     <span>{label}</span>
-                                    <span className="font-semibold text-brand-500">{p.title}</span>
+                                    <span className="font-semibold text-primary">{p.title}</span>
                                 </Link>
                             ) : null,
                         )}
@@ -291,7 +292,8 @@ const Gallery: React.FC<{ project: ResolvedProject }> = ({ project }) => {
                     className="block w-full cursor-zoom-in"
                 >
                     <img
-                        src={current.src}
+                        {...responsiveImage(current.src)}
+                        sizes="(min-width: 768px) 800px, 100vw"
                         alt={current.alt}
                         className="w-full h-[260px] md:h-[420px] object-contain bg-slate-200/70 dark:bg-slate-900"
                     />
@@ -329,9 +331,10 @@ const Gallery: React.FC<{ project: ResolvedProject }> = ({ project }) => {
                     </button>
                     <div className="relative mx-auto flex h-full max-w-6xl flex-col items-center justify-center gap-4">
                         <img
-                            src={current.src}
+                            {...responsiveImage(current.src)}
+                            sizes="100vw"
                             alt={current.alt}
-                            className="max-h-[70vh] max-w-full object-contain"
+                            className="max-h-[70vh] w-auto max-w-full object-contain"
                         />
                         <p className="text-sm text-slate-200">
                             {current.alt} · {index + 1}/{images.length}
@@ -364,13 +367,15 @@ const Gallery: React.FC<{ project: ResolvedProject }> = ({ project }) => {
                                         aria-current={i === index ? 'true' : undefined}
                                         className={`h-16 w-24 overflow-hidden rounded-lg border transition ${
                                             i === index
-                                                ? 'border-brand-400 ring-2 ring-brand-500/50'
+                                                ? 'border-primary ring-2 ring-primary'
                                                 : 'border-slate-600 hover:border-slate-400'
                                         }`}
                                     >
                                         <img
-                                            src={image.src}
+                                            {...responsiveImage(image.src)}
+                                            sizes="160px"
                                             alt=""
+                                            loading="lazy"
                                             className="h-full w-full object-cover"
                                         />
                                     </button>

@@ -3,13 +3,59 @@
 @tailwind utilities;
 
 @layer base {
+    /* Títulos en Space Grotesk 700 (subset latino), auto-hospedada y precargada en index.html. */
+    @font-face {
+        font-family: 'Space Grotesk';
+        src: url('./assets/fonts/space-grotesk-latin-700.woff2') format('woff2');
+        font-weight: 700;
+        font-style: normal;
+        font-display: swap;
+        unicode-range:
+            U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308,
+            U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+    }
+    /* Respaldos con las métricas de Space Grotesk, para que el cambio de fuente no mueva nada. */
+    @font-face {
+        font-family: 'Space Grotesk Fallback';
+        src: local('Arial Bold'), local('Arial-BoldMT'), local('Arial');
+        font-weight: 700;
+        size-adjust: 101%;
+        ascent-override: 97.4%;
+        descent-override: 28.9%;
+        line-gap-override: 0%;
+    }
+    @font-face {
+        font-family: 'Space Grotesk Fallback Android';
+        src: local('Roboto Bold'), local('Roboto-Bold'), local('Roboto');
+        font-weight: 700;
+        size-adjust: 107.9%;
+        ascent-override: 91.2%;
+        descent-override: 27.1%;
+        line-gap-override: 0%;
+    }
     :root {
         color-scheme: light dark;
     }
+    /* El fondo de la página es el cielo de la Escena: así los bloques se evalúan contra lo real. */
+    html {
+        @apply bg-page;
+    }
     body {
-        @apply antialiased font-sans bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100 transition-colors duration-300;
+        @apply antialiased font-sans text-ink;
+        background: transparent;
         position: relative;
         min-height: 100vh;
+    }
+    h1,
+    h2,
+    h3 {
+        @apply font-display font-bold;
+    }
+    /* Foco visible de dos colores (técnica C40 del W3C): se ve sobre los bloques y sobre el cielo. */
+    :focus-visible {
+        outline: 2px solid var(--ui-focus-outer);
+        outline-offset: 2px;
+        box-shadow: 0 0 0 2px var(--ui-focus-inner);
     }
 }
 

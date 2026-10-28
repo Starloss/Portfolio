@@ -47,6 +47,8 @@ export default defineConfig({
         'src/app/prototypes/**',
         // Datos generados por scripts/avila-profile.ts.
         'src/app/scene/avila-data.ts',
+        // Medidas generadas por scripts/images.ts.
+        'src/content/data/image-sizes.ts',
       ],
     },
   },

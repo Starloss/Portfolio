@@ -1,8 +1,11 @@
+import { imageFiles } from './images';
 import { LOCALES, type Content } from './types';
 
 interface Options {
-    /** Comprueba si existe un archivo publicado, p. ej. "/projects/x.jpg". */
+    /** Comprueba si existe un archivo publicado, p. ej. "/projects/x-640.webp". */
     fileExists: (src: string) => boolean;
+    /** Ancho y alto de una imagen del contenido, si se conocen. */
+    imageSize: (src: string) => { width: number; height: number } | undefined;
 }
 
 /** Un texto traducible: sus claves son idiomas, aunque falte alguno. */
@@ -36,7 +39,7 @@ function walk(value: unknown, at: string, problems: string[]) {
 }
 
 /** Devuelve la lista de problemas; vacía si el contenido se puede publicar. */
-export function validateContent(content: Content, { fileExists }: Options): string[] {
+export function validateContent(content: Content, { fileExists, imageSize }: Options): string[] {
     const problems: string[] = [];
     walk(content, '', problems);
 
@@ -52,10 +55,11 @@ export function validateContent(content: Content, { fileExists }: Options): stri
         if (p.experienceId && !experienceIds.has(p.experienceId))
             problems.push(`projects[${i}]: la Experiencia "${p.experienceId}" no existe`);
         p.caseStudy.gallery.forEach((g, j) => {
-            if (!fileExists(g.src))
-                problems.push(
-                    `projects[${i}].caseStudy.gallery[${j}]: no existe el archivo ${g.src}`,
-                );
+            const at = `projects[${i}].caseStudy.gallery[${j}]`;
+            for (const file of imageFiles(g.src)) {
+                if (!fileExists(file)) problems.push(`${at}: no existe el archivo ${file}`);
+            }
+            if (!imageSize(g.src)) problems.push(`${at}: ${g.src} no tiene medidas (ancho y alto)`);
         });
     });
 

@@ -80,7 +80,7 @@ describe('Home con el contenido nuevo', () => {
 
     it('los enlaces a Proyectos conservan el idioma', () => {
         renderAt('/en');
-        const projects = screen.getByRole('list', { name: 'projects list' });
+        const projects = screen.getByRole('region', { name: 'Featured projects' });
         expect(
             within(projects).getAllByRole('link', { name: /Wedding Invitation/ })[0],
         ).toHaveAttribute('href', '/en/projects/wedding-invitation');
@@ -113,6 +113,20 @@ describe('Caso de estudio', () => {
 });
 
 describe('Galería del Caso de estudio', () => {
+    it('una captura más angosta que 640 px se declara con su ancho real', async () => {
+        const { container } = renderAt('/projects/wedding-invitation');
+        // La primera captura (wedding-invitation-11) mide 1280 px: lleva los dos anchos.
+        const current = () => container.querySelector('button img') as HTMLImageElement;
+        expect(current().getAttribute('srcset')).toBe(
+            '/projects/wedding-invitation-11-640.webp 640w, /projects/wedding-invitation-11-1280.webp 1280w',
+        );
+        // La siguiente (wedding-invitation-1) mide 371 px: no se agranda y va con su ancho real.
+        await userEvent.click(screen.getByRole('button', { name: 'Siguiente imagen' }));
+        expect(current().getAttribute('srcset')).toBe(
+            '/projects/wedding-invitation-1-640.webp 371w',
+        );
+    });
+
     it('avanza y retrocede entre capturas con su texto alternativo', async () => {
         renderAt('/en/projects/superwallet');
         expect(

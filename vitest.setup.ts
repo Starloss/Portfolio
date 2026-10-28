@@ -1,6 +1,10 @@
 import '@testing-library/jest-dom/vitest';
 import { afterEach } from 'vitest';
 import { cleanup } from '@testing-library/react';
+import { MotionGlobalConfig } from 'motion/react';
+
+// Las animaciones de motion se resuelven al instante en los tests.
+MotionGlobalConfig.skipAnimations = true;
 
 afterEach(() => cleanup());
 

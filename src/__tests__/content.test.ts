@@ -60,7 +60,7 @@ describe('Contenido resuelto por idioma', () => {
         expect(boda?.caseStudy.problem).toMatch(/^Collecting RSVPs per group/);
         expect(boda?.caseStudy.decisions[0].title).toBe('Token-based RSVP, no login');
         expect(boda?.caseStudy.gallery[0]).toEqual({
-            src: '/projects/wedding-invitation-11.jpg',
+            src: '/projects/wedding-invitation-11',
             alt: 'Invitation cover on desktop',
         });
     });
