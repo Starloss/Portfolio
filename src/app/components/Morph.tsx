@@ -15,5 +15,6 @@ export const Morph: React.FC<{ name: string; children: React.ReactNode }> = ({
     return <ViewTransition name={name}>{children}</ViewTransition>;
 };
 
-export const coverTransition = (projectId: string) => `portada-${projectId}`;
-export const titleTransition = (projectId: string) => `titulo-${projectId}`;
+/** Nombres de la transición compartidos por la tarjeta y el Caso de estudio. */
+export const coverTransitionName = (projectId: string) => `portada-${projectId}`;
+export const titleTransitionName = (projectId: string) => `titulo-${projectId}`;

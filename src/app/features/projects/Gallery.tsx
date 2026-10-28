@@ -8,7 +8,7 @@ import { IMAGE_SIZES } from '@/content/data/image-sizes';
 import { responsiveImage } from '@/content/images';
 import type { ResolvedProject } from '@/content';
 
-type Image = ResolvedProject['caseStudy']['gallery'][number];
+type GalleryItem = ResolvedProject['caseStudy']['gallery'][number];
 
 // Una captura vertical (más alta que ancha) ocupa 2 filas; una horizontal, 2 columnas.
 const isPortrait = (src: string) => {
@@ -20,15 +20,15 @@ const isPortrait = (src: string) => {
  * Galería del Caso de estudio: una cuadrícula que respeta la orientación de cada captura y un
  * visor a pantalla completa. Sin capturas (BE), la sección explica por qué.
  */
-export const Gallery: React.FC<{ project: ResolvedProject }> = ({ project }) => {
+export const Gallery: React.FC<{ id: string; project: ResolvedProject }> = ({ id, project }) => {
     const { t } = useI18n();
     const headingId = useId();
     const { gallery: images, diagram } = project.caseStudy;
-    const [open, setOpen] = useState<number | null>(null);
+    const [openIndex, setOpenIndex] = useState<number | null>(null);
     const buttons = useRef<Array<HTMLButtonElement | null>>([]);
 
     return (
-        <section id="gallery" aria-labelledby={headingId} className="space-y-4 scroll-mt-24">
+        <section id={id} aria-labelledby={headingId} className="space-y-4 scroll-mt-24">
             <h2 id={headingId} className="scroll-mt-24 text-2xl text-ink">
                 {t('project_gallery_title')}
             </h2>
@@ -49,15 +49,15 @@ export const Gallery: React.FC<{ project: ResolvedProject }> = ({ project }) => 
                                     ref={(el) => {
                                         buttons.current[i] = el;
                                     }}
-                                    onClick={() => setOpen(i)}
+                                    onClick={() => setOpenIndex(i)}
                                     className="block h-full w-full cursor-zoom-in overflow-hidden rounded-lg border border-line"
                                 >
                                     <img
                                         {...responsiveImage(image.src)}
                                         sizes={
                                             portrait
-                                                ? '(min-width: 900px) 200px, 50vw'
-                                                : '(min-width: 900px) 400px, 100vw'
+                                                ? '(min-width: 900px) 200px, (min-width: 768px) 25vw, 50vw'
+                                                : '(min-width: 900px) 400px, (min-width: 768px) 50vw, 100vw'
                                         }
                                         alt={image.alt}
                                         loading="lazy"
@@ -70,14 +70,14 @@ export const Gallery: React.FC<{ project: ResolvedProject }> = ({ project }) => 
                     })}
                 </ul>
             )}
-            {open !== null && (
+            {openIndex !== null && (
                 <Viewer
                     title={project.title}
                     images={images}
-                    index={open}
-                    onIndexChange={setOpen}
-                    onClose={() => setOpen(null)}
-                    opener={buttons.current[open]}
+                    index={openIndex}
+                    onIndexChange={setOpenIndex}
+                    onClose={() => setOpenIndex(null)}
+                    opener={buttons.current[openIndex]}
                 />
             )}
         </section>
@@ -93,7 +93,7 @@ const FOCUSABLE = 'button:not([disabled]), [href], [tabindex]:not([tabindex="-1"
  */
 const Viewer: React.FC<{
     title: string;
-    images: Image[];
+    images: GalleryItem[];
     index: number;
     onIndexChange: (index: number) => void;
     onClose: () => void;
@@ -108,8 +108,8 @@ const Viewer: React.FC<{
     const step = (delta: number) => onIndexChange((index + delta + images.length) % images.length);
 
     // Las teclas se leen en cada render para usar el índice actual.
-    const keys = useRef<(event: KeyboardEvent) => void>(() => {});
-    keys.current = (event) => {
+    const handleKey = useRef<(event: KeyboardEvent) => void>(() => {});
+    handleKey.current = (event) => {
         if (event.key === 'Escape') onClose();
         else if (event.key === 'ArrowRight') step(1);
         else if (event.key === 'ArrowLeft') step(-1);
@@ -129,7 +129,7 @@ const Viewer: React.FC<{
     };
 
     useEffect(() => {
-        const onKeyDown = (event: KeyboardEvent) => keys.current(event);
+        const onKeyDown = (event: KeyboardEvent) => handleKey.current(event);
         window.addEventListener('keydown', onKeyDown);
         closeButton.current?.focus();
         // El resto de la página queda inerte: ni el foco ni los lectores de pantalla llegan a él.

@@ -4,9 +4,9 @@ import { useI18n } from '@lib/i18n';
 import { localizedPath, projectPath } from '@lib/locale-path';
 
 import { Block, Chip } from '../../components/Block';
-import { Morph, coverTransition, titleTransition } from '../../components/Morph';
+import { Morph, titleTransitionName } from '../../components/Morph';
 
-import { ProjectCover } from './ProjectCover';
+import { ProjectCover, ProjectType } from './ProjectCover';
 
 // En escritorio caben 3 tarjetas por fila dentro de un bloque de 860 px.
 const CARD_SIZES = '(min-width: 768px) 270px, 100vw';
@@ -23,22 +23,9 @@ export const FeaturedProjects: React.FC = () => {
                             to={localizedPath(locale, projectPath(project.id))}
                             className="group flex h-full flex-col gap-3 rounded-xl border border-line p-3 transition-colors hover:border-primary"
                         >
-                            <Morph name={coverTransition(project.id)}>
-                                <div>
-                                    <ProjectCover
-                                        project={project}
-                                        sizes={CARD_SIZES}
-                                        compact
-                                        lazy
-                                    />
-                                </div>
-                            </Morph>
-                            <p className="text-xs font-semibold text-amber">
-                                {project.company
-                                    ? `${t('project_work')} · ${project.company}`
-                                    : t('project_personal')}
-                            </p>
-                            <Morph name={titleTransition(project.id)}>
+                            <ProjectCover project={project} sizes={CARD_SIZES} compact lazy />
+                            <ProjectType project={project} />
+                            <Morph name={titleTransitionName(project.id)}>
                                 <h3 className="text-lg text-ink group-hover:underline underline-offset-4">
                                     {project.title}
                                 </h3>

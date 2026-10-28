@@ -1,4 +1,7 @@
 import React from 'react';
+import { useI18n } from '@lib/i18n';
+
+import { Morph, coverTransitionName } from '../../components/Morph';
 
 import { responsiveImage } from '@/content/images';
 import type { ResolvedProject } from '@/content';
@@ -6,7 +9,7 @@ import type { ResolvedProject } from '@/content';
 type ResolvedDiagram = NonNullable<ResolvedProject['caseStudy']['diagram']>;
 
 /** Diagrama propio (BE): los pasos del ciclo, como una sola imagen con su texto alternativo. */
-export const Diagram: React.FC<{ diagram: ResolvedDiagram; compact?: boolean }> = ({
+export const DiagramImage: React.FC<{ diagram: ResolvedDiagram; compact?: boolean }> = ({
     diagram,
     compact = false,
 }) => (
@@ -33,7 +36,10 @@ export const Diagram: React.FC<{ diagram: ResolvedDiagram; compact?: boolean }> 
     </div>
 );
 
-/** Portada de un Proyecto: su primera captura o, si no tiene capturas publicables, su diagrama. */
+/**
+ * Portada de un Proyecto: su primera captura o, si no tiene capturas publicables, su diagrama.
+ * Es el elemento compartido de la transición entre la tarjeta y el Caso de estudio.
+ */
 export const ProjectCover: React.FC<{
     project: ResolvedProject;
     sizes: string;
@@ -42,15 +48,32 @@ export const ProjectCover: React.FC<{
 }> = ({ project, sizes, compact, lazy = false }) => {
     const { gallery, diagram } = project.caseStudy;
     const first = gallery[0];
-    if (!first) return diagram ? <Diagram diagram={diagram} compact={compact} /> : null;
     return (
-        <img
-            {...responsiveImage(first.src)}
-            sizes={sizes}
-            alt={first.alt}
-            loading={lazy ? 'lazy' : undefined}
-            decoding="async"
-            className="aspect-[16/9] w-full rounded-lg object-cover object-top"
-        />
+        <Morph name={coverTransitionName(project.id)}>
+            <div>
+                {first ? (
+                    <img
+                        {...responsiveImage(first.src)}
+                        sizes={sizes}
+                        alt={first.alt}
+                        loading={lazy ? 'lazy' : undefined}
+                        decoding="async"
+                        className="aspect-[16/9] w-full rounded-lg object-cover object-top"
+                    />
+                ) : (
+                    diagram && <DiagramImage diagram={diagram} compact={compact} />
+                )}
+            </div>
+        </Morph>
+    );
+};
+
+/** "Proyecto de trabajo · Empresa" o "Proyecto personal". */
+export const ProjectType: React.FC<{ project: ResolvedProject }> = ({ project }) => {
+    const { t } = useI18n();
+    return (
+        <p className="text-xs font-semibold text-amber">
+            {project.company ? `${t('project_work')} · ${project.company}` : t('project_personal')}
+        </p>
     );
 };

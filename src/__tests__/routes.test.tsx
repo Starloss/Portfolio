@@ -182,10 +182,7 @@ describe('Caso de estudio · relato', () => {
     it('un Proyecto inexistente muestra el aviso en el idioma de la URL', () => {
         renderAt('/en/projects/nada');
         expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Project not found');
-        expect(screen.getByRole('link', { name: '← Projects' })).toHaveAttribute(
-            'href',
-            '/en#projects',
-        );
+        expect(screen.getByRole('link', { name: '← Home' })).toHaveAttribute('href', '/en');
     });
 });
 

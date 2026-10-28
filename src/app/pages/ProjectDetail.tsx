@@ -7,9 +7,9 @@ import { localizedPath, projectPath } from '@lib/locale-path';
 
 import { Chip } from '../components/Block';
 import { MainHeader } from '../components/MainHeader';
-import { Morph, coverTransition, titleTransition } from '../components/Morph';
+import { Morph, titleTransitionName } from '../components/Morph';
 import { Gallery } from '../features/projects/Gallery';
-import { ProjectCover } from '../features/projects/ProjectCover';
+import { ProjectCover, ProjectType } from '../features/projects/ProjectCover';
 import { Scene } from '../scene/Scene';
 
 import type { ResolvedProject } from '@/content';
@@ -24,6 +24,11 @@ const COVER_SIZES = '(min-width: 900px) 780px, 100vw';
 
 const linkClass =
     'inline-flex items-center rounded-full border px-3 py-1.5 text-sm font-semibold transition-colors';
+const outlineLinkClass = `${linkClass} border-line text-ink hover:border-primary`;
+const backLinkClass = 'text-sm font-semibold text-primary hover:underline underline-offset-4';
+
+// Las secciones del relato a las que lleva el índice de la ficha.
+const SECTIONS = { context: 'context', decisions: 'decisions', gallery: 'gallery' } as const;
 
 // "↗" como ícono: la fuente lo muestra como emoji en Windows y el lector de pantalla lo leería.
 const ExternalArrow: React.FC = () => (
@@ -33,10 +38,7 @@ const ExternalArrow: React.FC = () => (
 const BackLink: React.FC = () => {
     const { t, locale } = useI18n();
     return (
-        <Link
-            to={`${localizedPath(locale, '/')}#projects`}
-            className="text-sm font-semibold text-primary hover:underline underline-offset-4"
-        >
+        <Link to={`${localizedPath(locale, '/')}#projects`} className={backLinkClass}>
             {t('project_back')}
         </Link>
     );
@@ -44,21 +46,29 @@ const BackLink: React.FC = () => {
 
 export const ProjectDetail: React.FC = () => {
     const { id } = useParams<{ id: string }>();
-    const { t, content } = useI18n();
+    const { t, locale, content } = useI18n();
     const project = content.projects.find((p) => p.id === id);
 
     if (!project) {
         return (
-            <main className="mx-auto max-w-3xl space-y-4 px-4 py-14">
-                <h1 className="text-3xl text-ink">{t('project_not_found')}</h1>
-                <BackLink />
-            </main>
+            <>
+                <Scene height={CASE_STUDY_CAMERA_HEIGHT} />
+                <MainHeader />
+                <main className="mx-auto max-w-3xl px-4 py-14">
+                    <div className="space-y-4 rounded-2xl border border-line bg-surface p-6 md:p-8">
+                        <h1 className="text-3xl text-ink">{t('project_not_found')}</h1>
+                        <Link to={localizedPath(locale, '/')} className={backLinkClass}>
+                            {t('project_home')}
+                        </Link>
+                    </div>
+                </main>
+            </>
         );
     }
     return <CaseStudyPage key={project.id} project={project} />;
 };
 
-/** Caso de estudio · B · Ficha lateral: la ficha a la izquierda y el relato a la derecha. */
+/** Caso de estudio con ficha lateral: la ficha a la izquierda y el relato a la derecha. */
 const CaseStudyPage: React.FC<{ project: ResolvedProject }> = ({ project }) => (
     <>
         <Scene height={CASE_STUDY_CAMERA_HEIGHT} />
@@ -85,12 +95,8 @@ const Sheet: React.FC<{ project: ResolvedProject }> = ({ project }) => {
         >
             <BackLink />
             <div className="space-y-2">
-                <p className="text-xs font-semibold text-amber">
-                    {project.company
-                        ? `${t('project_work')} · ${project.company}`
-                        : t('project_personal')}
-                </p>
-                <Morph name={titleTransition(project.id)}>
+                <ProjectType project={project} />
+                <Morph name={titleTransitionName(project.id)}>
                     <h1 id={titleId} className="text-3xl text-ink md:text-4xl">
                         {project.title}
                     </h1>
@@ -123,7 +129,7 @@ const Sheet: React.FC<{ project: ResolvedProject }> = ({ project }) => {
                             href={project.repositoryUrl}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className={`${linkClass} border-line text-ink hover:border-primary`}
+                            className={outlineLinkClass}
                         >
                             {t('project_repository')}
                             <ExternalArrow />
@@ -151,9 +157,9 @@ const Sheet: React.FC<{ project: ResolvedProject }> = ({ project }) => {
             <nav aria-label={t('project_index_aria')}>
                 <ul className="space-y-1 text-sm">
                     {[
-                        ['context', t('project_context_title')],
-                        ['decisions', t('project_decisions_title')],
-                        ['gallery', t('project_gallery_title')],
+                        [SECTIONS.context, t('project_context_title')],
+                        [SECTIONS.decisions, t('project_decisions_title')],
+                        [SECTIONS.gallery, t('project_gallery_title')],
                     ].map(([id, label]) => (
                         <li key={id}>
                             <a
@@ -178,13 +184,9 @@ const Story: React.FC<{ project: ResolvedProject }> = ({ project }) => {
     const cs = project.caseStudy;
     return (
         <article className="min-w-0 space-y-10">
-            <Morph name={coverTransition(project.id)}>
-                <div>
-                    <ProjectCover project={project} sizes={COVER_SIZES} />
-                </div>
-            </Morph>
+            <ProjectCover project={project} sizes={COVER_SIZES} />
 
-            <section id="context" className="space-y-3 scroll-mt-24">
+            <section id={SECTIONS.context} className="space-y-3 scroll-mt-24">
                 <h2 className={headingClass}>{t('project_context_title')}</h2>
                 {cs.context.map((paragraph) => (
                     <p key={paragraph} className={textClass}>
@@ -195,7 +197,7 @@ const Story: React.FC<{ project: ResolvedProject }> = ({ project }) => {
                 <p className={textClass}>{cs.problem}</p>
             </section>
 
-            <section id="decisions" className="space-y-4 scroll-mt-24">
+            <section id={SECTIONS.decisions} className="space-y-4 scroll-mt-24">
                 <h2 className={headingClass}>{t('project_decisions_title')}</h2>
                 <ol className="space-y-5">
                     {cs.decisions.map((d, i) => (
@@ -212,7 +214,7 @@ const Story: React.FC<{ project: ResolvedProject }> = ({ project }) => {
                 </ol>
             </section>
 
-            <Gallery project={project} />
+            <Gallery id={SECTIONS.gallery} project={project} />
 
             <ProjectNavigation project={project} />
         </article>
@@ -227,13 +229,12 @@ const ProjectNavigation: React.FC<{ project: ResolvedProject }> = ({ project }) 
     if (index < 0 || projects.length < 2) return null;
     const previous = projects[(index - 1 + projects.length) % projects.length];
     const next = projects[(index + 1) % projects.length];
-    const pill = `${linkClass} border-line text-ink hover:border-primary`;
     return (
         <nav aria-label={t('project_nav_aria')} className="flex flex-wrap justify-between gap-3">
-            <Link to={localizedPath(locale, projectPath(previous.id))} className={pill}>
+            <Link to={localizedPath(locale, projectPath(previous.id))} className={outlineLinkClass}>
                 ← {previous.title}
             </Link>
-            <Link to={localizedPath(locale, projectPath(next.id))} className={pill}>
+            <Link to={localizedPath(locale, projectPath(next.id))} className={outlineLinkClass}>
                 {next.title} →
             </Link>
         </nav>

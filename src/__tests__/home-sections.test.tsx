@@ -217,7 +217,8 @@ describe('Entrada de los bloques', () => {
 
     it('al volver de un Caso de estudio, Proyectos destacados ya está visible y en pantalla', async () => {
         reduceMotion(false);
-        // jsdom no implementa scrollIntoView: se registra a qué elemento se llevó la pantalla.
+        // Se registra a qué elemento se llevó la pantalla.
+        const original = Element.prototype.scrollIntoView;
         const scrolled: Element[] = [];
         Element.prototype.scrollIntoView = function (this: Element) {
             scrolled.push(this);
@@ -231,7 +232,7 @@ describe('Entrada de los bloques', () => {
             expect(scrolled).toContain(projects);
             expect(section(/Impacto/).style.opacity).toBe('0');
         } finally {
-            delete (Element.prototype as Partial<Element>).scrollIntoView;
+            Element.prototype.scrollIntoView = original;
         }
     });
 });

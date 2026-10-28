@@ -47,7 +47,7 @@ export const Home: React.FC = () => {
     useLayoutEffect(() => {
         const id = initialHash.replace('#', '');
         if (id)
-            document.getElementById(id)?.scrollIntoView?.({ behavior: 'instant', block: 'start' });
+            document.getElementById(id)?.scrollIntoView({ behavior: 'instant', block: 'start' });
     }, [initialHash]);
 
     useEffect(() => {
