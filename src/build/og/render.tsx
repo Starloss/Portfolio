@@ -29,8 +29,11 @@ function loadFont(): string {
     const woff = fs.readFileSync(
         path.resolve(process.cwd(), 'node_modules', '@fontsource', FONT.pkg, 'files', FONT.file),
     );
-    fontFile = path.join(dir, FONT.file.replace(/\.woff$/, '.ttf'));
-    fs.writeFileSync(fontFile, woffToSfnt(woff));
+    const target = path.join(dir, FONT.file.replace(/\.woff$/, '.ttf'));
+    const temporary = `${target}.${process.pid}.tmp`;
+    fs.writeFileSync(temporary, woffToSfnt(woff));
+    fs.renameSync(temporary, target);
+    fontFile = target;
     return fontFile;
 }
 
