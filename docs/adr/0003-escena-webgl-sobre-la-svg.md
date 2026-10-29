@@ -17,8 +17,9 @@ Si el prototipo da luz verde, esta ADR reemplaza a la 0001. La Escena SVG por ca
 
 - El presupuesto de Lighthouse (≥90 y 150 kB) aplica a la carga inicial. La detección y la versión WebGL se cargan en chunks diferidos.
 - Una corrida de Lighthouse de escritorio con `?escena=webgl` también exige rendimiento ≥90.
-- Antes de descargar nada, la detección previa deja la SVG si hay reduced-motion, Save-Data, falta WebGL2, el hardware es bajo, la GPU es de gama baja o por software, o el dispositivo es móvil.
-- En ejecución, un vigilante vuelve a la SVG si la Escena se sostiene por debajo de unos 45 fps, y recuerda la decisión para ese visitante.
+- La detección previa es un chunk diminuto que se carga cuando el navegador está ocioso, y decide antes de descargar la versión WebGL. Deja la SVG si hay reduced-motion, Save-Data, falta WebGL2, el hardware es bajo, la GPU es de gama baja o por software, o el dispositivo es móvil.
+- En ejecución, un vigilante vuelve a la SVG si la Escena se sostiene por debajo de unos 45 fps, y recuerda la decisión para ese visitante. Los valores exactos del vigilante los fija la spec.
+- Si `ogl` no logra iniciar o se pierde el contexto WebGL (`webglcontextlost`), la Escena vuelve a la SVG de inmediato, como si hubiera actuado el vigilante.
 - El parámetro `?escena=webgl` salta tanto la detección como el vigilante.
 - Las dos versiones leen el mismo modelo del Viaje de cámara, así que el paso de una a otra es un fundido cruzado sin salto. En la SVG, la Avenida Bolívar aparece quieta.
 - El renderer `ogl` es un adaptador delgado: queda excluido de la cobertura y se prueba con Playwright. La lógica pura se cubre con tests unitarios.
