@@ -279,6 +279,19 @@ describe('Galería del Caso de estudio', () => {
         expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
         expect(opener).toHaveFocus();
     });
+
+    it('aunque las flechas cambien de captura, al cerrar con Esc el foco vuelve a la que abrió el visor', async () => {
+        renderAt('/en/projects/superwallet');
+        const opener = within(gallery()).getByRole('button', {
+            name: 'Wallet with USDT balance and supported tokens',
+        });
+        await userEvent.click(opener);
+        await userEvent.keyboard('{ArrowRight}{ArrowRight}');
+        expect(screen.getByRole('dialog')).toHaveTextContent('4 of 8');
+        await userEvent.keyboard('{Escape}');
+        expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+        expect(opener).toHaveFocus();
+    });
 });
 
 describe('Navegación desde un Caso de estudio', () => {
