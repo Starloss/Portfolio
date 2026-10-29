@@ -133,7 +133,10 @@ describe('i18n fallback', () => {
         };
         // React reporta el error por consola antes de relanzarlo.
         const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
-        expect(() => render(<Err />)).toThrow();
-        consoleError.mockRestore();
+        try {
+            expect(() => render(<Err />)).toThrow();
+        } finally {
+            consoleError.mockRestore();
+        }
     });
 });

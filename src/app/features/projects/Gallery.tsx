@@ -34,7 +34,7 @@ export const Gallery: React.FC<{ id: string; project: ResolvedProject }> = ({ id
     const landscapes = images.filter((image) => !isPortrait(image.src)).length;
     const [openIndex, setOpenIndex] = useState<number | null>(null);
     // La captura que abrió el visor: se guarda en el clic, no se lee durante el render.
-    const opener = useRef<HTMLElement | null>(null);
+    const openerRef = useRef<HTMLElement | null>(null);
 
     return (
         <section id={id} aria-labelledby={headingId} className="space-y-4 scroll-mt-24">
@@ -62,7 +62,7 @@ export const Gallery: React.FC<{ id: string; project: ResolvedProject }> = ({ id
                                 <button
                                     type="button"
                                     onClick={(event) => {
-                                        opener.current = event.currentTarget;
+                                        openerRef.current = event.currentTarget;
                                         setOpenIndex(i);
                                     }}
                                     className="block h-full w-full cursor-zoom-in overflow-hidden rounded-lg border border-line"
@@ -92,7 +92,7 @@ export const Gallery: React.FC<{ id: string; project: ResolvedProject }> = ({ id
                     index={openIndex}
                     onIndexChange={setOpenIndex}
                     onClose={() => setOpenIndex(null)}
-                    opener={opener}
+                    openerRef={openerRef}
                 />
             )}
         </section>
@@ -112,8 +112,8 @@ const Viewer: React.FC<{
     index: number;
     onIndexChange: (index: number) => void;
     onClose: () => void;
-    opener: React.RefObject<HTMLElement | null>;
-}> = ({ title, images, index, onIndexChange, onClose, opener }) => {
+    openerRef: React.RefObject<HTMLElement | null>;
+}> = ({ title, images, index, onIndexChange, onClose, openerRef }) => {
     const { t } = useI18n();
     const dialog = useRef<HTMLDivElement>(null);
     const closeButton = useRef<HTMLButtonElement>(null);
@@ -141,8 +141,8 @@ const Viewer: React.FC<{
     });
 
     useEffect(() => {
-        // Se copia al abrir: aunque las flechas cambien de captura, el foco vuelve a la que abrió.
-        const returnFocusTo = opener.current;
+        // Se copia al abrir: las flechas no cambian a qué captura vuelve el foco.
+        const returnFocusTo = openerRef.current;
         const onKeyDown = (event: KeyboardEvent) => handleKey(event);
         window.addEventListener('keydown', onKeyDown);
         closeButton.current?.focus();
@@ -157,7 +157,7 @@ const Viewer: React.FC<{
             // Después de quitar `inert`: un elemento inerte no puede recibir el foco.
             returnFocusTo?.focus();
         };
-    }, [opener]);
+    }, [openerRef]);
 
     const current = images[index];
     const control =
