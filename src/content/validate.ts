@@ -54,7 +54,14 @@ export function validateContent(content: Content, { fileExists, imageSize }: Opt
     content.projects.forEach((p, i) => {
         if (p.experienceId && !experienceIds.has(p.experienceId))
             problems.push(`projects[${i}]: la Experiencia "${p.experienceId}" no existe`);
-        p.caseStudy.gallery.forEach((g, j) => {
+        const { gallery, diagram } = p.caseStudy;
+        if (!gallery.length && !diagram)
+            problems.push(
+                `projects[${i}] ("${p.id}"): el Caso de estudio no tiene portada (ni capturas ni diagrama)`,
+            );
+        if (diagram && !diagram.steps.length)
+            problems.push(`projects[${i}] ("${p.id}"): el diagrama no tiene pasos`);
+        gallery.forEach((g, j) => {
             const at = `projects[${i}].caseStudy.gallery[${j}]`;
             for (const file of imageFiles(g.src)) {
                 if (!fileExists(file)) problems.push(`${at}: no existe el archivo ${file}`);

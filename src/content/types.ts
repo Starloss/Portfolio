@@ -29,6 +29,14 @@ export interface GalleryImage {
     caption?: Localized;
 }
 
+/** Diagrama propio de un Proyecto sin capturas publicables: su portada en lugar de una captura. */
+export interface Diagram {
+    steps: Localized[];
+    alt: Localized;
+    /** Explica por qué no hay galería. */
+    noScreenshots: Localized;
+}
+
 export interface CaseStudy {
     /** Resumen de tarjeta. */
     summary: Localized;
@@ -38,6 +46,7 @@ export interface CaseStudy {
     decisions: { title: Localized; explanation: Localized }[];
     impact: (Pending & { text: Localized; metric?: Localized })[];
     gallery: GalleryImage[];
+    diagram?: Diagram;
 }
 
 export interface Project {

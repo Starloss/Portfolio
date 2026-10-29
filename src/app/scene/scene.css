@@ -9,6 +9,8 @@
     z-index: -1;
     overflow: hidden;
     pointer-events: none;
+    /* Nombre propio en la transición Home ↔ Caso de estudio: la Escena no se mueve. */
+    view-transition-name: escena;
 }
 
 .scene-layer {

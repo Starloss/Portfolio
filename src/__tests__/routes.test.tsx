@@ -4,9 +4,11 @@ import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { AppRoutes } from '@app/App';
+import { I18nProvider } from '@lib/i18n';
 import { ThemeProvider } from '@lib/theme';
+import { Gallery } from '@app/features/projects/Gallery';
 
-import { CONTENT } from '@/content';
+import { CONTENT, resolveContent } from '@/content';
 
 const renderAt = (url: string) =>
     render(
@@ -87,91 +89,198 @@ describe('Home con el contenido nuevo', () => {
     });
 });
 
-describe('Caso de estudio', () => {
-    it('muestra el problema y las decisiones en el idioma de la URL', () => {
-        renderAt('/projects/wedding-invitation');
-        expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Invitación de Boda');
-        expect(screen.getByText(/^Confirmar asistencia por grupo/)).toBeInTheDocument();
-        expect(
-            screen.getByRole('heading', { name: 'RSVP por token, sin login' }),
-        ).toBeInTheDocument();
-        expect(
-            screen.getByRole('img', { name: 'Portada de la invitación en escritorio' }),
-        ).toBeInTheDocument();
+const sheet = () => screen.getByRole('complementary');
+const story = () => screen.getByRole('article');
+
+describe('Caso de estudio · ficha', () => {
+    it('muestra tipo, título, resumen, período · rol, tech y el Impacto', () => {
+        renderAt('/projects/superwallet');
+        const ficha = sheet();
+        expect(ficha).toHaveTextContent('Proyecto de trabajo · XHype');
+        expect(within(ficha).getByRole('heading', { level: 1 })).toHaveTextContent('SuperWallet');
+        expect(ficha).toHaveTextContent('· Senior Developer');
+        expect(within(ficha).getByRole('list', { name: 'tecnologias' })).toBeInTheDocument();
+        const impacto = within(ficha).getByRole('region', { name: 'Impacto' });
+        expect(impacto).toHaveTextContent('−80%');
     });
 
-    it('BE - Booking Engine no muestra galería', () => {
+    it('un Proyecto personal lo dice y lleva Demo y Repositorio', () => {
+        renderAt('/projects/wedding-invitation');
+        const ficha = sheet();
+        expect(ficha).toHaveTextContent('Proyecto personal');
+        expect(within(ficha).getByRole('link', { name: 'Demo' })).toHaveAttribute(
+            'href',
+            'https://wedding-invitation-seven-brown.vercel.app',
+        );
+        expect(within(ficha).getByRole('link', { name: 'Repositorio' })).toHaveAttribute(
+            'href',
+            'https://github.com/Starloss/wedding-invitation',
+        );
+    });
+
+    it('solo muestra los enlaces que existen', () => {
         renderAt('/en/projects/be-booking-engine');
-        expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('BE - Booking Engine');
-        expect(screen.queryByRole('img')).not.toBeInTheDocument();
+        const ficha = sheet();
+        expect(within(ficha).queryByRole('link', { name: /Demo/ })).not.toBeInTheDocument();
+        expect(within(ficha).queryByRole('link', { name: /Repository/ })).not.toBeInTheDocument();
+        expect(ficha).not.toHaveTextContent('Private');
+    });
+
+    it('el índice lleva a Contexto, Decisiones clave y Galería', () => {
+        renderAt('/en/projects/superwallet');
+        const index = within(sheet()).getByRole('navigation', { name: 'On this page' });
+        const links = within(index).getAllByRole('link');
+        expect(links.map((l) => [l.textContent, l.getAttribute('href')])).toEqual([
+            ['Context', '#context'],
+            ['Key decisions', '#decisions'],
+            ['Gallery', '#gallery'],
+        ]);
+        for (const id of ['context', 'decisions', 'gallery']) {
+            expect(story().querySelector(`#${id}`)).not.toBeNull();
+        }
+    });
+
+    it('"← Proyectos" vuelve a Proyectos destacados del mismo idioma', () => {
+        renderAt('/en/projects/superwallet');
+        expect(within(sheet()).getByRole('link', { name: '← Projects' })).toHaveAttribute(
+            'href',
+            '/en#projects',
+        );
+    });
+});
+
+describe('Caso de estudio · relato', () => {
+    it('empieza con la portada y sigue con Contexto, Problema y las Decisiones numeradas', () => {
+        renderAt('/projects/wedding-invitation');
+        const relato = story();
+        const [cover] = within(relato).getAllByRole('img');
+        expect(cover).toHaveAccessibleName('Portada de la invitación en escritorio');
+        const headings = within(relato)
+            .getAllByRole('heading')
+            .map((h) => h.textContent);
+        expect(headings.slice(0, 4)).toEqual([
+            'Contexto',
+            'Problema',
+            'Decisiones clave',
+            '01RSVP por token, sin login',
+        ]);
+        expect(relato).toHaveTextContent(/Confirmar asistencia por grupo/);
+    });
+
+    it('BE muestra su diagrama como portada y explica por qué no hay capturas', () => {
+        renderAt('/projects/be-booking-engine');
+        const relato = story();
+        expect(
+            within(relato).getByRole('img', {
+                name: 'Ciclo de una reserva: reserva, asignación de intérprete, servicio, reporte y facturación',
+            }),
+        ).toHaveTextContent('Facturación');
+        expect(relato).toHaveTextContent(
+            'Sin capturas: el sistema es interno. El diagrama resume el ciclo de una reserva.',
+        );
+        expect(within(relato).queryAllByRole('button')).toEqual([]);
     });
 
     it('un Proyecto inexistente muestra el aviso en el idioma de la URL', () => {
         renderAt('/en/projects/nada');
         expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Project not found');
+        expect(screen.getByRole('link', { name: '← Home' })).toHaveAttribute('href', '/en');
     });
 });
 
 describe('Galería del Caso de estudio', () => {
-    it('una captura más angosta que 640 px se declara con su ancho real', async () => {
-        const { container } = renderAt('/projects/wedding-invitation');
-        // La primera captura (wedding-invitation-11) mide 1280 px: lleva los dos anchos.
-        const current = () => container.querySelector('button img') as HTMLImageElement;
-        expect(current().getAttribute('srcset')).toBe(
-            '/projects/wedding-invitation-11-640.webp 640w, /projects/wedding-invitation-11-1280.webp 1280w',
-        );
-        // La siguiente (wedding-invitation-1) mide 371 px: no se agranda y va con su ancho real.
-        await userEvent.click(screen.getByRole('button', { name: 'Siguiente imagen' }));
-        expect(current().getAttribute('srcset')).toBe(
-            '/projects/wedding-invitation-1-640.webp 371w',
-        );
+    const gallery = () => screen.getByRole('region', { name: /^(Galería|Gallery)$/ });
+
+    it('agrupa las capturas por orientación: primero las horizontales, de a 2 columnas, y debajo las verticales', () => {
+        renderAt('/projects/wedding-invitation');
+        const images = within(gallery()).getAllByRole('img');
+        expect(images.map((img) => img.getAttribute('alt'))).toEqual([
+            'Portada de la invitación en escritorio',
+            'Galería de retratos de la pareja',
+            'Panel del anfitrión con invitaciones y confirmaciones',
+            'Formulario para crear una invitación con cupos',
+            'Portada de la invitación en móvil',
+            'Día, lugar y dirección del evento en móvil',
+            'Confirmación de asistencia con código de invitación',
+            'Código QR para que los invitados suban fotos',
+        ]);
+        const items = within(gallery()).getAllByRole('listitem');
+        expect(items[3]).toHaveStyle({ gridColumn: 'span 2' });
+        expect(items[4]).not.toHaveStyle({ gridColumn: 'span 2' });
+        expect(items[4]).not.toHaveStyle({ gridRow: 'span 2' });
     });
 
-    it('avanza y retrocede entre capturas con su texto alternativo', async () => {
-        renderAt('/en/projects/superwallet');
-        expect(
-            screen.getByRole('img', { name: 'SuperWallet sign-up screen showing XHype cards' }),
-        ).toBeInTheDocument();
-        await userEvent.click(screen.getByRole('button', { name: 'Next image' }));
-        expect(
-            screen.getByRole('img', { name: 'Wallet with USDT balance and supported tokens' }),
-        ).toBeInTheDocument();
-        await userEvent.click(screen.getByRole('button', { name: 'Previous image' }));
-        await userEvent.click(screen.getByRole('button', { name: 'Previous image' }));
-        expect(screen.getByRole('img', { name: 'Referral program dashboard' })).toBeInTheDocument();
+    it('con un número impar de horizontales, la última ocupa todo el ancho y no deja hueco', () => {
+        const wedding = resolveContent('es', new Date()).projects.find(
+            (p) => p.id === 'wedding-invitation',
+        )!;
+        // 3 horizontales y 1 vertical.
+        const images = [
+            '/projects/superwallet-1',
+            '/projects/wedding-invitation-1',
+            '/projects/superwallet-2',
+            '/projects/superwallet-4',
+        ].map((src) => ({ src, alt: src.endsWith('wedding-invitation-1') ? 'vertical' : src }));
+        const project = { ...wedding, caseStudy: { ...wedding.caseStudy, gallery: images } };
+        render(
+            <I18nProvider locale="es">
+                <Gallery id="gallery" project={project} />
+            </I18nProvider>,
+        );
+        const items = within(gallery()).getAllByRole('listitem');
+        expect(items[0]).toHaveStyle({ gridColumn: 'span 2' });
+        expect(items[1]).toHaveStyle({ gridColumn: 'span 2' });
+        expect(items[2]).toHaveStyle({ gridColumn: '1 / -1' });
+        expect(within(items[3]).getByRole('img')).toHaveAttribute('alt', 'vertical');
     });
 
-    it('abre el visor, navega con el teclado y lo cierra con Esc', async () => {
+    it('una captura más angosta que 640 px se declara con su ancho real', () => {
+        renderAt('/projects/wedding-invitation');
+        const narrow = within(gallery()).getByRole('img', {
+            name: 'Portada de la invitación en móvil',
+        });
+        expect(narrow.getAttribute('srcset')).toBe('/projects/wedding-invitation-1-640.webp 371w');
+    });
+
+    it('el visor se abre en la captura tocada, navega con flechas y botones, y Esc lo cierra', async () => {
         renderAt('/projects/wedding-invitation');
         await userEvent.click(
-            screen.getByRole('img', { name: 'Portada de la invitación en escritorio' }),
+            within(gallery()).getByRole('button', { name: 'Portada de la invitación en móvil' }),
         );
-        const viewer = screen.getByRole('dialog', { name: 'Invitación de Boda · galería' });
-        expect(
-            within(viewer).getByText('Portada de la invitación en escritorio · 1/8'),
-        ).toBeInTheDocument();
+        const viewer = screen.getByRole('dialog', { name: 'Invitación de Boda · Galería' });
+        // El visor sigue el orden de la galería: las verticales van después de las 4 horizontales.
+        expect(viewer).toHaveTextContent('Portada de la invitación en móvil · 5 de 8');
         await userEvent.keyboard('{ArrowRight}');
-        expect(
-            within(viewer).getByText('Portada de la invitación en móvil · 2/8'),
-        ).toBeInTheDocument();
-        await userEvent.keyboard('{ArrowLeft}');
-        await userEvent.click(
-            within(viewer).getByRole('button', { name: 'Galería de retratos de la pareja' }),
-        );
-        expect(
-            within(viewer).getByText('Galería de retratos de la pareja · 5/8'),
-        ).toBeInTheDocument();
+        expect(viewer).toHaveTextContent('· 6 de 8');
+        for (let i = 0; i < 6; i++) {
+            await userEvent.click(within(viewer).getByRole('button', { name: 'Anterior' }));
+        }
+        // En círculo: antes de la primera viene la última.
+        expect(viewer).toHaveTextContent('· 8 de 8');
+        await userEvent.click(within(viewer).getByRole('button', { name: 'Siguiente' }));
+        expect(viewer).toHaveTextContent('Portada de la invitación en escritorio · 1 de 8');
         await userEvent.keyboard('{Escape}');
         expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     });
 
-    it('el botón de cerrar también cierra el visor', async () => {
-        renderAt('/projects/wedding-invitation');
-        await userEvent.click(
-            screen.getByRole('img', { name: 'Portada de la invitación en escritorio' }),
-        );
-        await userEvent.click(screen.getByRole('button', { name: 'Cerrar galería' }));
+    it('el foco entra al visor, no sale con Tab y vuelve a la captura al cerrar', async () => {
+        renderAt('/en/projects/superwallet');
+        const opener = within(gallery()).getByRole('button', {
+            name: 'Wallet with USDT balance and supported tokens',
+        });
+        await userEvent.click(opener);
+        const viewer = screen.getByRole('dialog', { name: 'SuperWallet · Gallery' });
+        expect(viewer).toHaveTextContent('2 of 8');
+        expect(viewer).toContainElement(document.activeElement as HTMLElement);
+        for (let i = 0; i < 5; i++) {
+            await userEvent.tab();
+            expect(viewer).toContainElement(document.activeElement as HTMLElement);
+        }
+        await userEvent.tab({ shift: true });
+        expect(viewer).toContainElement(document.activeElement as HTMLElement);
+        await userEvent.click(within(viewer).getByRole('button', { name: 'Close' }));
         expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+        expect(opener).toHaveFocus();
     });
 });
 
@@ -188,10 +297,7 @@ describe('Navegación desde un Caso de estudio', () => {
                 renderAt('/en/projects/superwallet');
                 expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('SuperWallet');
                 expect(
-                    screen.queryByRole('link', { name: /Previous project/ }),
-                ).not.toBeInTheDocument();
-                expect(
-                    screen.queryByRole('link', { name: /Next project/ }),
+                    screen.queryByRole('navigation', { name: 'More projects' }),
                 ).not.toBeInTheDocument();
             } finally {
                 CONTENT.projects = originalProjects;
@@ -211,13 +317,15 @@ describe('Navegación desde un Caso de estudio', () => {
         expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent("Hi, I'm");
     });
 
-    it('anterior y siguiente recorren los Proyectos destacados en orden', async () => {
+    it('anterior y siguiente recorren los Proyectos destacados en orden, en círculo', async () => {
         renderAt('/en/projects/be-booking-engine');
-        await userEvent.click(screen.getByRole('link', { name: /Next project/ }));
+        const nav = () => screen.getByRole('navigation', { name: 'More projects' });
+        expect(within(nav()).getByRole('link', { name: '← SuperWallet' })).toBeInTheDocument();
+        await userEvent.click(within(nav()).getByRole('link', { name: 'Wedding Invitation →' }));
         expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Wedding Invitation');
-        await userEvent.click(screen.getByRole('link', { name: /Next project/ }));
+        await userEvent.click(within(nav()).getByRole('link', { name: 'SuperWallet →' }));
         expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('SuperWallet');
-        await userEvent.click(screen.getByRole('link', { name: /Previous project/ }));
+        await userEvent.click(within(nav()).getByRole('link', { name: '← Wedding Invitation' }));
         expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Wedding Invitation');
     });
 });

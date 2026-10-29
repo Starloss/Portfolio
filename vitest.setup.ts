@@ -8,7 +8,8 @@ MotionGlobalConfig.skipAnimations = true;
 
 afterEach(() => cleanup());
 
-// jsdom no trae matchMedia ni IntersectionObserver. Valores por defecto inertes: cada test puede
+// jsdom no trae matchMedia, IntersectionObserver ni scrollIntoView, y su scrollTo solo avisa que no está
+// implementado. Valores por defecto inertes: cada test puede
 // reemplazarlos (p. ej. para simular prefers-reduced-motion o una sección visible).
 if (typeof window !== 'undefined') {
     if (!window.matchMedia) {
@@ -24,6 +25,8 @@ if (typeof window !== 'undefined') {
                 dispatchEvent: () => false,
             }) as MediaQueryList;
     }
+    Element.prototype.scrollIntoView ??= () => {};
+    window.scrollTo = () => {};
     if (!('IntersectionObserver' in window)) {
         class InertIntersectionObserver {
             observe() {}
