@@ -1,6 +1,12 @@
 // GENERADO por scripts/images.ts. No editar a mano.
 // Ancho y alto del WebP más grande de cada imagen, por su ruta sin extensión.
 export const IMAGE_SIZES: Record<string, { width: number; height: number } | undefined> = {
+    '/projects/be-booking-engine-1': { width: 1280, height: 631 },
+    '/projects/be-booking-engine-2': { width: 1280, height: 632 },
+    '/projects/be-booking-engine-3': { width: 1280, height: 634 },
+    '/projects/be-booking-engine-4': { width: 1280, height: 633 },
+    '/projects/be-booking-engine-5': { width: 1280, height: 629 },
+    '/projects/be-booking-engine-6': { width: 1280, height: 634 },
     '/projects/superwallet-1': { width: 1280, height: 634 },
     '/projects/superwallet-13': { width: 1280, height: 634 },
     '/projects/superwallet-14': { width: 1280, height: 635 },
