@@ -36,6 +36,14 @@ _Avoid_: trabajo, caso, app
 La forma de contar un Proyecto: contexto y problema, rol de Diego, decisiones clave, impacto y galería.
 _Avoid_: case study, detalle de proyecto
 
+**Portada**:
+La imagen que representa a un Proyecto, en su tarjeta de Proyectos destacados y al inicio de su Caso de estudio: su primera captura o, si no tiene capturas publicables, su Diagrama.
+_Avoid_: cover, thumbnail, imagen principal
+
+**Diagrama**:
+El esquema del funcionamiento de un Proyecto cuyas capturas no pueden publicarse, como un sistema interno de una Empresa. Hace de Portada y ocupa el lugar de la galería en el Caso de estudio.
+_Avoid_: ilustración, placeholder
+
 **Dato pendiente**:
 Una cifra o afirmación redactada por Claude que Diego todavía no confirmó. No puede publicarse.
 _Avoid_: TODO, placeholder
