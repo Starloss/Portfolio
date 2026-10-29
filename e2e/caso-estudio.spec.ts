@@ -29,7 +29,8 @@ test('de la tarjeta al Caso de estudio y de vuelta, con View Transition', async 
 
     await page.getByRole('link', { name: '← Proyectos' }).click();
     await expect(page).toHaveURL(/\/#projects$/);
-    expect(await transitions()).toBe(2);
+    // La URL cambia antes de que React confirme la navegación e inicie la transición.
+    await expect.poll(transitions).toBe(2);
     // El morph de vuelta necesita la tarjeta visible y en pantalla desde el primer cuadro.
     const back = card(page, 'SuperWallet');
     await expect(back).toBeInViewport();
@@ -79,4 +80,23 @@ test('el foco no sale del visor y vuelve a la captura al cerrarlo', async ({ pag
     await page.keyboard.press('Escape');
     await expect(viewer).toHaveCount(0);
     await expect(opener).toBeFocused();
+});
+
+test('un Caso de estudio se abre desde arriba, venga de donde venga', async ({ page }) => {
+    const scrollY = () => page.evaluate(() => window.scrollY);
+    await page.goto('/#projects');
+    await expect.poll(scrollY).toBeGreaterThan(0);
+    await card(page, 'SuperWallet').click();
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText('SuperWallet');
+    expect(await scrollY()).toBe(0);
+
+    // Desde el final del relato, el siguiente Proyecto también empieza arriba.
+    const next = page
+        .getByRole('navigation', { name: 'Más Proyectos' })
+        .getByRole('link', { name: /→$/ });
+    await next.scrollIntoViewIfNeeded();
+    expect(await scrollY()).toBeGreaterThan(0);
+    await next.click();
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText('BE - Booking Engine');
+    expect(await scrollY()).toBe(0);
 });

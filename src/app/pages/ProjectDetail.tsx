@@ -1,6 +1,6 @@
-import React, { useId } from 'react';
+import React, { useId, useLayoutEffect, useState } from 'react';
 import { FiArrowUpRight } from 'react-icons/fi';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useLocation, useParams } from 'react-router-dom';
 import { currentYear } from '@lib/date';
 import { useI18n } from '@lib/i18n';
 import { localizedPath, projectPath } from '@lib/locale-path';
@@ -69,19 +69,33 @@ export const ProjectDetail: React.FC = () => {
 };
 
 /** Caso de estudio con ficha lateral: la ficha a la izquierda y el relato a la derecha. */
-const CaseStudyPage: React.FC<{ project: ResolvedProject }> = ({ project }) => (
-    <>
-        <Scene height={CASE_STUDY_CAMERA_HEIGHT} />
-        <MainHeader activeId="projects" />
-        <main className="mx-auto max-w-[1120px] px-4 pb-10">
-            <div className="grid gap-8 rounded-2xl border border-line bg-surface p-5 md:p-8 min-[900px]:grid-cols-[300px_minmax(0,1fr)]">
-                <Sheet project={project} />
-                <Story project={project} />
-            </div>
-        </main>
-        <footer className="pb-10 text-center text-xs text-ink">© {currentYear()}</footer>
-    </>
-);
+const CaseStudyPage: React.FC<{ project: ResolvedProject }> = ({ project }) => {
+    const { hash } = useLocation();
+    const [initialHash] = useState(hash);
+    // El router conserva el scroll de la página anterior: el Caso de estudio se lee desde arriba,
+    // salvo que la URL lleve a una de sus secciones. Antes del pintado, para que la transición
+    // ya capture la página arriba.
+    useLayoutEffect(() => {
+        const id = initialHash.replace('#', '');
+        const target = id ? document.getElementById(id) : null;
+        if (target) target.scrollIntoView({ behavior: 'instant', block: 'start' });
+        else window.scrollTo({ top: 0, behavior: 'instant' });
+    }, [initialHash]);
+
+    return (
+        <>
+            <Scene height={CASE_STUDY_CAMERA_HEIGHT} />
+            <MainHeader activeId="projects" />
+            <main className="mx-auto max-w-[1120px] px-4 pb-10">
+                <div className="grid gap-8 rounded-2xl border border-line bg-surface p-5 md:p-8 min-[900px]:grid-cols-[300px_minmax(0,1fr)]">
+                    <Sheet project={project} />
+                    <Story project={project} />
+                </div>
+            </main>
+            <footer className="pb-10 text-center text-xs text-ink">© {currentYear()}</footer>
+        </>
+    );
+};
 
 const Sheet: React.FC<{ project: ResolvedProject }> = ({ project }) => {
     const { t } = useI18n();
