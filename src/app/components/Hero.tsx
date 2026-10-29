@@ -1,4 +1,5 @@
 import React from 'react';
+import { trackCvDownload } from '@lib/analytics';
 import { useI18n } from '@lib/i18n';
 import { cvPath } from '@lib/locale-path';
 
@@ -25,6 +26,7 @@ export const Hero: React.FC = () => {
                 <a
                     href={cvPath(locale)}
                     download
+                    onClick={() => trackCvDownload(locale)}
                     className="rounded-xl border border-primary bg-primary px-4 py-2 text-sm font-semibold text-on-primary transition-opacity hover:opacity-90"
                 >
                     {t('hero_cta_cv')}

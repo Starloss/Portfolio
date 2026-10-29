@@ -18,5 +18,12 @@
     <body>
         <div id="root" class="min-h-screen"></div>
         <script type="module" src="/src/main.tsx"></script>
+        <!-- Umami (docs/adr/0002): sin cookies; solo cuenta en el dominio de producción. -->
+        <script
+            defer
+            src="https://cloud.umami.is/script.js"
+            data-website-id="b76f28fd-a425-4d9c-95f1-26dc246fef0d"
+            data-domains="www.diegorangel.dev"
+        ></script>
     </body>
 </html>

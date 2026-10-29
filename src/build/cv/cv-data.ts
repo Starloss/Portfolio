@@ -22,6 +22,10 @@ const HEADINGS: Record<
     },
 };
 
+/** Etiqueta los enlaces al sitio que salen del CV, para que Umami sepa que la visita llegó desde él. */
+const fromCv = (url: string, locale: Locale) =>
+    `${url}?utm_source=cv&utm_medium=pdf&utm_campaign=cv-${locale}`;
+
 /** Lo que muestra el CV de un idioma, sacado del mismo contenido que el sitio. */
 export function cvData(locale: Locale, today: Date, siteUrl: string) {
     const content = resolveContent(locale, today);
@@ -37,7 +41,7 @@ export function cvData(locale: Locale, today: Date, siteUrl: string) {
                 { label: profile.email, url: `mailto:${profile.email}` },
                 { label: 'LinkedIn', url: profile.linkedin },
                 { label: 'GitHub', url: profile.github },
-                { label: siteUrl.replace(/^https?:\/\//, ''), url: siteUrl },
+                { label: siteUrl.replace(/^https?:\/\//, ''), url: fromCv(siteUrl, locale) },
             ],
         },
         summary: profile.cvSummary,
@@ -52,7 +56,7 @@ export function cvData(locale: Locale, today: Date, siteUrl: string) {
         featuredProjects: content.featuredProjects.map((p) => ({
             title: p.title,
             summary: p.caseStudy.summary,
-            url: `${siteUrl}${localizedPath(locale, projectPath(p.id))}`,
+            url: fromCv(`${siteUrl}${localizedPath(locale, projectPath(p.id))}`, locale),
         })),
         education: content.education,
         skills: content.skills,
