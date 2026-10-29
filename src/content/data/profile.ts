@@ -4,7 +4,7 @@ export const PROFILE: Profile = {
     name: 'Diego Rangel',
     fullName: 'Diego Alfonso Rangel De Ornelas',
     role: 'Full-Stack Lead Developer',
-    email: 'starloss09@gmail.com',
+    email: 'contact@diegorangel.dev',
     linkedin: 'https://www.linkedin.com/in/diego-rangel-de-ornelas',
     github: 'https://github.com/Starloss',
     cvSummary: {
