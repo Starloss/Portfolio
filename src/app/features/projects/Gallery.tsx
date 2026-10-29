@@ -10,11 +10,17 @@ import type { ResolvedProject } from '@/content';
 
 type GalleryItem = ResolvedProject['caseStudy']['gallery'][number];
 
-// Una captura vertical (más alta que ancha) ocupa 2 filas; una horizontal, 2 columnas.
 const isPortrait = (src: string) => {
     const size = IMAGE_SIZES[src];
     return !!size && size.height > size.width;
 };
+
+// Mezclar orientaciones en una misma fila deja huecos: primero van las horizontales (escritorio), de
+// a 2 por fila, y debajo las verticales (móvil), de a 4. Cada grupo conserva el orden del contenido.
+const byOrientation = (images: GalleryItem[]) => [
+    ...images.filter((image) => !isPortrait(image.src)),
+    ...images.filter((image) => isPortrait(image.src)),
+];
 
 /**
  * Galería del Caso de estudio: una cuadrícula que respeta la orientación de cada captura y un
@@ -23,7 +29,9 @@ const isPortrait = (src: string) => {
 export const Gallery: React.FC<{ id: string; project: ResolvedProject }> = ({ id, project }) => {
     const { t } = useI18n();
     const headingId = useId();
-    const { gallery: images, diagram } = project.caseStudy;
+    const { gallery, diagram } = project.caseStudy;
+    const images = byOrientation(gallery);
+    const landscapes = images.filter((image) => !isPortrait(image.src)).length;
     const [openIndex, setOpenIndex] = useState<number | null>(null);
     const buttons = useRef<Array<HTMLButtonElement | null>>([]);
 
@@ -35,13 +43,19 @@ export const Gallery: React.FC<{ id: string; project: ResolvedProject }> = ({ id
             {images.length === 0 ? (
                 <p className="leading-relaxed text-muted">{diagram?.noScreenshots}</p>
             ) : (
-                <ul className="grid grid-flow-row-dense grid-cols-2 gap-3 md:grid-cols-4">
+                <ul className="grid grid-cols-2 gap-3 md:grid-cols-4">
                     {images.map((image, i) => {
                         const portrait = isPortrait(image.src);
+                        // Si las horizontales son impares, la última no deja medio renglón vacío.
+                        const alone = i === landscapes - 1 && landscapes % 2 === 1;
                         return (
                             <li
                                 key={image.src}
-                                style={portrait ? { gridRow: 'span 2' } : { gridColumn: 'span 2' }}
+                                style={
+                                    portrait
+                                        ? undefined
+                                        : { gridColumn: alone ? '1 / -1' : 'span 2' }
+                                }
                                 className={portrait ? 'aspect-[1/2]' : 'aspect-[2/1]'}
                             >
                                 <button

@@ -4,9 +4,11 @@ import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { AppRoutes } from '@app/App';
+import { I18nProvider } from '@lib/i18n';
 import { ThemeProvider } from '@lib/theme';
+import { Gallery } from '@app/features/projects/Gallery';
 
-import { CONTENT } from '@/content';
+import { CONTENT, resolveContent } from '@/content';
 
 const renderAt = (url: string) =>
     render(
@@ -189,14 +191,47 @@ describe('Caso de estudio · relato', () => {
 describe('Galería del Caso de estudio', () => {
     const gallery = () => screen.getByRole('region', { name: /^(Galería|Gallery)$/ });
 
-    it('las capturas horizontales ocupan 2 columnas y las verticales 2 filas', () => {
+    it('agrupa las capturas por orientación: primero las horizontales, de a 2 columnas, y debajo las verticales', () => {
         renderAt('/projects/wedding-invitation');
+        const images = within(gallery()).getAllByRole('img');
+        expect(images.map((img) => img.getAttribute('alt'))).toEqual([
+            'Portada de la invitación en escritorio',
+            'Galería de retratos de la pareja',
+            'Panel del anfitrión con invitaciones y confirmaciones',
+            'Formulario para crear una invitación con cupos',
+            'Portada de la invitación en móvil',
+            'Día, lugar y dirección del evento en móvil',
+            'Confirmación de asistencia con código de invitación',
+            'Código QR para que los invitados suban fotos',
+        ]);
         const items = within(gallery()).getAllByRole('listitem');
-        // wedding-invitation-11 es horizontal (1280 × 635); wedding-invitation-1, vertical (371 × 793).
+        expect(items[3]).toHaveStyle({ gridColumn: 'span 2' });
+        expect(items[4]).not.toHaveStyle({ gridColumn: 'span 2' });
+        expect(items[4]).not.toHaveStyle({ gridRow: 'span 2' });
+    });
+
+    it('con un número impar de horizontales, la última ocupa todo el ancho y no deja hueco', () => {
+        const wedding = resolveContent('es', new Date()).projects.find(
+            (p) => p.id === 'wedding-invitation',
+        )!;
+        // 3 horizontales y 1 vertical.
+        const images = [
+            '/projects/superwallet-1',
+            '/projects/wedding-invitation-1',
+            '/projects/superwallet-2',
+            '/projects/superwallet-4',
+        ].map((src) => ({ src, alt: src.endsWith('wedding-invitation-1') ? 'vertical' : src }));
+        const project = { ...wedding, caseStudy: { ...wedding.caseStudy, gallery: images } };
+        render(
+            <I18nProvider locale="es">
+                <Gallery id="gallery" project={project} />
+            </I18nProvider>,
+        );
+        const items = within(gallery()).getAllByRole('listitem');
         expect(items[0]).toHaveStyle({ gridColumn: 'span 2' });
-        expect(items[0]).not.toHaveStyle({ gridRow: 'span 2' });
-        expect(items[1]).toHaveStyle({ gridRow: 'span 2' });
-        expect(items[1]).not.toHaveStyle({ gridColumn: 'span 2' });
+        expect(items[1]).toHaveStyle({ gridColumn: 'span 2' });
+        expect(items[2]).toHaveStyle({ gridColumn: '1 / -1' });
+        expect(within(items[3]).getByRole('img')).toHaveAttribute('alt', 'vertical');
     });
 
     it('una captura más angosta que 640 px se declara con su ancho real', () => {
@@ -213,12 +248,13 @@ describe('Galería del Caso de estudio', () => {
             within(gallery()).getByRole('button', { name: 'Portada de la invitación en móvil' }),
         );
         const viewer = screen.getByRole('dialog', { name: 'Invitación de Boda · Galería' });
-        expect(viewer).toHaveTextContent('Portada de la invitación en móvil · 2 de 8');
+        // El visor sigue el orden de la galería: las verticales van después de las 4 horizontales.
+        expect(viewer).toHaveTextContent('Portada de la invitación en móvil · 5 de 8');
         await userEvent.keyboard('{ArrowRight}');
-        expect(viewer).toHaveTextContent('· 3 de 8');
-        await userEvent.click(within(viewer).getByRole('button', { name: 'Anterior' }));
-        await userEvent.click(within(viewer).getByRole('button', { name: 'Anterior' }));
-        await userEvent.click(within(viewer).getByRole('button', { name: 'Anterior' }));
+        expect(viewer).toHaveTextContent('· 6 de 8');
+        for (let i = 0; i < 6; i++) {
+            await userEvent.click(within(viewer).getByRole('button', { name: 'Anterior' }));
+        }
         // En círculo: antes de la primera viene la última.
         expect(viewer).toHaveTextContent('· 8 de 8');
         await userEvent.click(within(viewer).getByRole('button', { name: 'Siguiente' }));
