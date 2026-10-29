@@ -2,7 +2,7 @@
 // build no procesa imágenes.
 //
 // Lee los originales de images/projects/ (no se publican) y escribe en public/projects/ un WebP
-// de 640 y otro de 1280 px de ancho por imagen ("x-640.webp", "x-1280.webp"; nunca agranda).
+// de 640, 960 y 1280 px de ancho por imagen ("x-640.webp", "x-960.webp", "x-1280.webp"; nunca agranda).
 // También escribe src/content/data/image-sizes.ts con el ancho y alto del WebP más grande, para
 // que las páginas reserven su espacio (CLS 0).
 // Uso: pnpm images
