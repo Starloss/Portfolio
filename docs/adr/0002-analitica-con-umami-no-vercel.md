@@ -1,6 +1,6 @@
 # La analítica usa Umami Cloud, no Vercel Web Analytics
 
-El sitio se aloja en Vercel, pero mide las Señales de interés con Umami Cloud (plan Hobby gratuito). Lo que importa medir es la descarga del CV y los clics a email o LinkedIn, y eso exige eventos personalizados. En Vercel esos eventos solo existen en los planes Pro y Enterprise; el plan Hobby solo cuenta páginas vistas. Umami Hobby incluye eventos, reportes UTM y no usa cookies, así que no necesita un banner de consentimiento. Su script pesa pocos kB y cabe en el presupuesto de script de Lighthouse CI.
+El sitio se aloja en Vercel, pero mide las Señales de interés con Umami Cloud (plan Hobby gratuito). Lo que importa medir es la descarga del CV y los clics a email o LinkedIn, y eso exige eventos personalizados. En Vercel esos eventos solo existen en los planes Pro y Enterprise; el plan Hobby solo cuenta páginas vistas. Umami Hobby incluye eventos, reportes UTM y no usa cookies, así que no necesita un banner de consentimiento. Su script pesa ~4 kB gzip: para que entrara, el presupuesto de script de Lighthouse CI pasó de 150 a 155 kB.
 
 ## Considered Options
 
