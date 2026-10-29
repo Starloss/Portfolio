@@ -1,4 +1,4 @@
-// Las capturas se publican como WebP de dos anchos (los genera scripts/images.ts). En el
+// Las capturas se publican como WebP de tres anchos (los genera scripts/images.ts). En el
 // contenido, una imagen se nombra por su ruta sin extensión: "/projects/superwallet-1".
 import { IMAGE_SIZES } from './data/image-sizes';
 
