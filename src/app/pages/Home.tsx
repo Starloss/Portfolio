@@ -1,4 +1,4 @@
-import React, { useEffect, useLayoutEffect, useState } from 'react';
+import React, { lazy, Suspense, useEffect, useLayoutEffect, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { currentYear } from '@lib/date';
 
@@ -10,6 +10,9 @@ import { ImpactSection } from '../features/impact/ImpactSection';
 import { FeaturedProjects } from '../features/projects/FeaturedProjects';
 import { SkillsSection } from '../features/skills/SkillsSection';
 import { Scene } from '../scene/Scene';
+
+// Prototipo #40: la Escena WebGL va en su propio chunk.
+const SceneGL = lazy(() => import('../scene/gl/SceneGL').then((m) => ({ default: m.SceneGL })));
 
 /**
  * Home · Layout B: el Hero en el cielo y un bloque por sección, con un respiro de paisaje entre
@@ -63,6 +66,9 @@ export const Home: React.FC = () => {
     return (
         <>
             <Scene />
+            <Suspense fallback={null}>
+                <SceneGL />
+            </Suspense>
             <MainHeader activeId={activeId} isHome />
             <main className="mx-auto max-w-[892px] space-y-[20vh] px-4 pb-[20vh] md:space-y-[35vh]">
                 <Hero />

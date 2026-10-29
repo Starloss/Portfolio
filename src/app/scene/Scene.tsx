@@ -96,7 +96,7 @@ const JourneyStyles: React.FC<{
     return <>{children(styles)}</>;
 };
 
-interface PageLayout {
+export interface PageLayout {
     column: TextColumn | null;
     headerBottom: number;
 }
@@ -118,7 +118,7 @@ function measurePage(): PageLayout {
 
 const samePage = (a: PageLayout | null, b: PageLayout) => JSON.stringify(a) === JSON.stringify(b);
 
-function usePageLayout(enabled: boolean, viewport: Viewport): PageLayout | null {
+export function usePageLayout(enabled: boolean, viewport: Viewport): PageLayout | null {
     const [page, setPage] = useState<PageLayout | null>(null);
     useLayoutEffect(() => {
         if (!enabled) return;
