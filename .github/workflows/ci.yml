@@ -93,6 +93,8 @@ jobs:
         with:
           name: lighthouse
           path: .lighthouseci
+          # La carpeta empieza con punto: sin esto, upload-artifact v4 no sube nada.
+          include-hidden-files: true
 
   e2e:
     name: Playwright

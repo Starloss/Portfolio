@@ -2,7 +2,7 @@
 // contenido, una imagen se nombra por su ruta sin extensión: "/projects/superwallet-1".
 import { IMAGE_SIZES } from './data/image-sizes';
 
-export const IMAGE_WIDTHS = [640, 1280] as const;
+export const IMAGE_WIDTHS = [640, 960, 1280] as const;
 
 /** Los archivos publicados de una imagen, del más chico al más grande. */
 export const imageFiles = (src: string) => IMAGE_WIDTHS.map((w) => `${src}-${w}.webp`);
