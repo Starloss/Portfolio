@@ -1,5 +1,6 @@
 import React from 'react';
 import { FiGithub, FiLinkedin, FiMail } from 'react-icons/fi';
+import { trackContact, trackCvDownload } from '@lib/analytics';
 import { useI18n } from '@lib/i18n';
 import { cvPath } from '@lib/locale-path';
 
@@ -18,11 +19,21 @@ export const ContactSection: React.FC = () => {
         <Block id="contact" title={t('contact_title')}>
             <p className="text-lg text-ink">{t('contact_phrase')}</p>
             <div className="flex flex-wrap gap-3">
-                <a href={`mailto:${email}`} className={primary}>
+                <a
+                    href={`mailto:${email}`}
+                    onClick={() => trackContact('email')}
+                    className={primary}
+                >
                     <FiMail aria-hidden="true" />
                     {email}
                 </a>
-                <a href={linkedin} target="_blank" rel="noopener noreferrer" className={secondary}>
+                <a
+                    href={linkedin}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={() => trackContact('linkedin')}
+                    className={secondary}
+                >
                     <FiLinkedin aria-hidden="true" />
                     LinkedIn
                 </a>
@@ -30,7 +41,12 @@ export const ContactSection: React.FC = () => {
                     <FiGithub aria-hidden="true" />
                     GitHub
                 </a>
-                <a href={cvPath(locale)} download className={secondary}>
+                <a
+                    href={cvPath(locale)}
+                    download
+                    onClick={() => trackCvDownload(locale)}
+                    className={secondary}
+                >
                     {t('cv_button')}
                 </a>
             </div>

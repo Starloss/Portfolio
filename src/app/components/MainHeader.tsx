@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { FiMoon, FiSun } from 'react-icons/fi';
 import { Link, useLocation } from 'react-router-dom';
+import { trackCvDownload } from '@lib/analytics';
 import { useI18n } from '@lib/i18n';
 import { cvPath, localizedPath, switchLocalePath } from '@lib/locale-path';
 import { useTheme } from '@lib/theme';
@@ -169,6 +170,7 @@ export const MainHeader: React.FC<MainHeaderProps> = ({ activeId, isHome = false
                     <a
                         href={cvPath(locale)}
                         download
+                        onClick={() => trackCvDownload(locale)}
                         className="text-xs font-semibold px-3 h-9 inline-flex items-center rounded-xl border transition-opacity border-primary bg-primary text-on-primary hover:opacity-90"
                     >
                         {t('cv_button')}

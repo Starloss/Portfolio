@@ -5,6 +5,7 @@ import { CONTENT } from '@/content';
 
 const TODAY = new Date(2026, 9, 27);
 const SITE = 'https://www.diegorangel.dev';
+const FROM_CV_EN = '?utm_source=cv&utm_medium=pdf&utm_campaign=cv-en';
 
 describe('Datos del CV', () => {
     it('la cabecera lleva el nombre completo y el contacto, sin teléfono', () => {
@@ -12,10 +13,13 @@ describe('Datos del CV', () => {
         expect(cv.header.fullName).toBe('Diego Alfonso Rangel De Ornelas');
         expect(cv.header.role).toBe('Full-Stack Lead Developer');
         expect(cv.header.contacts).toEqual([
-            { label: 'starloss09@gmail.com', url: 'mailto:starloss09@gmail.com' },
+            { label: 'contact@diegorangel.dev', url: 'mailto:contact@diegorangel.dev' },
             { label: 'LinkedIn', url: 'https://www.linkedin.com/in/diego-rangel-de-ornelas' },
             { label: 'GitHub', url: 'https://github.com/Starloss' },
-            { label: 'www.diegorangel.dev', url: 'https://www.diegorangel.dev' },
+            {
+                label: 'www.diegorangel.dev',
+                url: 'https://www.diegorangel.dev?utm_source=cv&utm_medium=pdf&utm_campaign=cv-es',
+            },
         ]);
         expect(JSON.stringify(cv)).not.toMatch(/\+58|424/);
     });
@@ -41,12 +45,12 @@ describe('Datos del CV', () => {
         expect(experiences[2].projects).toEqual([]);
     });
 
-    it('enlaza cada Proyecto destacado a su Caso de estudio en el mismo idioma', () => {
+    it('enlaza cada Proyecto destacado a su Caso de estudio en el mismo idioma, etiquetado como visita desde el CV', () => {
         const projects = cvData('en', TODAY, SITE).featuredProjects;
         expect(projects.map((p) => p.url)).toEqual([
-            'https://www.diegorangel.dev/en/projects/superwallet',
-            'https://www.diegorangel.dev/en/projects/be-booking-engine',
-            'https://www.diegorangel.dev/en/projects/wedding-invitation',
+            `https://www.diegorangel.dev/en/projects/superwallet${FROM_CV_EN}`,
+            `https://www.diegorangel.dev/en/projects/be-booking-engine${FROM_CV_EN}`,
+            `https://www.diegorangel.dev/en/projects/wedding-invitation${FROM_CV_EN}`,
         ]);
         expect(projects[2].title).toBe('Wedding Invitation');
     });
