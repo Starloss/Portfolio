@@ -63,6 +63,12 @@ _Avoid_: usar "Personal" como si fuera una Empresa
 Un Proyecto que Diego elige mostrar en la sección de destacados del Home. Si además es un Proyecto de trabajo, también aparece dentro de su Experiencia.
 _Avoid_: featured, principal
 
+## Medición
+
+**Señal de interés**:
+Una acción del visitante que indica que considera a Diego para un puesto: descargar el CV, abrir el email o LinkedIn de Diego, o abrir un Caso de estudio. Es lo que el sitio mide para saber si cumple su propósito; las visitas por sí solas no cuentan.
+_Avoid_: conversión, evento, KPI
+
 ## Escena
 
 **Escena**:
