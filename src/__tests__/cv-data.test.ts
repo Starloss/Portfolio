@@ -12,7 +12,7 @@ describe('Datos del CV', () => {
         expect(cv.header.fullName).toBe('Diego Alfonso Rangel De Ornelas');
         expect(cv.header.role).toBe('Full-Stack Lead Developer');
         expect(cv.header.contacts).toEqual([
-            { label: 'starloss09@gmail.com', url: 'mailto:starloss09@gmail.com' },
+            { label: 'contact@diegorangel.dev', url: 'mailto:contact@diegorangel.dev' },
             { label: 'LinkedIn', url: 'https://www.linkedin.com/in/diego-rangel-de-ornelas' },
             { label: 'GitHub', url: 'https://github.com/Starloss' },
             { label: 'www.diegorangel.dev', url: 'https://www.diegorangel.dev' },
