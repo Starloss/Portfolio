@@ -128,7 +128,11 @@ describe('Proyectos destacados', () => {
         const [superwallet] = within(section(/Featured projects/)).getAllByRole('link');
         const img = within(superwallet).getByRole('img');
         expect(img).toHaveAttribute('src', '/projects/superwallet-1-1280.webp');
-        expect(img.getAttribute('srcset')).toContain('/projects/superwallet-1-640.webp 640w');
+        // 960 es lo que pide un móvil de ~412 px a DPR 1,75: sin él bajaría el de 1280.
+        expect(img).toHaveAttribute(
+            'srcset',
+            '/projects/superwallet-1-640.webp 640w, /projects/superwallet-1-960.webp 960w, /projects/superwallet-1-1280.webp 1280w',
+        );
         expect(img).toHaveAttribute('width', '1280');
         expect(img).toHaveAttribute('loading', 'lazy');
     });
