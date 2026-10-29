@@ -24,7 +24,7 @@ const byOrientation = (images: GalleryItem[]) => [
 
 /**
  * Galería del Caso de estudio: una cuadrícula que respeta la orientación de cada captura y un
- * visor a pantalla completa. Sin capturas (BE), la sección explica por qué.
+ * visor a pantalla completa. Sin capturas (un Proyecto con Diagrama), la sección explica por qué.
  */
 export const Gallery: React.FC<{ id: string; project: ResolvedProject }> = ({ id, project }) => {
     const { t } = useI18n();

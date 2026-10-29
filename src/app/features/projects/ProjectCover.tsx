@@ -8,7 +8,7 @@ import type { ResolvedProject } from '@/content';
 
 type ResolvedDiagram = NonNullable<ResolvedProject['caseStudy']['diagram']>;
 
-/** Diagrama propio (BE): los pasos del ciclo, como una sola imagen con su texto alternativo. */
+/** Diagrama de un Proyecto sin capturas: los pasos del ciclo, como una sola imagen con su texto alternativo. */
 export const DiagramImage: React.FC<{ diagram: ResolvedDiagram; compact?: boolean }> = ({
     diagram,
     compact = false,

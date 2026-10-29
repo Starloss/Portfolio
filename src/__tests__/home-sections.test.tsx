@@ -133,13 +133,13 @@ describe('Proyectos destacados', () => {
         expect(img).toHaveAttribute('loading', 'lazy');
     });
 
-    it('la tarjeta de BE, sin capturas, muestra el diagrama del ciclo de una reserva', () => {
+    it('la tarjeta de BE muestra su primera captura: la lista de reservas', () => {
         renderAt('/en');
         const [, be] = within(section(/Featured projects/)).getAllByRole('link');
-        const diagram = within(be).getByRole('img', {
-            name: "A booking's lifecycle: booking, interpreter assignment, service, report and billing",
-        });
-        expect(diagram).toHaveTextContent('Interpreter assignment');
+        expect(within(be).getByRole('img')).toHaveAttribute(
+            'alt',
+            'Booking list with missing-data alerts',
+        );
     });
 });
 

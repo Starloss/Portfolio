@@ -3,6 +3,8 @@ import path from 'node:path';
 
 import { describe, it, expect } from 'vitest';
 
+import { withDiagram } from './diagram-fixture';
+
 import { CONTENT, type Content } from '@/content';
 import { IMAGE_SIZES } from '@/content/data/image-sizes';
 import { validateContent } from '@/content/validate';
@@ -105,7 +107,7 @@ describe('validateContent', () => {
     });
 
     it('falla si al diagrama le faltan pasos o un texto en algún idioma', () => {
-        const c = clone();
+        const c = withDiagram(clone());
         const diagram = c.projects[1].caseStudy.diagram!;
         diagram.steps = [];
         diagram.alt.en = '';

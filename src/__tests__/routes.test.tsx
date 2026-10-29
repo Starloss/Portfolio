@@ -167,18 +167,15 @@ describe('Caso de estudio · relato', () => {
         expect(relato).toHaveTextContent(/Confirmar asistencia por grupo/);
     });
 
-    it('BE muestra su diagrama como portada y explica por qué no hay capturas', () => {
+    it('BE tiene galería: su portada es la lista de reservas y ya no explica que no hay capturas', () => {
         renderAt('/projects/be-booking-engine');
         const relato = story();
-        expect(
-            within(relato).getByRole('img', {
-                name: 'Ciclo de una reserva: reserva, asignación de intérprete, servicio, reporte y facturación',
-            }),
-        ).toHaveTextContent('Facturación');
-        expect(relato).toHaveTextContent(
-            'Sin capturas: el sistema es interno. El diagrama resume el ciclo de una reserva.',
+        expect(within(relato).getAllByRole('img')[0]).toHaveAttribute(
+            'alt',
+            'Lista de reservas con las alertas de datos faltantes',
         );
-        expect(within(relato).queryAllByRole('button')).toEqual([]);
+        expect(relato).not.toHaveTextContent('Sin capturas');
+        expect(within(relato).getAllByRole('button')).toHaveLength(6);
     });
 
     it('un Proyecto inexistente muestra el aviso en el idioma de la URL', () => {

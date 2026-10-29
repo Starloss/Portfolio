@@ -179,25 +179,36 @@ export const PROJECTS: Project[] = [
                     ),
                 },
             ],
-            // Sin capturas hasta tener el permiso por escrito de CORE: la portada es el diagrama.
-            gallery: [],
-            diagram: {
-                steps: [
-                    text('Reserva', 'Booking'),
-                    text('Asignación de intérprete', 'Interpreter assignment'),
-                    text('Servicio', 'Service'),
-                    text('Reporte', 'Report'),
-                    text('Facturación', 'Billing'),
+            // Publicadas con permiso por escrito de CORE. Los datos de pacientes, clientes y
+            // operadores se taparon antes de entrar al repo (ver #36).
+            gallery: gallery('be-booking-engine', [
+                [
+                    '1',
+                    'Lista de reservas con las alertas de datos faltantes',
+                    'Booking list with missing-data alerts',
                 ],
-                alt: text(
-                    'Ciclo de una reserva: reserva, asignación de intérprete, servicio, reporte y facturación',
-                    "A booking's lifecycle: booking, interpreter assignment, service, report and billing",
-                ),
-                noScreenshots: text(
-                    'Sin capturas: el sistema es interno. El diagrama resume el ciclo de una reserva.',
-                    "No screenshots: the system is internal. The diagram summarizes a booking's lifecycle.",
-                ),
-            },
+                [
+                    '2',
+                    'Reserva completa: paciente, servicio, intérprete y actividad',
+                    'Full booking: patient, service, interpreter and activity',
+                ],
+                [
+                    '3',
+                    'Reclamo de compensación con el timeline de sus reservas',
+                    'Compensation claim with its booking timeline',
+                ],
+                ['4', 'Búsqueda global de notas con etiquetas', 'Global note search with tags'],
+                [
+                    '5',
+                    'Filtros por estado y por dato faltante, en modo oscuro',
+                    'Filters by status and missing data, in dark mode',
+                ],
+                [
+                    '6',
+                    'Facturación: facturas por estado de factura y de cobro, en modo oscuro',
+                    'Billing: invoices by invoice and payment status, in dark mode',
+                ],
+            ]),
         },
     },
     {

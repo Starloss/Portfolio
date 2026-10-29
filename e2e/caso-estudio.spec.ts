@@ -37,14 +37,16 @@ test('de la tarjeta al Caso de estudio y de vuelta, con View Transition', async 
     await expect(page.locator('#projects')).toHaveCSS('opacity', '1');
 });
 
-test('BE también hace el morph: su portada es el diagrama', async ({ page }) => {
+test('BE también hace el morph con su primera captura', async ({ page }) => {
     const transitions = await countViewTransitions(page);
     await page.goto('/en');
     await card(page, 'BE - Booking Engine').click();
     await expect(page).toHaveURL(/\/en\/projects\/be-booking-engine$/);
-    await expect(
-        page.getByRole('article').getByRole('img', { name: /A booking's lifecycle/ }),
-    ).toBeVisible();
+    // La primera captura es la Portada y también abre la galería: la Portada va primero.
+    const cover = page.getByRole('article').getByRole('img', {
+        name: 'Booking list with missing-data alerts',
+    });
+    await expect(cover.first()).toBeVisible();
     expect(await transitions()).toBe(1);
 });
 
