@@ -59,6 +59,8 @@ export default [
     rules: {
       ...js.configs.recommended.rules,
       ...pluginReact.configs.recommended.rules,
+      // Reglas de hooks de React 19, incluidas las del React Compiler (pureza, refs, efectos).
+      ...pluginReactHooks.configs.recommended.rules,
       ...ts.configs.recommended.rules,
       ...jsxA11y.configs.recommended.rules,
       ...prettierPlugin.configs.recommended.rules,

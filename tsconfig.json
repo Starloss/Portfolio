@@ -15,7 +15,7 @@
     "isolatedModules": true,
     "noEmit": true,
     "jsx": "react-jsx",
-    "types": ["node", "vitest", "@testing-library/jest-dom"],
+    "types": ["node", "vitest", "@testing-library/jest-dom/vitest"],
     "baseUrl": "./src",
     "paths": {
       "@/*": ["*"],

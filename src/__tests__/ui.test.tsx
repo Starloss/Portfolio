@@ -128,10 +128,15 @@ describe('i18n fallback', () => {
     });
     it('lanza error al usar hook fuera del provider', () => {
         const Err: React.FC = () => {
-            // Simula uso indebido
-            expect(() => useI18n()).toThrow();
+            useI18n();
             return null;
         };
-        render(<Err />);
+        // React reporta el error por consola antes de relanzarlo.
+        const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
+        try {
+            expect(() => render(<Err />)).toThrow();
+        } finally {
+            consoleError.mockRestore();
+        }
     });
 });
