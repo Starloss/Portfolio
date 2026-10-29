@@ -14,7 +14,7 @@
     "@react-pdf/renderer": "^4.9.0",
     "@resvg/resvg-js": "^2.6.2",
     "@testing-library/dom": "^10.4.2",
-    "@testing-library/jest-dom": "^6.4.3",
+    "@testing-library/jest-dom": "^7.0.1",
     "@testing-library/react": "^16.3.3",
     "@testing-library/user-event": "^14.5.2",
     "@types/node": "^22.20.5",
@@ -22,9 +22,9 @@
     "@types/react-dom": "^19.3.0",
     "@typescript-eslint/eslint-plugin": "^7.9.0",
     "@typescript-eslint/parser": "^7.9.0",
-    "@vitejs/plugin-basic-ssl": "^2.1.4",
-    "@vitejs/plugin-react": "^4.2.1",
-    "@vitest/coverage-v8": "^1.6.0",
+    "@vitejs/plugin-basic-ssl": "^2.3.0",
+    "@vitejs/plugin-react": "^6.1.2",
+    "@vitest/coverage-v8": "^5.0.5",
     "autoprefixer": "^10.4.20",
     "eslint": "^9.5.0",
     "eslint-config-prettier": "^9.1.0",
@@ -41,9 +41,9 @@
     "sharp": "^0.34.5",
     "tailwindcss": "^3.4.7",
     "typescript": "^5.4.0",
-    "vite": "^5.2.0",
-    "vite-node": "^1.6.1",
-    "vitest": "^1.6.0"
+    "vite": "^8.3.5",
+    "vite-node": "^6.0.0",
+    "vitest": "^5.0.5"
   },
   "engines": {
     "node": ">=22.12.0"

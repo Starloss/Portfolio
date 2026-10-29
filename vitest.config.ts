@@ -23,6 +23,8 @@ export default defineConfig({
     exclude: ['**/node_modules/**', '**/dist/**', 'e2e/**'],
     coverage: {
       provider: 'v8',
+      // Desde Vitest 3 solo se mide lo que algún test importa; así se mide todo src, como antes.
+      include: ['src/**/*.{ts,tsx}'],
       reporter: ['text', 'html', 'lcov'],
       reportsDirectory: './coverage',
       thresholds: {
