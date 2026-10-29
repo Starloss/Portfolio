@@ -1,4 +1,4 @@
-import React, { useEffect, useId, useRef, useState } from 'react';
+import React, { useEffect, useEffectEvent, useId, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useI18n } from '@lib/i18n';
 
@@ -107,9 +107,7 @@ const Viewer: React.FC<{
 
     const step = (delta: number) => onIndexChange((index + delta + images.length) % images.length);
 
-    // Las teclas se leen en cada render para usar el índice actual.
-    const handleKey = useRef<(event: KeyboardEvent) => void>(() => {});
-    handleKey.current = (event) => {
+    const handleKey = useEffectEvent((event: KeyboardEvent) => {
         if (event.key === 'Escape') onClose();
         else if (event.key === 'ArrowRight') step(1);
         else if (event.key === 'ArrowLeft') step(-1);
@@ -126,10 +124,10 @@ const Viewer: React.FC<{
                 first.focus();
             }
         }
-    };
+    });
 
     useEffect(() => {
-        const onKeyDown = (event: KeyboardEvent) => handleKey.current(event);
+        const onKeyDown = (event: KeyboardEvent) => handleKey(event);
         window.addEventListener('keydown', onKeyDown);
         closeButton.current?.focus();
         // El resto de la página queda inerte: ni el foco ni los lectores de pantalla llegan a él.
