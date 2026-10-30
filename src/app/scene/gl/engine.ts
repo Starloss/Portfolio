@@ -109,6 +109,7 @@ export class EscenaGL {
     private raf = 0;
     private running = false;
     private disposed = false;
+    private failed = false;
     private drawn = false;
     private watchdog: ReturnType<typeof createWatchdog> | null;
     // Con una GPU por software (solo forzada, en CI) cada cuadro cuesta unos 100 ms de CPU: dibuja
@@ -242,8 +243,10 @@ export class EscenaGL {
         });
     }
 
+    // Se avisa una sola vez: lo que falle después (las esperas que quedan) conserva la razón original.
     private fail(reason: FallbackReason) {
-        if (this.disposed) return;
+        if (this.disposed || this.failed) return;
+        this.failed = true;
         this.settle(() => true, false);
         this.stop();
         this.onFailed?.(reason);
