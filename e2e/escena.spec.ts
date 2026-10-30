@@ -1,5 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 import { DAY, NIGHT } from '../src/app/scene/palette';
+import { STREET_ABOVE, streetBand } from '../src/app/scene/street';
 import { contrastRatio } from '../src/lib/contrast';
 
 for (const [colorScheme, palette] of [
@@ -60,9 +61,12 @@ test('el Viaje de cámara baja en un solo sentido, del Hero a la ciudad en Conta
     }
     for (let i = 1; i < tops.length; i++) expect(tops[i]).toBeLessThanOrEqual(tops[i - 1] + 1);
 
-    // Al final, en Contacto, la ciudad está apoyada abajo: se ve Caracas completa.
-    expect(Math.abs(await layerTop(page, 'city'))).toBeLessThan(2);
-    expect(Math.abs(await layerTop(page, 'towers'))).toBeLessThan(2);
+    // Al final, en Contacto, entró la Avenida Bolívar y la ciudad subió con ella: queda apoyada en
+    // la acera y se ven completas la ciudad y la avenida.
+    const band = streetBand(0, viewport.height);
+    expect(await layerTop(page, 'city')).toBeCloseTo(-band.lift, 0);
+    expect(await layerTop(page, 'towers')).toBeCloseTo(-band.lift, 0);
+    expect(await layerTop(page, 'street')).toBeCloseTo(band.top - STREET_ABOVE * band.height, 0);
 });
 
 test('con prefers-reduced-motion la Escena no se mueve al hacer scroll', async ({ page }) => {

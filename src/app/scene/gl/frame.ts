@@ -14,6 +14,7 @@ import {
     type Viewport,
 } from '../camera';
 import { cablePoint, MOVING_CABINS } from '../geometry';
+import { streetBand } from '../street';
 
 /** Una curva `cubic-bezier()` de CSS, como función del progreso. */
 export function cubicBezier(x1: number, y1: number, x2: number, y2: number) {
@@ -107,7 +108,14 @@ export function followPointer(current: number, target: number, dt: number): numb
 /** px que se corre la capa más cercana con el puntero en un borde. */
 export const PARALLAX_PX = 14;
 // Profundidad de cada capa para el parallax: lo lejano se mueve menos.
-const PARALLAX_DEPTH = { sky: 0.15, farRidge: 0.3, avila: 0.5, city: 0.8, towers: 0.9 };
+const PARALLAX_DEPTH = {
+    sky: 0.15,
+    farRidge: 0.3,
+    avila: 0.5,
+    city: 0.8,
+    towers: 0.9,
+    street: 1.1,
+};
 
 // Altura de la cámara donde la atraviesan las nubes cercanas, y cuánto dura el cruce.
 const FRONT_CLOUDS = { height: 0.6, spread: 0.11, density: 0.9 };
@@ -142,6 +150,7 @@ export function escenaFrame({ progress, sink, viewport, frame, clocks, pointer }
         avila: shift(PARALLAX_DEPTH.avila),
         city: shift(PARALLAX_DEPTH.city),
         towers: shift(PARALLAX_DEPTH.towers),
+        street: shift(PARALLAX_DEPTH.street),
     };
     // Una cabina cuelga del cable desde su centro arriba; en pantalla, el rectángulo de su sprite.
     const cabinRect = (x: number, y: number) => {
@@ -181,6 +190,8 @@ export function escenaFrame({ progress, sink, viewport, frame, clocks, pointer }
         macaws: { x: macaws.x * frame.scale + parallax.sky, y: macaws.y * frame.scale },
         twinkle: clocks.twinkle,
         parallax,
+        /** La franja de la Avenida Bolívar (street.ts): su borde de arriba y su alto, en px. */
+        street: streetBand(height, vh),
         /** Densidad de las nubes cercanas que cruza la cámara (0 a 1). */
         frontClouds:
             FRONT_CLOUDS.density *

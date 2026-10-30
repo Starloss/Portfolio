@@ -76,7 +76,7 @@ El paisaje animado de Caracas que vive detrás del contenido: cielo, El Ávila y
 _Avoid_: fondo, background
 
 **Hito**:
-Un elemento reconocible de Caracas dentro de la Escena: El Ávila, el Hotel Humboldt, las Torres de Parque Central, el Teleférico.
+Un elemento reconocible de Caracas dentro de la Escena: El Ávila, el Hotel Humboldt, las Torres de Parque Central, el Teleférico, la Avenida Bolívar.
 _Avoid_: edificio, landmark
 
 **Día** / **Noche**:
@@ -84,5 +84,5 @@ Los dos estados de la Escena. Siguen siempre el tema claro u oscuro que elige el
 _Avoid_: light mode, dark mode (al hablar de la Escena)
 
 **Viaje de cámara**:
-El recorrido vertical de la Escena que acompaña el scroll, contado como un viaje de bajada en el Teleférico: empieza arriba, entre las nubes y las cumbres del Ávila, y baja en un solo sentido hasta la ciudad, que se ve completa al llegar a Contacto.
+El recorrido vertical de la Escena que acompaña el scroll, contado como un viaje de bajada en el Teleférico: empieza arriba, entre las nubes y las cumbres del Ávila, y baja en un solo sentido hasta el nivel de la calle. En el último tramo entra la Avenida Bolívar y el paisaje sube con ella, así la ciudad queda apoyada en la acera; al llegar a Contacto se ven completas la ciudad y la avenida.
 _Avoid_: parallax, revelado de ciudad

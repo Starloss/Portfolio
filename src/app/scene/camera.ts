@@ -1,6 +1,7 @@
 // Viaje de cámara: la coreografía de la Escena como funciones puras.
 // La altura de la cámara va de 0 (ciudad) a 1 (sobre las nubes) y solo hay movimiento vertical.
 import { cablePoint, VIEW } from './geometry';
+import { LIFT_SHARE, streetBand } from './street';
 
 /** Altura de la cámara en el Hero: arriba, con las cumbres del Ávila y cielo libre para el texto. */
 export const HERO_HEIGHT = 0.8;
@@ -49,7 +50,10 @@ export function layerOffset(layer: MovingLayer, height: number, viewportHeight: 
 // así que se ven al empezar y al volver a la ciudad en Contacto.
 const SINKS_WITH_HERO: readonly MovingLayer[] = ['farRidge', 'avila'];
 
-/** Desplazamiento vertical total de una capa (px): su hundimiento con la cámara más el del Hero. */
+/**
+ * Desplazamiento vertical total de una capa (px): su hundimiento con la cámara más el del Hero,
+ * menos lo que sube con la Avenida Bolívar al final del Viaje.
+ */
 export function layerShift(
     layer: MovingLayer,
     height: number,
@@ -57,7 +61,8 @@ export function layerShift(
     heroSink: number,
 ): number {
     const sink = SINKS_WITH_HERO.includes(layer) ? heroSink : 0;
-    return sink + layerOffset(layer, height, viewportHeight);
+    const lift = streetBand(height, viewportHeight).lift * LIFT_SHARE[layer];
+    return sink + layerOffset(layer, height, viewportHeight) - lift;
 }
 
 /** Las nubes bajan de −70vh a +10vh y aparecen con opacidad al subir la cámara. */

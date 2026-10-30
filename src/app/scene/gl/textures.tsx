@@ -6,7 +6,19 @@ import { createRoot } from 'react-dom/client';
 
 import { CABIN_WIDTH, type SceneFrame, type Viewport } from '../camera';
 import { DAY, NIGHT, type ScenePalette } from '../palette';
-import { Avila, CabinShape, City, FarRidge, HaloGradient, Macaws, Stars, Towers } from '../parts';
+import {
+    Avenue,
+    Avila,
+    CabinShape,
+    City,
+    FarRidge,
+    HaloGradient,
+    LampGradient,
+    Macaws,
+    Stars,
+    Towers,
+} from '../parts';
+import { STREET_ABOVE, streetBand } from '../street';
 
 // Fuera del ciclo de React (un efecto no puede usar flushSync), por eso cede un turno antes.
 async function markup(node: React.ReactNode): Promise<string> {
@@ -44,7 +56,8 @@ export type LayerName =
     | 'macaws'
     | 'cabin'
     | 'cityLights'
-    | 'towersLights';
+    | 'towersLights'
+    | 'street';
 
 // Las luces de Noche van aparte, sobre las siluetas en negro: así las de atrás quedan tapadas por
 // los edificios de adelante, y el shader puede hacerlas titilar y brillar sin tocar las siluetas.
@@ -71,39 +84,57 @@ export async function themeLayers(
             </svg>,
         ).then(rasterize);
     const still = { night, animate: false };
-    const [far, avilaBack, avilaFront, city, towers, extra, cabin, cityLights, towersLights] =
-        await Promise.all([
-            full(<FarRidge c={c} />),
-            full(<Avila c={c} {...still} slice="back" />),
-            full(
-                <>
-                    <HaloGradient />
-                    <Avila c={c} {...still} slice="front" />
-                </>,
-            ),
-            // De Noche, las siluetas sin ventanas: las ventanas van en las texturas de luces.
-            full(<City c={c} night={false} animate={false} />),
-            full(<Towers c={c} night={false} animate={false} />),
-            full(
-                night ? (
-                    <Stars count={60} groups={3} animate={false} />
-                ) : (
-                    <Macaws animate={false} />
-                ),
-            ),
-            markup(
-                <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    viewBox="-6 0 12 17"
-                    width={Math.round(CABIN_WIDTH * frame.scale * dpr)}
-                    height={Math.round(17 * frame.scale * dpr)}
-                >
-                    <CabinShape c={c} />
-                </svg>,
-            ).then(rasterize),
-            night ? full(<City c={BLACK} night animate={false} />) : undefined,
-            night ? full(<Towers c={BLACK} night animate={false} />) : undefined,
-        ]);
+    const H = streetBand(0, viewport.height).height;
+    const streetSize = { width: viewport.width, height: H * (1 + STREET_ABOVE) };
+    const [
+        far,
+        avilaBack,
+        avilaFront,
+        city,
+        towers,
+        extra,
+        cabin,
+        cityLights,
+        towersLights,
+        street,
+    ] = await Promise.all([
+        full(<FarRidge c={c} />),
+        full(<Avila c={c} {...still} slice="back" />),
+        full(
+            <>
+                <HaloGradient />
+                <Avila c={c} {...still} slice="front" />
+            </>,
+        ),
+        // De Noche, las siluetas sin ventanas: las ventanas van en las texturas de luces.
+        full(<City c={c} night={false} animate={false} />),
+        full(<Towers c={c} night={false} animate={false} />),
+        full(night ? <Stars count={60} groups={3} animate={false} /> : <Macaws animate={false} />),
+        markup(
+            <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="-6 0 12 17"
+                width={Math.round(CABIN_WIDTH * frame.scale * dpr)}
+                height={Math.round(17 * frame.scale * dpr)}
+            >
+                <CabinShape c={c} />
+            </svg>,
+        ).then(rasterize),
+        night ? full(<City c={BLACK} night animate={false} />) : undefined,
+        night ? full(<Towers c={BLACK} night animate={false} />) : undefined,
+        // La calle sin gente ni vehículos: la WebGL los dibuja aparte, en movimiento.
+        markup(
+            <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox={`0 0 ${streetSize.width} ${streetSize.height}`}
+                width={Math.round(streetSize.width * dpr)}
+                height={Math.round(streetSize.height * dpr)}
+            >
+                <LampGradient />
+                <Avenue c={c} width={viewport.width} height={H} night={night} agents={false} />
+            </svg>,
+        ).then(rasterize),
+    ]);
     return {
         far,
         avilaBack,
@@ -111,6 +142,7 @@ export async function themeLayers(
         city,
         towers,
         cabin,
+        street,
         ...(night ? { stars: extra, cityLights, towersLights } : { macaws: extra }),
     };
 }

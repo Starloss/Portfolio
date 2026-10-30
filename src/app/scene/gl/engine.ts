@@ -4,6 +4,8 @@
 // watchdog.ts, con tests; esto se prueba con Playwright.
 import { Geometry, Mesh, Program, Renderer, Texture, Triangle } from 'ogl';
 
+import { STREET_ABOVE, streetAgents } from '../street';
+
 import { isSoftwareGpu, rendererName } from './detect';
 import {
     advanceClocks,
@@ -17,7 +19,10 @@ import {
 } from './frame';
 import { noiseData } from './noise';
 import type { FallbackReason, Layout, TextureRequest } from './protocol';
+import { createInstances, writeInstances } from './agents';
 import {
+    AGENT_FRAGMENT,
+    AGENT_VERTEX,
     CLOUDS_FRAGMENT,
     FRONT_FRAGMENT,
     FULLSCREEN_VERTEX,
@@ -59,6 +64,8 @@ const ORDER = [
     'cityLights',
     'towers',
     'towersLights',
+    'street',
+    'agents',
     'front',
 ] as const;
 type Pass = (typeof ORDER)[number];
@@ -134,6 +141,10 @@ export class EscenaGL {
     private raf = 0;
     private running = false;
     private disposed = false;
+    // La Avenida Bolívar: la misma formación que la SVG, en movimiento.
+    private agents = streetAgents();
+    private instances = createInstances();
+    private agentGeometry!: Geometry;
     private failed = false;
     private drawn = false;
     private watchdog: ReturnType<typeof createWatchdog> | null;
@@ -260,6 +271,17 @@ export class EscenaGL {
             uTwinkle: { value: -1 },
             uRim: { value: 0 },
             uSunSide: { value: -1 },
+            uSize: { value: [1, 1] },
+        });
+        // La gente y los vehículos de la calle: un quad por instancia (agents.ts).
+        const agents = this.program(AGENT_VERTEX, AGENT_FRAGMENT, { uTime: { value: 0 } });
+        const i = this.instances;
+        this.agentGeometry = new Geometry(gl, {
+            position: { size: 2, data: new Float32Array([0, 0, 1, 0, 1, 1, 0, 0, 1, 1, 0, 1]) },
+            aAnchor: { size: 2, instanced: 1, data: i.anchor },
+            aSize: { size: 2, instanced: 1, data: i.size },
+            aMeta: { size: 4, instanced: 1, data: i.meta },
+            aColor: { size: 3, instanced: 1, data: i.color },
         });
         const sprite = this.program(SPRITE_VERTEX, SPRITE_FRAGMENT, {
             ...textures,
@@ -313,6 +335,8 @@ export class EscenaGL {
             cityLights: lightsOf('cityLights'),
             towers: both('towers'),
             towersLights: lightsOf('towersLights'),
+            street: both('street'),
+            agents: pass(this.agentGeometry, agents),
             front: pass(fullscreen, front),
         };
     }
@@ -586,6 +610,12 @@ export class EscenaGL {
                 uTime: time,
                 uCell: frame.scale,
             },
+            street: {
+                uOffset: [parallax.street, f.street.top - STREET_ABOVE * f.street.height],
+                uSize: [viewport.width, f.street.height * (1 + STREET_ABOVE)],
+                uDusk: dusk,
+            },
+            agents: { uTime: time },
             front: {
                 uFront: f.frontClouds,
                 uHeight: f.height,
@@ -594,11 +624,29 @@ export class EscenaGL {
                 uTime: time,
             },
         };
+        // Con la calle a la vista, la gente y los vehículos avanzan a su ritmo.
+        const streetVisible = f.street.top < viewport.height;
+        if (streetVisible) {
+            writeInstances(this.instances, this.agents, {
+                time,
+                top: f.street.top,
+                H: f.street.height,
+                width: viewport.width,
+                night: this.night,
+                shiftX: parallax.street,
+            });
+            for (const name of ['aAnchor', 'aSize', 'aMeta', 'aColor']) {
+                this.agentGeometry.attributes[name].needsUpdate = true;
+            }
+            this.agentGeometry.setInstancedCount(Math.max(1, this.instances.count));
+        }
         ORDER.forEach((pass, i) => {
+            if ((pass === 'street' || pass === 'agents') && !streetVisible) return;
             const { mesh, fixed } = this.passes[pass];
             const u = mesh.program.uniforms;
             u.uRes.value = [viewport.width, viewport.height];
             u.uNight.value = this.night;
+            if (u.uSize) u.uSize.value = [viewport.width, viewport.height];
             for (const [k, v] of Object.entries({ ...fixed, ...values[pass] })) u[k].value = v;
             this.renderer.render({ scene: mesh, clear: i === 0 });
         });

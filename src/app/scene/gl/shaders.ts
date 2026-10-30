@@ -129,9 +129,11 @@ uniform float uOpacity;
 uniform float uTwinkle;
 uniform float uRim;
 uniform float uSunSide;
+// Lo que mide la capa en px: la pantalla, salvo la calle, que es una franja.
+uniform vec2 uSize;
 
 void main() {
-    vec2 uv = (screen() - uOffset) / uRes;
+    vec2 uv = (screen() - uOffset) / uSize;
     if (uv.y < 0.0 || uv.y > 1.0) discard;
     // En x, el parallax deja ver el borde: se estira la última columna en vez de cortar.
     uv.x = clamp(uv.x, 0.0, 1.0);
@@ -265,5 +267,136 @@ uniform sampler2D tNight;
 uniform float uNight;
 void main() {
     outColor = mix(texture(tDay, vUv), texture(tNight, vUv), uNight);
+}
+`;
+
+/**
+ * La gente y los vehículos de la Avenida Bolívar, y sus luces: una instancia por cada uno
+ * (agents.ts). El quad se apoya en el suelo y crece hacia arriba; las luces se centran.
+ */
+export const AGENT_VERTEX = /* glsl */ `#version 300 es
+in vec2 position;
+in vec2 aAnchor;
+in vec2 aSize;
+in vec4 aMeta;
+in vec3 aColor;
+uniform vec2 uRes;
+out vec2 vLocal;
+out vec2 vSize;
+out vec4 vMeta;
+out vec3 vColor;
+void main() {
+    float kind = aMeta.x;
+    vec2 local;
+    if (kind > 3.5) {
+        local = vec2(position.x - 0.5, position.y - 0.5) * aSize;
+    } else {
+        // Margen para los peatones, que abren las piernas, y para las ruedas.
+        float padX = kind > 2.5 ? 2.4 : 1.15;
+        local = vec2((position.x - 0.5) * aSize.x * padX, mix(-0.06, 1.06, position.y) * aSize.y);
+    }
+    vec2 px = aAnchor + vec2(local.x, kind > 3.5 ? local.y : -local.y);
+    gl_Position = vec4(px.x / uRes.x * 2.0 - 1.0, 1.0 - px.y / uRes.y * 2.0, 0.0, 1.0);
+    vLocal = vec2(local.x * aMeta.y, local.y);
+    vSize = aSize;
+    vMeta = aMeta;
+    vColor = aColor;
+}
+`;
+
+export const AGENT_FRAGMENT = /* glsl */ `#version 300 es
+precision highp float;
+in vec2 vLocal;
+in vec2 vSize;
+in vec4 vMeta;
+in vec3 vColor;
+uniform float uNight;
+uniform float uTime;
+out vec4 outColor;
+
+const vec3 SIL_DAY = ${vec(DAY.vehicle, 3)};
+const vec3 SIL_NIGHT = ${vec(NIGHT.vehicle, 3)};
+const vec3 WIN_DAY = ${vec(DAY.vehicleWindow, 3)};
+const vec3 WIN_NIGHT = ${vec(NIGHT.vehicleWindow, 3)};
+const vec3 BUS_WIN_NIGHT = ${vec(NIGHT.busWindow, 3)};
+
+float sdBox(vec2 p, vec2 b) {
+    vec2 d = abs(p) - b;
+    return length(max(d, 0.0)) + min(max(d.x, d.y), 0.0);
+}
+float sdRound(vec2 p, vec2 b, float r) { return sdBox(p, b - r) - r; }
+float sdCap(vec2 p, vec2 a, vec2 b, float r) {
+    vec2 pa = p - a, ba = b - a;
+    float h = clamp(dot(pa, ba) / dot(ba, ba), 0.0, 1.0);
+    return length(pa - ba * h) - r;
+}
+
+void main() {
+    float kind = vMeta.x;
+    vec2 p = vLocal;
+    float w = vSize.x;
+    float h = vSize.y;
+    if (kind > 4.5) {
+        // Faro o luz trasera: un punto con resplandor. Suma luz.
+        float r = length(p) / (0.5 * w);
+        float a = exp(-r * r * 4.0) * 0.8 + 1.0 - smoothstep(0.18, 0.35, r);
+        outColor = vec4(vColor * a * vMeta.w, 0.0);
+        return;
+    }
+    if (kind > 3.5) {
+        // El haz de los faros sobre el asfalto, que se abre y se apaga a lo lejos.
+        float u = (p.x + 0.5 * w) / w;
+        float spread = mix(0.1, 0.55, u);
+        float v = p.y / (0.5 * h);
+        float a = (1.0 - smoothstep(spread * 0.35, spread, abs(v))) * (1.0 - u) * (1.0 - u) * smoothstep(0.0, 0.05, u);
+        outColor = vec4(vColor * a * 0.32 * vMeta.w, 0.0);
+        return;
+    }
+    float d = 1e5;
+    float win = 1e5;
+    if (kind < 0.5) {
+        d = sdRound(p - vec2(0.0, 0.36 * h), vec2(0.5 * w, 0.2 * h), 0.12 * h);
+        vec2 q = p - vec2(-0.06 * w, 0.68 * h);
+        q.x -= q.y * 0.55;
+        d = min(d, sdRound(q, vec2(0.27 * w, 0.2 * h), 0.14 * h));
+        win = sdRound(q - vec2(0.0, 0.01 * h), vec2(0.21 * w, 0.11 * h), 0.06 * h);
+        win = max(win, -sdBox(p - vec2(-0.04 * w, 0.68 * h), vec2(0.015 * w, 0.3 * h)));
+        d = min(d, length(p - vec2(0.31 * w, 0.14 * h)) - 0.15 * h);
+        d = min(d, length(p - vec2(-0.31 * w, 0.14 * h)) - 0.15 * h);
+    } else if (kind < 1.5) {
+        d = sdRound(p - vec2(0.0, 0.54 * h), vec2(0.5 * w, 0.42 * h), 0.1 * h);
+        win = sdBox(p - vec2(0.03 * w, 0.68 * h), vec2(0.44 * w, 0.11 * h));
+        float cell = 0.12 * w;
+        float toPillar = cell * 0.5 - abs(mod(p.x + 0.5 * w, cell) - cell * 0.5);
+        win = max(win, -(toPillar - 0.01 * w));
+        d = min(d, length(p - vec2(0.33 * w, 0.13 * h)) - 0.13 * h);
+        d = min(d, length(p - vec2(-0.33 * w, 0.13 * h)) - 0.13 * h);
+    } else if (kind < 2.5) {
+        d = length(p - vec2(0.33 * w, 0.17 * h)) - 0.17 * h;
+        d = min(d, length(p - vec2(-0.33 * w, 0.17 * h)) - 0.17 * h);
+        d = min(d, sdCap(p, vec2(-0.3 * w, 0.3 * h), vec2(0.3 * w, 0.38 * h), 0.07 * h));
+        d = min(d, sdCap(p, vec2(-0.05 * w, 0.45 * h), vec2(0.06 * w, 0.78 * h), 0.1 * h));
+        d = min(d, length(p - vec2(0.1 * w, 0.9 * h)) - 0.1 * h);
+        d = min(d, sdCap(p, vec2(0.06 * w, 0.72 * h), vec2(0.3 * w, 0.55 * h), 0.04 * h));
+        d = min(d, sdCap(p, vec2(-0.02 * w, 0.45 * h), vec2(0.12 * w, 0.25 * h), 0.05 * h));
+    } else {
+        // Un peatón caminando: piernas y brazos que van y vienen, con un leve rebote.
+        float t = uTime * 4.2 + vMeta.z;
+        float sw = sin(t) * 0.42;
+        p.y -= abs(cos(t)) * 0.015 * h;
+        vec2 hip = vec2(0.0, 0.5 * h);
+        vec2 sh = vec2(0.0, 0.76 * h);
+        d = length(p - vec2(0.0, 0.9 * h)) - 0.075 * h;
+        d = min(d, sdCap(p, hip + vec2(0.0, 0.04 * h), vec2(0.0, 0.78 * h), 0.085 * h));
+        d = min(d, sdCap(p, hip, hip + vec2(sin(sw), -cos(sw)) * 0.48 * h, 0.04 * h));
+        d = min(d, sdCap(p, hip, hip + vec2(sin(-sw), -cos(-sw)) * 0.48 * h, 0.04 * h));
+        d = min(d, sdCap(p, sh, sh + vec2(sin(-sw * 0.8), -cos(sw * 0.8)) * 0.33 * h, 0.03 * h));
+        d = min(d, sdCap(p, sh, sh + vec2(sin(sw * 0.8), -cos(sw * 0.8)) * 0.33 * h, 0.03 * h));
+    }
+    vec3 sil = mix(SIL_DAY, SIL_NIGHT, uNight);
+    float body = 1.0 - smoothstep(-0.5, 0.5, d);
+    float wn = (1.0 - smoothstep(-0.5, 0.5, win)) * body;
+    vec3 window = mix(WIN_DAY, kind > 0.5 && kind < 1.5 ? BUS_WIN_NIGHT : WIN_NIGHT, uNight);
+    outColor = vec4(mix(sil, window, wn) * body, body);
 }
 `;

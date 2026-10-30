@@ -15,6 +15,7 @@ import {
     VIEW,
 } from './geometry';
 import { NIGHT_LIGHTS, type ScenePalette } from './palette';
+import { AGENT_SIZE, agentX, STREET_ABOVE, streetAgents, type AgentKind } from './street';
 
 interface PartProps {
     c: ScenePalette;
@@ -407,6 +408,294 @@ export const HaloGradient: React.FC = () => (
         <radialGradient id="scene-halo">
             <stop offset="0" style={{ stopColor: NIGHT_LIGHTS.halo }} stopOpacity={0.55} />
             <stop offset="1" style={{ stopColor: NIGHT_LIGHTS.halo }} stopOpacity={0} />
+        </radialGradient>
+    </defs>
+);
+
+// ---------- Avenida Bolívar ----------
+
+// Cada cuánto hay un poste (con un árbol a mitad de camino), en px de pantalla.
+const POST_EVERY = 260;
+
+const circlePath = (x: number, y: number, r: number) =>
+    `M${x - r} ${y} a${r} ${r} 0 1 0 ${2 * r} 0 a${r} ${r} 0 1 0 ${-2 * r} 0 Z`;
+
+// Una línea con puntas redondas: los brazos, piernas y cuadros de las siluetas. `from` y `to` van
+// en px con y hacia arriba, desde el suelo.
+const Stroke: React.FC<{
+    from: [number, number];
+    to: [number, number];
+    r: number;
+    fill: string;
+}> = ({ from, to, r, fill }) => (
+    <line
+        x1={from[0]}
+        y1={-from[1]}
+        x2={to[0]}
+        y2={-to[1]}
+        style={{ stroke: fill }}
+        strokeWidth={2 * r}
+        strokeLinecap="round"
+    />
+);
+
+/**
+ * La silueta de alguien de la calle, mirando hacia +x y apoyada en (0, 0), con su ancho `w` y alto
+ * `h` en px. Son las mismas proporciones que dibuja la Escena WebGL.
+ */
+export const StreetAgentShape: React.FC<{
+    kind: AgentKind;
+    w: number;
+    h: number;
+    c: ScenePalette;
+    night: boolean;
+}> = ({ kind, w, h, c, night }) => {
+    const wheel = (x: number, y: number, r: number) => (
+        <circle cx={x * w} cy={-y * h} r={r * h} style={{ fill: c.vehicle }} />
+    );
+    const light = (x: number, y: number, r: number, color: string) =>
+        night && <circle cx={x * w} cy={-y * h} r={r * h} style={{ fill: color }} />;
+    if (kind === 'car') {
+        return (
+            <g>
+                <rect
+                    x={-0.5 * w}
+                    y={-0.56 * h}
+                    width={w}
+                    height={0.4 * h}
+                    rx={0.12 * h}
+                    style={{ fill: c.vehicle }}
+                />
+                <path
+                    d={`M${-0.36 * w} ${-0.5 * h} L${-0.2 * w} ${-0.88 * h} L${0.12 * w} ${-0.88 * h} L${0.26 * w} ${-0.5 * h} Z`}
+                    style={{ fill: c.vehicle }}
+                />
+                <path
+                    d={`M${-0.27 * w} ${-0.58 * h} L${-0.16 * w} ${-0.8 * h} L${0.1 * w} ${-0.8 * h} L${0.18 * w} ${-0.58 * h} Z`}
+                    style={{ fill: c.vehicleWindow }}
+                />
+                {wheel(0.31, 0.14, 0.15)}
+                {wheel(-0.31, 0.14, 0.15)}
+                {light(0.5, 0.36, 0.05, NIGHT_LIGHTS.headlight)}
+                {light(-0.5, 0.36, 0.045, NIGHT_LIGHTS.taillight)}
+            </g>
+        );
+    }
+    if (kind === 'bus') {
+        return (
+            <g>
+                <rect
+                    x={-0.5 * w}
+                    y={-0.96 * h}
+                    width={w}
+                    height={0.84 * h}
+                    rx={0.1 * h}
+                    style={{ fill: c.vehicle }}
+                />
+                {[0, 1, 2, 3, 4, 5, 6].map((i) => (
+                    <rect
+                        key={i}
+                        x={(-0.41 + i * 0.12) * w}
+                        y={-0.79 * h}
+                        width={0.1 * w}
+                        height={0.22 * h}
+                        style={{ fill: c.busWindow }}
+                    />
+                ))}
+                {wheel(0.33, 0.13, 0.13)}
+                {wheel(-0.33, 0.13, 0.13)}
+                {light(0.5, 0.28, 0.05, NIGHT_LIGHTS.headlight)}
+                {light(-0.5, 0.28, 0.045, NIGHT_LIGHTS.taillight)}
+            </g>
+        );
+    }
+    if (kind === 'moto') {
+        return (
+            <g>
+                {wheel(0.33, 0.17, 0.17)}
+                {wheel(-0.33, 0.17, 0.17)}
+                <Stroke
+                    from={[-0.3 * w, 0.3 * h]}
+                    to={[0.3 * w, 0.38 * h]}
+                    r={0.07 * h}
+                    fill={c.vehicle}
+                />
+                <Stroke
+                    from={[-0.05 * w, 0.45 * h]}
+                    to={[0.06 * w, 0.78 * h]}
+                    r={0.1 * h}
+                    fill={c.vehicle}
+                />
+                <Stroke
+                    from={[0.06 * w, 0.72 * h]}
+                    to={[0.3 * w, 0.55 * h]}
+                    r={0.04 * h}
+                    fill={c.vehicle}
+                />
+                <Stroke
+                    from={[-0.02 * w, 0.45 * h]}
+                    to={[0.12 * w, 0.25 * h]}
+                    r={0.05 * h}
+                    fill={c.vehicle}
+                />
+                <circle cx={0.1 * w} cy={-0.9 * h} r={0.1 * h} style={{ fill: c.vehicle }} />
+                {light(0.5, 0.5, 0.05, NIGHT_LIGHTS.headlight)}
+                {light(-0.5, 0.5, 0.04, NIGHT_LIGHTS.taillight)}
+            </g>
+        );
+    }
+    // Un peatón a mitad de paso.
+    const step = 0.3;
+    const leg = (a: number): [number, number] => [
+        Math.sin(a) * 0.48 * h,
+        0.5 * h - Math.cos(a) * 0.48 * h,
+    ];
+    const arm = (a: number): [number, number] => [
+        Math.sin(a) * 0.33 * h,
+        0.76 * h - Math.cos(a) * 0.33 * h,
+    ];
+    return (
+        <g>
+            <circle cx={0} cy={-0.9 * h} r={0.075 * h} style={{ fill: c.vehicle }} />
+            <Stroke from={[0, 0.54 * h]} to={[0, 0.78 * h]} r={0.085 * h} fill={c.vehicle} />
+            <Stroke from={[0, 0.5 * h]} to={leg(step)} r={0.04 * h} fill={c.vehicle} />
+            <Stroke from={[0, 0.5 * h]} to={leg(-step)} r={0.04 * h} fill={c.vehicle} />
+            <Stroke from={[0, 0.76 * h]} to={arm(-step * 0.8)} r={0.03 * h} fill={c.vehicle} />
+            <Stroke from={[0, 0.76 * h]} to={arm(step * 0.8)} r={0.03 * h} fill={c.vehicle} />
+        </g>
+    );
+};
+
+/**
+ * La Avenida Bolívar en una franja de `width` px de ancho: la calzada mide `height`, y los postes y
+ * los árboles suben hasta 0,8 de eso por encima. Con `agents`, la gente y los vehículos quietos en
+ * su lugar de partida; la Escena WebGL los dibuja aparte, en movimiento.
+ */
+export const Avenue: React.FC<{
+    c: ScenePalette;
+    width: number;
+    height: number;
+    night: boolean;
+    agents: boolean;
+}> = ({ c, width, height: H, night, agents }) => {
+    const top = STREET_ABOVE * H;
+    const band = (from: number, to: number, fill: string) => (
+        <rect x={0} y={top + from * H} width={width} height={(to - from) * H} style={{ fill }} />
+    );
+    const mark = (s: number, stroke: string, dash?: string) => (
+        <line
+            x1={0}
+            y1={top + s * H}
+            x2={width}
+            y2={top + s * H}
+            style={{ stroke }}
+            strokeWidth={0.012 * H}
+            strokeDasharray={dash}
+        />
+    );
+    const posts = Array.from(
+        { length: Math.ceil(width / POST_EVERY) + 1 },
+        (_, i) => i * POST_EVERY,
+    );
+    return (
+        <g data-part="avenue">
+            {band(0.1, 0.3, c.sidewalk)}
+            {band(0.3, 0.33, c.curb)}
+            {band(0.33, 0.915, c.road)}
+            {band(0.915, 0.94, c.curb)}
+            {band(0.94, 1, c.sidewalk)}
+            {mark(0.535, c.laneMark, '46 44')}
+            {mark(0.82, c.laneMark, '46 44')}
+            {mark(0.672, c.centerLine)}
+            {mark(0.69, c.centerLine)}
+            {posts.map((x) => (
+                <g key={`tree-${x}`} transform={`translate(${x + POST_EVERY / 2},${top})`}>
+                    <rect
+                        x={-0.02 * H}
+                        y={-0.06 * H}
+                        width={0.04 * H}
+                        height={0.32 * H}
+                        style={{ fill: c.tree }}
+                    />
+                    {/* La copa: tres círculos en un solo path (en móvil se cuentan los elementos). */}
+                    <path
+                        d={[
+                            [0, -0.16, 0.22],
+                            [0.15, -0.08, 0.17],
+                            [-0.16, -0.07, 0.16],
+                        ]
+                            .map(([x, y, r]) => circlePath(x * H, y * H, r * H))
+                            .join(' ')}
+                        style={{ fill: c.tree }}
+                    />
+                </g>
+            ))}
+            {posts.map((x) => (
+                <g key={`post-${x}`} transform={`translate(${x},${top})`}>
+                    {night && (
+                        <circle
+                            cx={0.23 * H}
+                            cy={-0.75 * H}
+                            r={0.32 * H}
+                            style={{ fill: 'url(#scene-lamp)' }}
+                        />
+                    )}
+                    <rect
+                        x={-0.014 * H}
+                        y={-0.77 * H}
+                        width={0.028 * H}
+                        height={1.04 * H}
+                        style={{ fill: c.lamppost }}
+                    />
+                    <rect
+                        x={0}
+                        y={-0.777 * H}
+                        width={0.24 * H}
+                        height={0.024 * H}
+                        style={{ fill: c.lamppost }}
+                    />
+                    <rect
+                        x={0.185 * H}
+                        y={-0.766 * H}
+                        width={0.09 * H}
+                        height={0.032 * H}
+                        style={{ fill: night ? NIGHT_LIGHTS.window : c.lamppost }}
+                    />
+                </g>
+            ))}
+            {agents &&
+                streetAgents().map((a, i) => {
+                    const [fw, fh] = AGENT_SIZE[a.kind];
+                    const x = agentX(a, 0, width, H);
+                    // Solo los que caen en pantalla: en un teléfono son menos.
+                    if (x < -fw * H || x > width + fw * H) return null;
+                    return (
+                        <g
+                            // La formación es siempre la misma: el índice es una key estable.
+                            // eslint-disable-next-line @eslint-react/no-array-index-key
+                            key={i}
+                            transform={`translate(${x},${top + a.s * H}) scale(${a.dir},1)`}
+                        >
+                            <StreetAgentShape
+                                kind={a.kind}
+                                w={fw * H * a.scale}
+                                h={fh * H * a.scale}
+                                c={c}
+                                night={night}
+                            />
+                        </g>
+                    );
+                })}
+        </g>
+    );
+};
+
+/** La luz de los postes de Noche. */
+export const LampGradient: React.FC = () => (
+    <defs>
+        <radialGradient id="scene-lamp">
+            <stop offset="0" style={{ stopColor: NIGHT_LIGHTS.window }} stopOpacity={0.6} />
+            <stop offset="1" style={{ stopColor: NIGHT_LIGHTS.window }} stopOpacity={0} />
         </radialGradient>
     </defs>
 );

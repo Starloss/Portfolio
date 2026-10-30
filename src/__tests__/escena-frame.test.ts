@@ -174,7 +174,14 @@ describe('efectos', () => {
         expect(Math.abs(f.parallax.city)).toBeLessThanOrEqual(PARALLAX_PX * 1.2);
         // Las cabinas cuelgan del Ávila: se mueven con él.
         expect(f.cabins[2].x - at(0.5).cabins[2].x).toBeCloseTo(f.parallax.avila);
-        expect(at(0.5).parallax).toEqual({ farRidge: 0, avila: 0, city: 0, towers: 0, sky: 0 });
+        expect(at(0.5).parallax).toEqual({
+            farRidge: 0,
+            avila: 0,
+            city: 0,
+            towers: 0,
+            sky: 0,
+            street: 0,
+        });
     });
 
     it('las nubes cercanas se cruzan a mitad del Viaje, no arriba ni en la ciudad', () => {

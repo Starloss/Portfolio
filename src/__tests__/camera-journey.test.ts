@@ -13,6 +13,7 @@ import {
     sceneFrame,
     toScreen,
 } from '@app/scene/camera';
+import { LIFT_SHARE, streetBand } from '@app/scene/street';
 import { STATIONS } from '@app/scene/geometry';
 
 describe('Viaje de cámara: baja del Hero a la ciudad', () => {
@@ -76,11 +77,13 @@ describe('Viaje de cámara: desplazamiento de las capas', () => {
     });
 
     it('el hundimiento del Hero baja las crestas y el Ávila, pero no la ciudad ni las Torres', () => {
-        // Con la cámara en la ciudad (Hero y Contacto), la ciudad sigue apoyada abajo.
-        expect(layerShift('farRidge', 0, 900, 150)).toBe(150);
-        expect(layerShift('avila', 0, 900, 150)).toBe(150);
-        expect(layerShift('city', 0, 900, 150)).toBe(0);
-        expect(layerShift('towers', 0, 900, 150)).toBe(0);
+        // Con la cámara en la ciudad (Contacto), la ciudad sigue apoyada abajo: solo sube con la
+        // Avenida Bolívar, igual que la montaña, que además lleva el hundimiento del Hero.
+        const lift = streetBand(0, 900).lift;
+        expect(layerShift('farRidge', 0, 900, 150)).toBeCloseTo(150 - lift * LIFT_SHARE.farRidge);
+        expect(layerShift('avila', 0, 900, 150)).toBeCloseTo(150 - lift * LIFT_SHARE.avila);
+        expect(layerShift('city', 0, 900, 150)).toBeCloseTo(-lift);
+        expect(layerShift('towers', 0, 900, 150)).toBeCloseTo(-lift);
         // Al subir, cada capa suma lo que se hunde por su profundidad.
         expect(layerShift('avila', 1, 900, 150)).toBeCloseTo(645, 5);
         expect(layerShift('city', 1, 900, 150)).toBeCloseTo(720, 5);
