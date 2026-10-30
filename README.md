@@ -32,7 +32,7 @@ Every pull request runs these checks in CI:
 - **Lighthouse CI** on the home page and every case study (Spanish routes), at mobile settings. Performance and accessibility must score **≥ 90**. Transfer budgets: **155 kB** of script, **15 kB** of CSS and **30 kB** of fonts.
 - **Unit tests** with a coverage threshold of **80%** for lines, statements, functions and branches, reported to Codecov.
 - **End-to-end tests** with Playwright against the production build. They cover language routing, the per-route `<head>`, the scroll-driven scene, reduced motion, view transitions and keyboard focus in the gallery viewer.
-- **ESLint** with zero warnings, including the React 19 hooks rules, run on Node 22 and 24.
+- **ESLint 10** with zero warnings: React 19 rules (`@eslint-react` and the hooks rules), accessibility (`jsx-a11y`) and import order. It runs on Node 22 and 24.
 
 ## Running it locally
 

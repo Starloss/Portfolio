@@ -115,8 +115,8 @@ const Viewer: React.FC<{
     openerRef: React.RefObject<HTMLElement | null>;
 }> = ({ title, images, index, onIndexChange, onClose, openerRef }) => {
     const { t } = useI18n();
-    const dialog = useRef<HTMLDivElement>(null);
-    const closeButton = useRef<HTMLButtonElement>(null);
+    const dialogRef = useRef<HTMLDivElement>(null);
+    const closeButtonRef = useRef<HTMLButtonElement>(null);
     useCoverScene(true);
 
     const step = (delta: number) => onIndexChange((index + delta + images.length) % images.length);
@@ -125,15 +125,20 @@ const Viewer: React.FC<{
         if (event.key === 'Escape') onClose();
         else if (event.key === 'ArrowRight') step(1);
         else if (event.key === 'ArrowLeft') step(-1);
-        else if (event.key === 'Tab' && dialog.current) {
-            const focusable = Array.from(dialog.current.querySelectorAll<HTMLElement>(FOCUSABLE));
+        else if (event.key === 'Tab' && dialogRef.current) {
+            const focusable = Array.from(
+                dialogRef.current.querySelectorAll<HTMLElement>(FOCUSABLE),
+            );
             const first = focusable[0];
             const last = focusable[focusable.length - 1];
             const active = document.activeElement;
-            if (event.shiftKey && (active === first || !dialog.current.contains(active))) {
+            if (event.shiftKey && (active === first || !dialogRef.current.contains(active))) {
                 event.preventDefault();
                 last.focus();
-            } else if (!event.shiftKey && (active === last || !dialog.current.contains(active))) {
+            } else if (
+                !event.shiftKey &&
+                (active === last || !dialogRef.current.contains(active))
+            ) {
                 event.preventDefault();
                 first.focus();
             }
@@ -145,10 +150,10 @@ const Viewer: React.FC<{
         const returnFocusTo = openerRef.current;
         const onKeyDown = (event: KeyboardEvent) => handleKey(event);
         window.addEventListener('keydown', onKeyDown);
-        closeButton.current?.focus();
+        closeButtonRef.current?.focus();
         // El resto de la página queda inerte: ni el foco ni los lectores de pantalla llegan a él.
         const siblings = Array.from(document.body.children).filter(
-            (el) => !el.contains(dialog.current) && !el.hasAttribute('inert'),
+            (el) => !el.contains(dialogRef.current) && !el.hasAttribute('inert'),
         );
         siblings.forEach((el) => el.setAttribute('inert', ''));
         return () => {
@@ -168,14 +173,14 @@ const Viewer: React.FC<{
 
     return createPortal(
         <div
-            ref={dialog}
+            ref={dialogRef}
             role="dialog"
             aria-modal="true"
             aria-label={`${title} · ${t('project_gallery_title')}`}
             className="fixed inset-0 z-[100] flex flex-col items-center justify-center gap-4 bg-black/95 p-4 md:p-10"
         >
             <button
-                ref={closeButton}
+                ref={closeButtonRef}
                 type="button"
                 onClick={onClose}
                 className={`absolute right-4 top-4 ${control}`}

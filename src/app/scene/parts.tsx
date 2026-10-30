@@ -297,6 +297,8 @@ const Windows: React.FC<{ paths: string[]; animate: boolean; offset: number }> =
     <g data-part="windows" className="scene-fade-in">
         {paths.map((d, g) => (
             <path
+                // Los grupos de ventanas salen de una geometría fija: el índice es una key estable.
+                // eslint-disable-next-line @eslint-react/no-array-index-key
                 key={g}
                 d={d}
                 style={{ fill: NIGHT_LIGHTS.window, ...(animate ? delay(offset + g * 2.3) : {}) }}

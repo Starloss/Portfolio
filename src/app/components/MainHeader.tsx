@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { FiMoon, FiSun } from 'react-icons/fi';
 import { Link, useLocation } from 'react-router-dom';
 import { trackCvDownload } from '@lib/analytics';
@@ -23,21 +23,21 @@ interface MainHeaderProps {
     isHome?: boolean;
 }
 
+// La barra gana sombra en cuanto la página deja la parte de arriba. El valor es booleano: el scroll
+// solo vuelve a renderizar el header cuando cruza ese umbral.
+const subscribeToScroll = (onChange: () => void) => {
+    window.addEventListener('scroll', onChange, { passive: true });
+    return () => window.removeEventListener('scroll', onChange);
+};
+const isScrolled = () => window.scrollY > 4;
+
 export const MainHeader: React.FC<MainHeaderProps> = ({ activeId, isHome = false }) => {
     const { t, locale } = useI18n();
     const location = useLocation();
     const { theme, toggleTheme } = useTheme();
     const [menuOpen, setMenuOpen] = useState(false);
-    const [scrolled, setScrolled] = useState(false);
+    const scrolled = useSyncExternalStore(subscribeToScroll, isScrolled, () => false);
     const mobileMenuRef = useRef<HTMLDivElement | null>(null);
-
-    useEffect(() => {
-        if (typeof window === 'undefined') return;
-        const onScroll = () => setScrolled(window.scrollY > 4);
-        onScroll();
-        window.addEventListener('scroll', onScroll, { passive: true });
-        return () => window.removeEventListener('scroll', onScroll);
-    }, []);
 
     useEffect(() => {
         if (!menuOpen) return;

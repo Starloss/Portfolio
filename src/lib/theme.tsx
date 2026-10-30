@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
+import React, { createContext, use, useEffect, useState, useCallback } from 'react';
 
 interface ThemeContextValue {
     theme: 'light' | 'dark';
@@ -40,11 +40,11 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         setTheme((t) => (t === 'dark' ? 'light' : 'dark'));
     }, []);
 
-    return <ThemeContext.Provider value={{ theme, toggleTheme }}>{children}</ThemeContext.Provider>;
+    return <ThemeContext value={{ theme, toggleTheme }}>{children}</ThemeContext>;
 };
 
 export function useTheme() {
-    const ctx = useContext(ThemeContext);
+    const ctx = use(ThemeContext);
     if (!ctx) throw new Error('useTheme debe usarse dentro de ThemeProvider');
     return ctx;
 }
