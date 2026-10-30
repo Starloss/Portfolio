@@ -29,7 +29,7 @@ The decisions are recorded as ADRs in [`docs/adr/`](docs/adr). They are written 
 
 Every pull request runs these checks in CI:
 
-- **Lighthouse CI** on the home page and every case study (Spanish routes), at mobile settings. Performance and accessibility must score **≥ 90**. Transfer budgets: **155 kB** of script, **15 kB** of CSS and **30 kB** of fonts.
+- **Lighthouse CI** on the home page in both languages and every case study (Spanish routes), at mobile settings. Performance and accessibility must score **≥ 90**. Transfer budgets: **155 kB** of script, **15 kB** of CSS and **30 kB** of fonts.
 - **Unit tests** with a coverage threshold of **80%** for lines, statements, functions and branches, reported to Codecov.
 - **End-to-end tests** with Playwright against the production build. They cover language routing, the per-route `<head>`, the scroll-driven scene, reduced motion, view transitions and keyboard focus in the gallery viewer.
 - **ESLint** with zero warnings, including the React 19 hooks rules, run on Node 22 and 24.

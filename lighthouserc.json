@@ -6,6 +6,7 @@
       "numberOfRuns": 5,
       "url": [
         "http://localhost/",
+        "http://localhost/en/",
         "http://localhost/projects/superwallet",
         "http://localhost/projects/be-booking-engine",
         "http://localhost/projects/wedding-invitation"
