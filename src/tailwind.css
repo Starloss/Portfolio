@@ -1,6 +1,26 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import 'tailwindcss';
+@plugin './app/theme/tokens-plugin.cjs';
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* Utilidades de la identidad (bg-page, text-ink, border-line…) sobre las variables --ui-* de
+   Día y de Noche que publica tokens-plugin.cjs. `inline`: las utilidades usan la variable y no
+   su valor en :root, así .dark las cambia. */
+@theme inline {
+    --color-page: var(--ui-page);
+    --color-primary: var(--ui-primary);
+    --color-on-primary: var(--ui-on-primary);
+    --color-amber: var(--ui-amber-text);
+    --color-amber-decor: var(--ui-amber-decor);
+    --color-ink: var(--ui-text);
+    --color-muted: var(--ui-text-muted);
+    --color-surface: var(--ui-surface);
+    --color-line: var(--ui-border);
+    --color-focus-inner: var(--ui-focus-inner);
+    --color-focus-outer: var(--ui-focus-outer);
+    --font-display:
+        'Space Grotesk', 'Space Grotesk Fallback', 'Space Grotesk Fallback Android', system-ui,
+        sans-serif;
+}
 
 @layer base {
     /* Títulos en Space Grotesk 700 (subset latino), auto-hospedada y precargada en index.html. */
@@ -51,22 +71,15 @@
     h3 {
         @apply font-display font-bold;
     }
+    /* Tailwind 4 deja los botones con el cursor por defecto; aquí siguen mostrando la mano. */
+    button:not(:disabled),
+    [role='button']:not(:disabled) {
+        cursor: pointer;
+    }
     /* Foco visible de dos colores (técnica C40 del W3C): se ve sobre los bloques y sobre el cielo. */
     :focus-visible {
         outline: 2px solid var(--ui-focus-outer);
         outline-offset: 2px;
         box-shadow: 0 0 0 2px var(--ui-focus-inner);
-    }
-}
-
-@layer components {
-    .container-section {
-        @apply space-y-4;
-    }
-}
-
-@layer utilities {
-    .text-balance {
-        text-wrap: balance;
     }
 }

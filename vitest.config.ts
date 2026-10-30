@@ -35,8 +35,6 @@ export default defineConfig({
       },
       exclude: [
         '.eslintrc.*',
-        'postcss.config.*',
-        'tailwind.config.*',
         'vite.config.*',
         'vitest.config.*',
         'eslint.config.*',

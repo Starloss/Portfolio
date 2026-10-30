@@ -42,7 +42,7 @@ describe('Home interactions', () => {
         Object.defineProperty(window, 'scrollY', { value: 10, writable: true });
         fireEvent.scroll(window);
         const header = screen.getByRole('banner');
-        expect(header.className).toMatch(/shadow-sm/);
+        expect(header.className).toMatch(/shadow-xs/);
     });
 
     it('toggle de tema actualiza la clase dark', () => {
