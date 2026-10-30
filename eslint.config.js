@@ -7,16 +7,20 @@ import prettierPlugin from 'eslint-plugin-prettier';
 import importPlugin from 'eslint-plugin-import-x';
 import jsxA11y from 'eslint-plugin-jsx-a11y';
 
+const files = ['**/*.{ts,tsx}'];
+const ignores = ['dist', 'build', 'coverage', 'node_modules'];
 const reactRecommended = eslintReact.configs['recommended-typescript'];
 
 export default [
   {
-    files: ['**/*.{ts,tsx}'],
+    files,
+    ignores,
     ...reactRecommended,
     rules: {
       ...reactRecommended.rules,
       // Las reglas de hooks y del React Compiler las lleva react-hooks; estas son sus copias.
-      // set-state-in-effect se queda: detecta casos que la de react-hooks no ve.
+      // set-state-in-effect se queda: ve el setState dentro de un listener que el efecto llama
+      // al montar (así encontró el scroll del header), y la de react-hooks no.
       '@eslint-react/error-boundaries': 'off',
       '@eslint-react/exhaustive-deps': 'off',
       '@eslint-react/purity': 'off',
@@ -31,8 +35,8 @@ export default [
     },
   },
   {
-    files: ['**/*.{ts,tsx}'],
-    ignores: ['dist', 'build', 'coverage', 'node_modules'],
+    files,
+    ignores,
     languageOptions: {
       ecmaVersion: 2023,
       sourceType: 'module',
