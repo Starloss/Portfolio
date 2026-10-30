@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+
 import { describe, it, expect } from 'vitest';
 import { DAY, NIGHT, NIGHT_LIGHTS } from '@app/scene/palette';
 import { UI_TOKENS, type UiMode } from '@app/theme/tokens';
@@ -64,5 +66,19 @@ describe('Tokens de color de la UI', () => {
     it('el fondo de la página es el color del cielo de cada modo', () => {
         expect(UI_TOKENS.day.page).toBe('#5ea8dc');
         expect(UI_TOKENS.night.page).toBe('#050a1a');
+    });
+});
+
+describe('tokens en Tailwind', () => {
+    // @theme escribe a mano los nombres --ui-* que tokens-plugin.cjs deriva del JSON: un error de
+    // tipeo no falla el build, deja la utilidad sin color.
+    it('cada var(--ui-*) de tailwind.css existe en tokens.json', () => {
+        const css = readFileSync('src/tailwind.css', 'utf8');
+        const used = [...css.matchAll(/var\(--ui-([a-z-]+)\)/g)].map((m) => m[1]);
+        const published = Object.keys(UI_TOKENS.day).map((k) =>
+            k.replace(/[A-Z]/g, (c) => `-${c.toLowerCase()}`),
+        );
+        expect(used.length).toBeGreaterThan(0);
+        expect(used.filter((name) => !published.includes(name))).toEqual([]);
     });
 });

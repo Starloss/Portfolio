@@ -6,8 +6,8 @@ const tokens = require('./tokens.json');
 
 const kebab = (key) => key.replace(/[A-Z]/g, (c) => `-${c.toLowerCase()}`);
 const vars = (mode) =>
-  Object.fromEntries(Object.entries(tokens[mode]).map(([k, v]) => [`--ui-${kebab(k)}`, v]));
+    Object.fromEntries(Object.entries(tokens[mode]).map(([k, v]) => [`--ui-${kebab(k)}`, v]));
 
 module.exports = plugin(({ addBase }) => {
-  addBase({ ':root': vars('day'), '.dark': vars('night') });
+    addBase({ ':root': vars('day'), '.dark': vars('night') });
 });
