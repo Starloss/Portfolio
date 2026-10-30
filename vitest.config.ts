@@ -43,11 +43,10 @@ export default defineConfig({
         '**/__tests__/**',
         // Escena WebGL (ADR 0003): el adaptador delgado sobre ogl, sus shaders y la rasterización
         // necesitan una GPU y un navegador real. Lo prueba Playwright (e2e/escena-webgl.spec.ts);
-        // la lógica (detect, watchdog, frame) sí tiene tests unitarios.
+        // la lógica (detect, watchdog, frame, clocks) y el componente SceneGL sí tienen tests.
         'src/app/scene/gl/engine.ts',
         'src/app/scene/gl/shaders.ts',
         'src/app/scene/gl/textures.tsx',
-        'src/app/scene/gl/SceneGL.tsx',
         'e2e/**',
         'scripts/**',
         'playwright.config.*',

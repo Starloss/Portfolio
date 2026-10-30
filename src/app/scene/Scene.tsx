@@ -29,7 +29,11 @@ const MOBILE_QUERY = '(max-width: 767px)';
 // Cuánto se oscurece el cielo arriba de todo con la cámara sobre las nubes; poco, para que el
 // texto del Hero siga contrastando.
 export const SKY_DARKENING = 0.3;
+/** Cabina del visitante, en unidades SVG (viewBox -6 0 12 17). */
 export const CABIN_WIDTH = 12;
+export const CABIN_HEIGHT = 17;
+/** Las nubes son elipses de ancho / alto = 3,2. */
+export const CLOUD_ASPECT = 3.2;
 
 type StyledPart = 'farRidge' | 'avila' | 'city' | 'towers' | 'clouds' | 'skyHigh' | 'cabin';
 type PartStyles = Record<StyledPart, MotionStyle>;
@@ -96,7 +100,7 @@ const JourneyStyles: React.FC<{
     return <>{children(styles)}</>;
 };
 
-export interface PageLayout {
+interface PageLayout {
     column: TextColumn | null;
     headerBottom: number;
 }
@@ -138,6 +142,19 @@ export function usePageLayout(enabled: boolean, viewport: Viewport): PageLayout 
     return enabled ? page : null;
 }
 
+/**
+ * Lo que la Escena ajusta a la página: cuánto hundir la montaña en el Hero y dónde va la luna. Lo
+ * comparten la Escena SVG y la WebGL.
+ */
+export function pageFit(viewport: Viewport, page: PageLayout | null, night: boolean) {
+    return {
+        sink: page?.column ? mountainSink(viewport, page.column, skyline(night)) : 0,
+        moon: page?.column
+            ? moonPosition(viewport, page.column, page.headerBottom)
+            : { x: viewport.width - 90, y: 140 },
+    };
+}
+
 export const CLOUDS = [
     { left: 8, top: 20, width: 28, drift: 6 },
     { left: 55, top: 12, width: 34, drift: -5 },
@@ -165,10 +182,7 @@ export const Scene: React.FC<{ height?: number }> = ({ height }) => {
     const journeyMode = height === undefined;
     const page = usePageLayout(journeyMode, viewport);
 
-    const sink = page?.column ? mountainSink(viewport, page.column, skyline(night)) : 0;
-    const moon = page?.column
-        ? moonPosition(viewport, page.column, page.headerBottom)
-        : { x: viewport.width - 90, y: 140 };
+    const { sink, moon } = pageFit(viewport, page, night);
     const travels = journeyMode && !reduced;
 
     // Animan siempre las cabinas y las estrellas; nubes, guacamayas y ventanas solo en escritorio.
@@ -229,7 +243,7 @@ export const Scene: React.FC<{ height?: number }> = ({ height }) => {
                                     left: `${cloud.left}vw`,
                                     top: `${cloud.top}vh`,
                                     width: `${cloud.width}vw`,
-                                    height: `${cloud.width / 3.2}vw`,
+                                    height: `${cloud.width / CLOUD_ASPECT}vw`,
                                     '--drift': `${cloud.drift}vw`,
                                 } as React.CSSProperties
                             }
@@ -253,7 +267,7 @@ export const Scene: React.FC<{ height?: number }> = ({ height }) => {
                     <svg
                         viewBox="-6 0 12 17"
                         width={CABIN_WIDTH * frame.scale}
-                        height={17 * frame.scale}
+                        height={CABIN_HEIGHT * frame.scale}
                     >
                         <CabinShape c={VARS} />
                     </svg>
@@ -294,5 +308,4 @@ export const Scene: React.FC<{ height?: number }> = ({ height }) => {
     );
 };
 
-export const skyGradient = (c: typeof DAY) =>
-    `linear-gradient(to bottom, ${c.skyTop}, ${c.skyBottom})`;
+const skyGradient = (c: typeof DAY) => `linear-gradient(to bottom, ${c.skyTop}, ${c.skyBottom})`;

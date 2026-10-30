@@ -28,14 +28,13 @@ in vec2 position;
 void main() { gl_Position = vec4(position, 0.0, 1.0); }
 `;
 
-/** Cielo de Día y de Noche, el oscurecimiento sobre las nubes y la luna con su resplandor. */
+/** Cielo de Día y de Noche y el oscurecimiento sobre las nubes. */
 export const SKY_FRAGMENT = /* glsl */ `#version 300 es
 precision highp float;
 out vec4 outColor;
 ${SCREEN}
 uniform float uNight;
 uniform float uSkyHigh;
-uniform vec3 uMoon;
 
 const vec3 DAY_TOP = ${vec(DAY.skyTop, 3)};
 const vec3 DAY_BOTTOM = ${vec(DAY.skyBottom, 3)};
@@ -43,26 +42,39 @@ const vec3 DAY_HIGH = ${vec(DAY.skyHigh, 3)};
 const vec3 NIGHT_TOP = ${vec(NIGHT.skyTop, 3)};
 const vec3 NIGHT_BOTTOM = ${vec(NIGHT.skyBottom, 3)};
 const vec3 NIGHT_HIGH = ${vec(NIGHT.skyHigh, 3)};
-const vec3 MOON = ${vec(NIGHT_LIGHTS.moon, 3)};
-const vec3 MOON_GLOW = vec3(1.0, 0.945, 0.769);
 
 void main() {
     vec2 p = screen();
     float t = p.y / uRes.y;
     vec3 sky = mix(mix(DAY_TOP, DAY_BOTTOM, t), mix(NIGHT_TOP, NIGHT_BOTTOM, t), uNight);
     sky = mix(sky, mix(DAY_HIGH, NIGHT_HIGH, uNight), uSkyHigh * max(0.0, 1.0 - t / 0.75));
-    if (uMoon.z > 0.0) {
-        float d = length(p - uMoon.xy);
-        // box-shadow: 0 0 28px rgba(255, 241, 196, 0.45): el disco desenfocado con sigma 14. En el
-        // borde queda la mitad de la opacidad y hacia afuera cae como la función de error.
-        float z = max(d - uMoon.z, 0.0) / (14.0 * 1.41421);
-        // tanh de un número grande da NaN en algunas GPUs: a partir de 4 ya vale 1.
-        z = min(z, 4.0);
-        float glow = 0.45 * 0.5 * (1.0 - tanh(1.12838 * z + 0.10213 * z * z * z));
-        sky = mix(sky, MOON_GLOW, glow * uNight);
-        sky = mix(sky, MOON, smoothstep(uMoon.z + 0.75, uMoon.z - 0.75, d) * uNight);
-    }
     outColor = vec4(sky, 1.0);
+}
+`;
+
+/** La luna con su resplandor, encima de las estrellas como en la SVG. */
+export const MOON_FRAGMENT = /* glsl */ `#version 300 es
+precision highp float;
+out vec4 outColor;
+${SCREEN}
+uniform float uNight;
+uniform vec3 uMoon;
+
+const vec3 MOON = ${vec(NIGHT_LIGHTS.moon, 3)};
+const vec3 MOON_GLOW = vec3(1.0, 0.945, 0.769);
+
+void main() {
+    float d = length(screen() - uMoon.xy);
+    // box-shadow: 0 0 28px rgba(255, 241, 196, 0.45): el disco desenfocado con sigma 14. En el
+    // borde queda la mitad de la opacidad y hacia afuera cae como la función de error.
+    float z = max(d - uMoon.z, 0.0) / (14.0 * 1.41421);
+    // tanh de un número grande da NaN en algunas GPUs: a partir de 4 ya vale 1.
+    z = min(z, 4.0);
+    float glow = 0.45 * 0.5 * (1.0 - tanh(1.12838 * z + 0.10213 * z * z * z));
+    float disc = smoothstep(uMoon.z + 0.75, uMoon.z - 0.75, d);
+    float a = (disc + (1.0 - disc) * glow) * uNight * step(0.0, uMoon.z - 0.5);
+    vec3 c = mix(MOON_GLOW, MOON, disc);
+    outColor = vec4(c * a, a);
 }
 `;
 
@@ -91,13 +103,15 @@ void main() {
         // Tres grupos desfasados 1,7 s, de 0,85 a 0,25 de opacidad cada 5 s.
         float group = floor(hash(floor(screen() / 24.0)) * 3.0);
         float phase = fract((uTwinkle - group * 1.7) / 5.0);
-        c *= mix(0.85, 0.25, 0.5 - 0.5 * cos(phase * 6.2832));
+        // Keyframes 0,85 → 0,25 → 0,85, con ease-in-out en cada tramo (smoothstep se le parece).
+        float k = phase < 0.5 ? smoothstep(0.0, 1.0, phase * 2.0) : smoothstep(1.0, 0.0, phase * 2.0 - 1.0);
+        c *= mix(0.85, 0.25, k);
     }
     outColor = c;
 }
 `;
 
-/** Las tres nubes de fondo: gradientes radiales como los de CSS, que derivan de lado a lado. */
+/** Las tres nubes lejanas: gradientes radiales como los de CSS, que derivan de lado a lado. */
 export const CLOUDS_FRAGMENT = /* glsl */ `#version 300 es
 precision highp float;
 out vec4 outColor;

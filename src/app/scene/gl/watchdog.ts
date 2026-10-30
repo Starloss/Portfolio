@@ -11,27 +11,28 @@ export const WATCHDOG = {
     sustainMs: 2000,
     /** Al arrancar o volver de una pausa (texturas, primer cuadro), no se mide. */
     warmupMs: 1500,
-    /** Un hueco así entre cuadros es una pausa (pestaña oculta, Escena tapada), no lentitud. */
-    pauseMs: 400,
 } as const;
 
 export type Verdict = 'ok' | 'fallback';
 
 export function createWatchdog(start: number) {
-    let measureFrom = start + WATCHDOG.warmupMs;
-    let last = start;
+    let measureFrom = 0;
     let windowStart = -1;
     let frames = 0;
     let slowSince = -1;
 
+    // Las pausas (pestaña oculta, Escena tapada) las avisa quien detiene la Escena: un hueco
+    // largo entre cuadros, en cambio, es justamente la lentitud que hay que medir.
+    const restart = (now: number) => {
+        measureFrom = now + WATCHDOG.warmupMs;
+        windowStart = -1;
+        slowSince = -1;
+    };
+    restart(start);
+
     return {
+        restart,
         frame(now: number): Verdict {
-            if (now - last > WATCHDOG.pauseMs) {
-                measureFrom = now + WATCHDOG.warmupMs;
-                windowStart = -1;
-                slowSince = -1;
-            }
-            last = now;
             if (now < measureFrom) return 'ok';
             if (windowStart < 0) {
                 windowStart = now;

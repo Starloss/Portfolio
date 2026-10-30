@@ -4,13 +4,14 @@
 import { Geometry, Mesh, Program, Renderer, Texture, Triangle } from 'ogl';
 
 import type { SceneFrame, Viewport } from '../camera';
-import { CLOUDS } from '../Scene';
 
-import { escenaFrame } from './frame';
+import { readClocks } from './clocks';
+import { cssEase, escenaFrame } from './frame';
 import {
     CLOUDS_FRAGMENT,
     FULLSCREEN_VERTEX,
     LAYER_FRAGMENT,
+    MOON_FRAGMENT,
     SKY_FRAGMENT,
     SPRITE_FRAGMENT,
     SPRITE_VERTEX,
@@ -24,27 +25,50 @@ export interface Layout {
     moon: { x: number; y: number } | null;
 }
 
-type Gl = Renderer['gl'];
 type Theme = 'day' | 'night';
+type Uniforms = Record<string, { value: unknown }>;
 
-// El mismo atardecer de colores que la SVG (transition: 0.6s ease).
+// Las capas, de atrás hacia adelante, en el mismo orden que las de la Escena SVG.
+const ORDER = [
+    'sky',
+    'stars',
+    'moon',
+    'macaws',
+    'clouds',
+    'far',
+    'avilaBack',
+    'cabin0',
+    'cabin1',
+    'avilaFront',
+    'visitor',
+    'city',
+    'towers',
+] as const;
+type Pass = (typeof ORDER)[number];
+
+// El mismo cambio de colores que la SVG (transition: 0.6s ease).
 const THEME_SECONDS = 0.6;
 const MOON_RADIUS = 26;
-const ease = (t: number) => t * t * (3 - 2 * t);
 
 export class EscenaGL {
     onFirstFrame?: () => void;
     /** Cada cuadro dibujado, con su hora: lo usa el vigilante de FPS. */
     onFrame?: (now: number) => void;
-    onLost?: () => void;
+    /** Se perdió el contexto o no se pudieron preparar las texturas: hay que volver a la SVG. */
+    onFailed?: (reason: 'context-lost' | 'init-failed') => void;
 
     private renderer: Renderer;
-    private gl: Gl;
+    private gl: Renderer['gl'];
     private textures = new Map<string, Texture>();
-    private loaded: Record<Theme, boolean> = { day: false, night: false };
-    private loading: Partial<Record<Theme, Promise<void>>> = {};
+    private passes: Record<Pass, Mesh>;
     private layout: Layout | null = null;
     private sizeKey = '';
+    // Cada cambio de tamaño es una generación nueva de texturas. Mientras se rasterizan, se sigue
+    // dibujando con las anteriores (estiradas) en vez de dejar el canvas vacío.
+    private generation = 0;
+    private ready: Record<Theme, number> = { day: -1, night: -1 };
+    private pending: Partial<Record<Theme, { generation: number; promise: Promise<void> }>> = {};
+    private wanted = 0;
     private night = 0;
     private target = 0;
     private themeFrom = 0;
@@ -63,7 +87,7 @@ export class EscenaGL {
         this.renderer.autoClear = false;
         this.gl = this.renderer.gl;
         canvas.addEventListener('webglcontextlost', this.onContextLost);
-        this.build();
+        this.passes = this.build();
     }
 
     private texture(name: string): Texture {
@@ -79,15 +103,16 @@ export class EscenaGL {
         return t;
     }
 
-    private program(
-        vertex: string,
-        fragment: string,
-        uniforms: Record<string, { value: unknown }>,
-    ) {
+    private mesh(geometry: Geometry, vertex: string, fragment: string, uniforms: Uniforms) {
         const program = new Program(this.gl, {
             vertex,
             fragment,
-            uniforms: { uRes: { value: [1, 1] }, uDpr: { value: this.dpr }, ...uniforms },
+            uniforms: {
+                uRes: { value: [1, 1] },
+                uDpr: { value: this.dpr },
+                uNight: { value: 0 },
+                ...uniforms,
+            },
             transparent: true,
             depthTest: false,
             depthWrite: false,
@@ -95,133 +120,93 @@ export class EscenaGL {
             cullFace: false,
         });
         program.setBlendFunc(this.gl.ONE, this.gl.ONE_MINUS_SRC_ALPHA);
-        return program;
+        return new Mesh(this.gl, { geometry, program, frustumCulled: false });
     }
 
-    private build() {
-        const gl = this.gl;
-        const fullscreen = new Triangle(gl);
-        const quad = new Geometry(gl, {
+    private build(): Record<Pass, Mesh> {
+        const fullscreen = new Triangle(this.gl);
+        const quad = new Geometry(this.gl, {
             position: { size: 2, data: new Float32Array([0, 0, 1, 0, 1, 1, 0, 0, 1, 1, 0, 1]) },
         });
-        const mesh = (geometry: Geometry, program: Program) =>
-            new Mesh(gl, { geometry, program, frustumCulled: false });
-
-        const sky = mesh(
-            fullscreen,
-            this.program(FULLSCREEN_VERTEX, SKY_FRAGMENT, {
-                uNight: { value: 0 },
-                uSkyHigh: { value: 0 },
+        // Una capa rasterizada; las de un solo tema usan la misma textura de los dos lados.
+        const layer = (day: string, night: string, extra: Uniforms = {}) =>
+            this.mesh(fullscreen, FULLSCREEN_VERTEX, LAYER_FRAGMENT, {
+                tDay: { value: this.texture(day) },
+                tNight: { value: this.texture(night) },
+                uOffset: { value: [0, 0] },
+                uOpacity: { value: 1 },
+                uTwinkle: { value: -1 },
+                ...extra,
+            });
+        const both = (name: LayerName) => layer(`${name}:day`, `${name}:night`);
+        const cabin = () =>
+            this.mesh(quad, SPRITE_VERTEX, SPRITE_FRAGMENT, {
+                tDay: { value: this.texture('cabin:day') },
+                tNight: { value: this.texture('cabin:night') },
+                uRect: { value: [0, 0, 0, 0] },
+            });
+        return {
+            sky: this.mesh(fullscreen, FULLSCREEN_VERTEX, SKY_FRAGMENT, { uSkyHigh: { value: 0 } }),
+            stars: layer('stars:night', 'stars:night', { uTwinkle: { value: 0 } }),
+            moon: this.mesh(fullscreen, FULLSCREEN_VERTEX, MOON_FRAGMENT, {
                 uMoon: { value: [0, 0, 0] },
             }),
-        );
-        const clouds = mesh(
-            fullscreen,
-            this.program(FULLSCREEN_VERTEX, CLOUDS_FRAGMENT, {
-                uNight: { value: 0 },
+            macaws: layer('macaws:day', 'macaws:day'),
+            clouds: this.mesh(fullscreen, FULLSCREEN_VERTEX, CLOUDS_FRAGMENT, {
                 uOpacity: { value: 0 },
                 uCloud0: { value: [0, 0, 1, 1] },
                 uCloud1: { value: [0, 0, 1, 1] },
                 uCloud2: { value: [0, 0, 1, 1] },
             }),
-        );
-        // Las de un solo tema usan la misma textura de los dos lados de la mezcla.
-        const layer = (name: LayerName, day = name, night = name) =>
-            mesh(
-                fullscreen,
-                this.program(FULLSCREEN_VERTEX, LAYER_FRAGMENT, {
-                    tDay: { value: this.texture(`${day}:day`) },
-                    tNight: { value: this.texture(`${night}:night`) },
-                    uNight: { value: 0 },
-                    uOffset: { value: [0, 0] },
-                    uOpacity: { value: 1 },
-                    uTwinkle: { value: -1 },
-                }),
-            );
-        const sprite = () =>
-            mesh(
-                quad,
-                this.program(SPRITE_VERTEX, SPRITE_FRAGMENT, {
-                    tDay: { value: this.texture('cabin:day') },
-                    tNight: { value: this.texture('cabin:night') },
-                    uNight: { value: 0 },
-                    uRect: { value: [0, 0, 0, 0] },
-                }),
-            );
-        const stars = mesh(
-            fullscreen,
-            this.program(FULLSCREEN_VERTEX, LAYER_FRAGMENT, {
-                tDay: { value: this.texture('stars:night') },
-                tNight: { value: this.texture('stars:night') },
-                uNight: { value: 0 },
-                uOffset: { value: [0, 0] },
-                uOpacity: { value: 0 },
-                uTwinkle: { value: 0 },
-            }),
-        );
-        const macaws = mesh(
-            fullscreen,
-            this.program(FULLSCREEN_VERTEX, LAYER_FRAGMENT, {
-                tDay: { value: this.texture('macaws:day') },
-                tNight: { value: this.texture('macaws:day') },
-                uNight: { value: 0 },
-                uOffset: { value: [0, 0] },
-                uOpacity: { value: 1 },
-                uTwinkle: { value: -1 },
-            }),
-        );
-        const [cabin0, cabin1, visitor] = [sprite(), sprite(), sprite()];
-        this.meshes = {
-            sky,
-            stars,
-            macaws,
-            clouds,
-            far: layer('far'),
-            avilaBack: layer('avilaBack'),
-            cabin0,
-            cabin1,
-            avilaFront: layer('avilaFront'),
-            visitor,
-            city: layer('city'),
-            towers: layer('towers'),
+            far: both('far'),
+            avilaBack: both('avilaBack'),
+            cabin0: cabin(),
+            cabin1: cabin(),
+            avilaFront: both('avilaFront'),
+            visitor: cabin(),
+            city: both('city'),
+            towers: both('towers'),
         };
     }
-
-    // En el mismo orden que las capas de la Escena SVG, de atrás hacia adelante.
-    private meshes!: Record<string, Mesh>;
 
     private onContextLost = (event: Event) => {
         event.preventDefault();
         this.stop();
-        this.onLost?.();
+        this.onFailed?.('context-lost');
     };
 
-    private async loadTheme(theme: Theme) {
+    /** Rasteriza y sube las capas de un tema para el tamaño actual; una sola vez por generación. */
+    private load(theme: Theme): Promise<void> {
         const layout = this.layout;
-        if (!layout) return;
-        const key = this.sizeKey;
-        const images = await themeLayers(
-            theme === 'night',
-            layout.frame,
-            layout.viewport,
-            this.dpr,
-        );
-        // Si la pantalla cambió de tamaño mientras tanto, estas ya no sirven.
-        if (this.disposed || key !== this.sizeKey) return;
-        for (const [name, image] of Object.entries(images)) {
-            const t = this.texture(`${name}:${theme}`);
-            t.image = image;
-            t.needsUpdate = true;
-        }
-        this.loaded[theme] = true;
+        const generation = this.generation;
+        if (!layout || this.ready[theme] === generation) return Promise.resolve();
+        const pending = this.pending[theme];
+        if (pending?.generation === generation) return pending.promise;
+        const promise = themeLayers(theme === 'night', layout.frame, layout.viewport, this.dpr)
+            .then((images) => {
+                // Si la pantalla cambió de tamaño mientras tanto, ya viene otra generación.
+                if (this.disposed || generation !== this.generation) return;
+                for (const [name, image] of Object.entries(images)) {
+                    const t = this.texture(`${name}:${theme}`);
+                    t.image = image;
+                    t.needsUpdate = true;
+                }
+                this.ready[theme] = generation;
+            })
+            .catch(() => {
+                if (this.disposed) return;
+                this.stop();
+                this.onFailed?.('init-failed');
+            })
+            .finally(() => {
+                if (this.pending[theme]?.promise === promise) delete this.pending[theme];
+            });
+        this.pending[theme] = { generation, promise };
+        return promise;
     }
 
-    private ensureTheme(theme: Theme) {
-        if (this.loaded[theme]) return Promise.resolve();
-        this.loading[theme] ??= this.loadTheme(theme).finally(() => {
-            delete this.loading[theme];
-        });
-        return this.loading[theme]!;
+    private get theme(): Theme {
+        return this.target > 0.5 ? 'night' : 'day';
     }
 
     setLayout(layout: Layout) {
@@ -229,27 +214,27 @@ export class EscenaGL {
         const key = `${layout.viewport.width}x${layout.viewport.height}`;
         if (key === this.sizeKey) return;
         this.sizeKey = key;
+        this.generation++;
         this.renderer.setSize(layout.viewport.width, layout.viewport.height);
-        const had = { ...this.loaded };
-        this.loaded = { day: false, night: false };
-        this.loading = {};
-        const current: Theme = this.target > 0.5 ? 'night' : 'day';
-        void this.ensureTheme(current).then(() => {
-            const other: Theme = current === 'night' ? 'day' : 'night';
-            if (had[other]) void this.ensureTheme(other);
+        const current = this.theme;
+        const other: Theme = current === 'night' ? 'day' : 'night';
+        void this.load(current).then(() => {
+            if (this.ready[other] >= 0) void this.load(other);
         });
     }
 
     /** Cambia de tema: de entrada, sin transición; después, con el mismo fundido que la SVG. */
     async setNight(night: boolean) {
         const goal = night ? 1 : 0;
-        const theme: Theme = night ? 'night' : 'day';
+        this.wanted = goal;
         if (!this.drawn) {
             this.night = this.target = goal;
-            return this.ensureTheme(theme);
+            return this.load(this.theme);
         }
         if (goal === this.target) return;
-        await this.ensureTheme(theme);
+        await this.load(night ? 'night' : 'day');
+        // Si mientras se preparaba el tema se pidió el otro, manda el último pedido.
+        if (this.wanted !== goal || this.disposed) return;
         this.themeFrom = this.night;
         this.target = goal;
         this.themeStart = performance.now();
@@ -280,62 +265,61 @@ export class EscenaGL {
 
     private draw(now: number) {
         const layout = this.layout;
-        const theme: Theme = this.target > 0.5 ? 'night' : 'day';
-        if (!layout || !this.loaded[theme]) return;
+        if (!layout || this.ready[this.theme] < 0) return;
         const { viewport, frame, sink, moon } = layout;
 
         if (this.themeStart >= 0) {
             const t = Math.min(1, (now - this.themeStart) / 1000 / THEME_SECONDS);
-            this.night = this.themeFrom + (this.target - this.themeFrom) * ease(t);
+            this.night = this.themeFrom + (this.target - this.themeFrom) * cssEase(t);
             if (t >= 1) this.themeStart = -1;
         }
         const doc = document.documentElement;
-        const progress = window.scrollY / Math.max(1, doc.scrollHeight - window.innerHeight);
-        const f = escenaFrame({ progress, sink, viewport, frame, time: now / 1000 });
+        const f = escenaFrame({
+            progress: window.scrollY / Math.max(1, doc.scrollHeight - window.innerHeight),
+            sink,
+            viewport,
+            frame,
+            clocks: readClocks(now / 1000),
+            units: { vw: window.innerWidth / 100, vh: window.innerHeight / 100 },
+        });
 
-        const m = this.meshes;
-        const set = (mesh: Mesh, values: Record<string, unknown>) => {
-            const u = mesh.program.uniforms;
+        const p = this.passes;
+        const set = (pass: Pass, values: Record<string, unknown> = {}) => {
+            const u = p[pass].program.uniforms;
             u.uRes.value = [viewport.width, viewport.height];
-            if (u.uNight) u.uNight.value = this.night;
+            u.uNight.value = this.night;
             for (const [k, v] of Object.entries(values)) u[k].value = v;
         };
-        set(m.sky, {
-            uSkyHigh: f.skyHigh,
-            uMoon: moon ? [moon.x, moon.y, MOON_RADIUS] : [0, 0, 0],
+        const rect = (r: { x: number; y: number; width: number; height: number }) => [
+            r.x,
+            r.y,
+            r.width,
+            r.height,
+        ];
+        set('sky', { uSkyHigh: f.skyHigh });
+        set('stars', { uOpacity: this.night, uTwinkle: f.twinkle });
+        set('moon', { uMoon: moon ? [moon.x, moon.y, MOON_RADIUS] : [0, 0, 0] });
+        set('macaws', { uOffset: [f.macaws.x, f.macaws.y], uOpacity: 1 - this.night });
+        set('clouds', {
+            uOpacity: f.cloudsOpacity,
+            ...Object.fromEntries(f.clouds.map((c, i) => [`uCloud${i}`, [c.x, c.y, c.rx, c.ry]])),
         });
-        set(m.stars, { uOpacity: this.night, uTwinkle: now / 1000 });
-        set(m.macaws, { uOffset: [f.macaws.x, f.macaws.y], uOpacity: 1 - this.night });
-        const vw = window.innerWidth / 100;
-        const vh = window.innerHeight / 100;
-        CLOUDS.forEach((c, i) => {
-            m.clouds.program.uniforms[`uCloud${i}`].value = [
-                (c.left + c.width / 2 + c.drift * f.cloudDrift) * vw,
-                c.top * vh + (c.width / 3.2 / 2) * vw + f.clouds.y,
-                (c.width / 2) * vw,
-                (c.width / 3.2 / 2) * vw,
-            ];
-        });
-        set(m.clouds, { uOpacity: f.clouds.opacity });
-        set(m.far, { uOffset: [0, f.shifts.farRidge] });
-        set(m.avilaBack, { uOffset: [0, f.shifts.avila] });
-        set(m.avilaFront, { uOffset: [0, f.shifts.avila] });
-        set(m.city, { uOffset: [0, f.shifts.city] });
-        set(m.towers, { uOffset: [0, f.shifts.towers] });
-        const cabin = (x: number, y: number) => [x, y, 12 * frame.scale, 17 * frame.scale];
-        set(m.cabin0, { uRect: cabin(f.movingCabins[0].x - 6 * frame.scale, f.movingCabins[0].y) });
-        set(m.cabin1, { uRect: cabin(f.movingCabins[1].x - 6 * frame.scale, f.movingCabins[1].y) });
-        set(m.visitor, { uRect: cabin(f.visitorCabin.x, f.visitorCabin.y) });
+        set('far', { uOffset: [0, f.shifts.farRidge] });
+        set('avilaBack', { uOffset: [0, f.shifts.avila] });
+        set('cabin0', { uRect: rect(f.cabins[0]) });
+        set('cabin1', { uRect: rect(f.cabins[1]) });
+        set('avilaFront', { uOffset: [0, f.shifts.avila] });
+        set('visitor', { uRect: rect(f.cabins[2]) });
+        set('city', { uOffset: [0, f.shifts.city] });
+        set('towers', { uOffset: [0, f.shifts.towers] });
 
-        Object.values(m).forEach((mesh, i) =>
-            this.renderer.render({ scene: mesh, clear: i === 0 }),
-        );
+        ORDER.forEach((pass, i) => this.renderer.render({ scene: p[pass], clear: i === 0 }));
 
         if (!this.drawn) {
             this.drawn = true;
             this.onFirstFrame?.();
-            // Con la Escena ya visible, el otro tema se prepara para cambiar sin espera.
-            void this.ensureTheme(theme === 'night' ? 'day' : 'night');
+            // Con la Escena ya a la vista, el otro tema se prepara para cambiar sin espera.
+            void this.load(this.theme === 'night' ? 'day' : 'night');
         }
         this.onFrame?.(now);
     }

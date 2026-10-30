@@ -106,6 +106,14 @@ function probeWebGL(): { webgl2: boolean; renderer: string | null } {
 const matches = (query: string) =>
     typeof window.matchMedia === 'function' && window.matchMedia(query).matches;
 
+// Un teléfono, también acostado: la ventana angosta o la pantalla chica por su lado corto. Las
+// tabletas (desde 744 px de lado corto) y los escritorios pasan.
+const PHONE_SHORT_SIDE = 600;
+const isPhone = () =>
+    matches('(max-width: 767px)') ||
+    Math.min(window.screen?.width || Infinity, window.screen?.height || Infinity) <
+        PHONE_SHORT_SIDE;
+
 /** Lee del navegador lo que necesita `chooseEscena`. */
 export function readSignals(): DeviceSignals {
     const nav = navigator as Navigator & {
@@ -117,15 +125,15 @@ export function readSignals(): DeviceSignals {
         forced,
         reducedMotion: matches('(prefers-reduced-motion: reduce)'),
         saveData: nav.connection?.saveData === true,
-        mobile: matches('(max-width: 767px)'),
+        mobile: isPhone(),
         memory: nav.deviceMemory,
         cores: nav.hardwareConcurrency || undefined,
         rememberedFallback: isFallbackRemembered(storedFallback(), Date.now()),
     };
-    // Pedir un contexto WebGL cuesta: solo cuando lo demás ya no descartó la WebGL.
-    const decided = chooseEscena({ ...cheap, webgl2: true, renderer: null });
-    if (decided.version === 'svg' || decided.reason === 'forced') {
-        return { ...cheap, webgl2: decided.reason === 'forced', renderer: null };
-    }
+    // Pedir un contexto WebGL cuesta: solo cuando lo demás ya no la descartó o forzó. Si no se
+    // pregunta, la GPU no es la razón de la decisión: se la da por buena.
+    const unasked = { webgl2: true, renderer: null };
+    const decided = chooseEscena({ ...cheap, ...unasked });
+    if (decided.version === 'svg' || decided.reason === 'forced') return { ...cheap, ...unasked };
     return { ...cheap, ...probeWebGL() };
 }

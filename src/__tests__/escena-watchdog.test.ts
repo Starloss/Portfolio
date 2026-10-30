@@ -59,18 +59,24 @@ describe('Vigilante de FPS', () => {
         expect(run(w, r.now, 40, 1.5).verdict).toBe('fallback');
     });
 
-    it('una pausa (pestaña oculta) no cuenta como cuadros lentos', () => {
+    it('una pausa avisada (pestaña oculta) no cuenta como cuadros lentos', () => {
         const w = createWatchdog(0);
         let r = run(w, 0, 60, 3);
         // Diez segundos sin cuadros y luego vuelve a 60 fps.
+        w.restart(r.now + 10_000);
         r = run(w, r.now + 10_000, 60, 3);
         expect(r.verdict).toBe('ok');
     });
 
     it('después de una pausa, el arranque vuelve a no contar', () => {
         const w = createWatchdog(0);
-        let r = run(w, 0, 60, 3);
-        r = run(w, r.now + 10_000, 20, WATCHDOG.warmupMs / 1000);
-        expect(r.verdict).toBe('ok');
+        const r = run(w, 0, 60, 3);
+        w.restart(r.now + 10_000);
+        expect(run(w, r.now + 10_000, 20, WATCHDOG.warmupMs / 1000).verdict).toBe('ok');
+    });
+
+    it('un equipo que apenas llega a 2 fps también vuelve a la SVG', () => {
+        const w = createWatchdog(0);
+        expect(run(w, 0, 2, 10).verdict).toBe('fallback');
     });
 });

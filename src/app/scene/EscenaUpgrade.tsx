@@ -27,26 +27,39 @@ function whenIdleAfterLoad(run: () => void): () => void {
     };
 }
 
-interface Loaded {
+interface Upgrade {
     SceneGL: typeof SceneGLType;
     watch: boolean;
     rememberFallback: () => void;
 }
 
+// Una decisión por visita: volver a la Home no repite la detección ni el evento, y después de una
+// caída la WebGL no vuelve hasta la próxima visita.
+let decision: Promise<Upgrade | null> | null = null;
+
+function decide(): Promise<Upgrade | null> {
+    decision ??= import('./gl/detect')
+        .then(async ({ chooseEscena, readSignals, rememberFallback }) => {
+            const choice = chooseEscena(readSignals());
+            trackEscena(choice.version, choice.reason);
+            if (choice.version !== 'webgl') return null;
+            const { SceneGL } = await import('./gl/SceneGL');
+            return { SceneGL, watch: choice.reason !== 'forced', rememberFallback };
+        })
+        // Un chunk que no llega (red caída, deploy nuevo) deja la Escena SVG, que ya está.
+        .catch(() => null);
+    return decision;
+}
+
 export const EscenaUpgrade: React.FC = () => {
-    const [loaded, setLoaded] = useState<Loaded | null>(null);
+    const [upgrade, setUpgrade] = useState<Upgrade | null>(null);
 
     useEffect(() => {
         let active = true;
-        const stop = whenIdleAfterLoad(async () => {
-            const { chooseEscena, readSignals, rememberFallback } = await import('./gl/detect');
-            const choice = chooseEscena(readSignals());
-            trackEscena(choice.version, choice.reason);
-            if (choice.version !== 'webgl' || !active) return;
-            const { SceneGL } = await import('./gl/SceneGL');
-            if (active) {
-                setLoaded({ SceneGL, watch: choice.reason !== 'forced', rememberFallback });
-            }
+        const stop = whenIdleAfterLoad(() => {
+            void decide().then((result) => {
+                if (active) setUpgrade(result);
+            });
         });
         return () => {
             active = false;
@@ -54,13 +67,14 @@ export const EscenaUpgrade: React.FC = () => {
         };
     }, []);
 
-    if (!loaded) return null;
-    const { SceneGL, watch, rememberFallback } = loaded;
+    if (!upgrade) return null;
+    const { SceneGL, watch, rememberFallback } = upgrade;
     const onFallback = (reason: FallbackReason) => {
         trackEscenaFallback(reason);
         // Forzada con ?escena=webgl es una prueba: esa caída no se recuerda.
         if (watch) rememberFallback();
-        setLoaded(null);
+        decision = Promise.resolve(null);
+        setUpgrade(null);
     };
     return <SceneGL watch={watch} onFallback={onFallback} />;
 };

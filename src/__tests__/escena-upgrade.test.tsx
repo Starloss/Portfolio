@@ -1,7 +1,6 @@
 import React from 'react';
 import { afterEach, beforeEach, describe, it, expect, vi } from 'vitest';
 import { act, render, screen, waitFor } from '@testing-library/react';
-import { EscenaUpgrade } from '@app/scene/EscenaUpgrade';
 import type { EscenaChoice } from '@app/scene/gl/detect';
 import type { FallbackReason } from '@app/scene/gl/SceneGL';
 
@@ -10,12 +9,16 @@ import type { FallbackReason } from '@app/scene/gl/SceneGL';
 
 const detect = vi.hoisted(() => ({
     choice: { version: 'svg', reason: 'mobile' } as EscenaChoice,
+    fail: false,
     remember: vi.fn(),
 }));
 
 vi.mock('@app/scene/gl/detect', () => ({
     readSignals: () => ({}),
-    chooseEscena: () => detect.choice,
+    chooseEscena: () => {
+        if (detect.fail) throw new Error('chunk');
+        return detect.choice;
+    },
     rememberFallback: detect.remember,
 }));
 
@@ -40,8 +43,13 @@ vi.mock('@app/scene/gl/SceneGL', () => ({
 
 const track = vi.fn();
 
-beforeEach(() => {
+// La decisión es una por visita: cada test empieza con el módulo recién cargado.
+let EscenaUpgrade: React.FC;
+beforeEach(async () => {
     window.umami = { track };
+    detect.fail = false;
+    vi.resetModules();
+    ({ EscenaUpgrade } = await import('@app/scene/EscenaUpgrade'));
 });
 
 afterEach(() => {
@@ -101,5 +109,34 @@ describe('EscenaUpgrade', () => {
         state.mockRestore();
         window.dispatchEvent(new Event('load'));
         await waitFor(() => expect(track).toHaveBeenCalled());
+    });
+
+    it('volver a la Home no repite la detección ni el evento', async () => {
+        detect.choice = { version: 'webgl', reason: 'capable' };
+        const first = render(<EscenaUpgrade />);
+        await screen.findByTestId('escena-gl');
+        first.unmount();
+        render(<EscenaUpgrade />);
+        await screen.findByTestId('escena-gl');
+        expect(track.mock.calls.filter(([event]) => event === 'escena')).toHaveLength(1);
+    });
+
+    it('después de una caída, la WebGL no vuelve en la misma visita', async () => {
+        detect.choice = { version: 'webgl', reason: 'capable' };
+        const first = render(<EscenaUpgrade />);
+        const gl = await screen.findByTestId('escena-gl');
+        act(() => gl.click());
+        first.unmount();
+        render(<EscenaUpgrade />);
+        await new Promise((r) => setTimeout(r, 300));
+        expect(screen.queryByTestId('escena-gl')).not.toBeInTheDocument();
+    });
+
+    it('si el chunk de la detección no llega, se queda la SVG sin errores', async () => {
+        detect.fail = true;
+        render(<EscenaUpgrade />);
+        await new Promise((r) => setTimeout(r, 300));
+        expect(screen.queryByTestId('escena-gl')).not.toBeInTheDocument();
+        expect(track).not.toHaveBeenCalled();
     });
 });

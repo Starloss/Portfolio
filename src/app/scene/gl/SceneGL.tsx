@@ -1,19 +1,18 @@
-// La Escena WebGL encima de la SVG (ADR 0003). Entra con un fundido cruzado y, si el vigilante de
-// FPS la ve lenta o se pierde el contexto, se funde de vuelta a la SVG.
+// La Escena WebGL encima de la SVG (ADR 0003). Entra con un fundido cruzado; si el vigilante de FPS
+// la ve lenta, se funde de vuelta a la SVG, y si falla (contexto perdido, texturas), vuelve enseguida.
 import React, { useEffect, useEffectEvent, useRef, useState } from 'react';
 import { useTheme } from '@lib/theme';
 
-import { mountainSink, moonPosition, sceneFrame } from '../camera';
+import { sceneFrame } from '../camera';
 import { useDocumentHidden, useElementViewport, useSceneCovered } from '../environment';
-import { skyline } from '../geometry';
-import { usePageLayout } from '../Scene';
+import { pageFit, usePageLayout } from '../Scene';
 
 import { EscenaGL } from './engine';
 import { createWatchdog } from './watchdog';
 
 export type FallbackReason = 'slow' | 'context-lost' | 'init-failed';
 
-// Lo que dura el fundido cruzado (scene.css, .scene-gl).
+// Lo que dura el fundido cruzado (scene.css, .scene-gl > canvas).
 const FADE_MS = 600;
 
 export const SceneGL: React.FC<{
@@ -26,6 +25,7 @@ export const SceneGL: React.FC<{
     const boxRef = useRef<HTMLDivElement>(null);
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const engineRef = useRef<EscenaGL | null>(null);
+    const watchdogRef = useRef<ReturnType<typeof createWatchdog> | null>(null);
     const viewport = useElementViewport(boxRef);
     const page = usePageLayout(true, viewport);
     const hidden = useDocumentHidden();
@@ -45,10 +45,11 @@ export const SceneGL: React.FC<{
             return;
         }
         engineRef.current = engine;
-        const watchdog = createWatchdog(performance.now());
         engine.onFirstFrame = () => setVisible(true);
-        engine.onLost = () => setLeaving('context-lost');
+        engine.onFailed = (reason) => setLeaving(reason);
         if (watch) {
+            const watchdog = createWatchdog(performance.now());
+            watchdogRef.current = watchdog;
             engine.onFrame = (now) => {
                 if (watchdog.frame(now) === 'fallback') {
                     engine.stop();
@@ -59,30 +60,31 @@ export const SceneGL: React.FC<{
         return () => {
             engine.destroy();
             engineRef.current = null;
+            watchdogRef.current = null;
         };
     }, [watch]);
 
-    // Las mismas medidas que la Escena SVG: hundimiento de la montaña y luna fuera del texto.
+    // Las mismas medidas que la Escena SVG. El tema va antes que el tamaño: así se rasteriza
+    // primero el tema que se ve.
     useEffect(() => {
         const engine = engineRef.current;
         if (!engine) return;
-        engine.setLayout({
-            viewport,
-            frame: sceneFrame(viewport),
-            sink: page?.column ? mountainSink(viewport, page.column, skyline(night)) : 0,
-            moon: page?.column
-                ? moonPosition(viewport, page.column, page.headerBottom)
-                : { x: viewport.width - 90, y: 140 },
-        });
+        const { sink, moon } = pageFit(viewport, page, night);
         void engine.setNight(night);
+        engine.setLayout({ viewport, frame: sceneFrame(viewport), sink, moon });
         // `watch` recrea el motor: el nuevo también necesita sus medidas.
     }, [viewport, page, night, watch]);
 
     useEffect(() => {
         const engine = engineRef.current;
         if (!engine || leaving) return;
-        if (paused) engine.stop();
-        else engine.start();
+        if (paused) {
+            engine.stop();
+        } else {
+            // Al volver de una pausa, el vigilante no mide el arranque.
+            watchdogRef.current?.restart(performance.now());
+            engine.start();
+        }
     }, [paused, leaving, watch]);
 
     // Con la WebGL ya a la vista, la SVG de abajo deja de pintarse; al irse, vuelve antes del fundido.
@@ -96,9 +98,13 @@ export const SceneGL: React.FC<{
         };
     }, [visible, leaving]);
 
+    // Solo la lentitud se despide con un fundido: un canvas que falló se quita enseguida.
     useEffect(() => {
         if (!leaving) return;
-        const t = window.setTimeout(() => fallBack(leaving), visible ? FADE_MS : 0);
+        const t = window.setTimeout(
+            () => fallBack(leaving),
+            leaving === 'slow' && visible ? FADE_MS : 0,
+        );
         return () => window.clearTimeout(t);
     }, [leaving, visible]);
 

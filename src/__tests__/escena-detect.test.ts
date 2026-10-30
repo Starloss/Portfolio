@@ -160,6 +160,30 @@ describe('readSignals', () => {
         expect(getContext).not.toHaveBeenCalled();
     });
 
+    it('descarta por poca memoria con esa razón, sin pedir contexto', () => {
+        const getContext = vi.spyOn(HTMLCanvasElement.prototype, 'getContext');
+        Object.defineProperty(navigator, 'deviceMemory', { value: 2, configurable: true });
+        try {
+            expect(chooseEscena(readSignals())).toEqual({ version: 'svg', reason: 'low-memory' });
+            expect(getContext).not.toHaveBeenCalled();
+        } finally {
+            Reflect.deleteProperty(navigator, 'deviceMemory');
+        }
+    });
+
+    it('descarta por pocos núcleos con esa razón, sin pedir contexto', () => {
+        const getContext = vi.spyOn(HTMLCanvasElement.prototype, 'getContext');
+        vi.spyOn(navigator, 'hardwareConcurrency', 'get').mockReturnValue(2);
+        expect(chooseEscena(readSignals())).toEqual({ version: 'svg', reason: 'few-cores' });
+        expect(getContext).not.toHaveBeenCalled();
+    });
+
+    it('un teléfono acostado (ventana ancha, pantalla chica) es un teléfono', () => {
+        vi.spyOn(window.screen, 'width', 'get').mockReturnValue(390);
+        vi.spyOn(window.screen, 'height', 'get').mockReturnValue(844);
+        expect(chooseEscena(readSignals())).toEqual({ version: 'svg', reason: 'mobile' });
+    });
+
     it('si ya se descartó por otra razón, tampoco lo pide', () => {
         const getContext = vi.spyOn(HTMLCanvasElement.prototype, 'getContext');
         rememberFallback();

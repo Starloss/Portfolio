@@ -1,6 +1,6 @@
 // Lo que la Escena WebGL dibuja en cada cuadro, como funciones puras. Sale del mismo Viaje de
-// cámara que la Escena SVG (camera.ts) y repite sus animaciones de CSS con los mismos tiempos, así
-// el fundido cruzado entre las dos no salta.
+// cámara que la Escena SVG (camera.ts) y repite sus animaciones de CSS con sus mismas curvas, sobre
+// el reloj de esas mismas animaciones: así el fundido cruzado entre las dos no salta.
 import {
     cabinPoint,
     cameraHeightAt,
@@ -12,24 +12,29 @@ import {
 } from '../camera';
 import { cablePoint } from '../geometry';
 import { MOVING_CABINS } from '../parts';
-import { CABIN_WIDTH, SKY_DARKENING } from '../Scene';
+import { CABIN_HEIGHT, CABIN_WIDTH, CLOUD_ASPECT, CLOUDS, SKY_DARKENING } from '../Scene';
 
-/** `ease-in-out` de CSS: cubic-bezier(0.42, 0, 0.58, 1). */
-export function cssEaseInOut(t: number): number {
-    if (t <= 0) return 0;
-    if (t >= 1) return 1;
-    const curve = (u: number, a: number, b: number) =>
+/** Una curva `cubic-bezier()` de CSS, como función del progreso. */
+export function cubicBezier(x1: number, y1: number, x2: number, y2: number) {
+    const at = (u: number, a: number, b: number) =>
         3 * a * u * (1 - u) ** 2 + 3 * b * u * u * (1 - u) + u ** 3;
-    // Busca el parámetro de la curva cuya x es t; la x es monótona, alcanza con bisección.
-    let lo = 0;
-    let hi = 1;
-    for (let i = 0; i < 24; i++) {
-        const mid = (lo + hi) / 2;
-        if (curve(mid, 0.42, 0.58) < t) lo = mid;
-        else hi = mid;
-    }
-    return curve((lo + hi) / 2, 0, 1);
+    return (t: number) => {
+        if (t <= 0) return 0;
+        if (t >= 1) return 1;
+        // La x de la curva es monótona: alcanza con bisección para hallar el parámetro.
+        let lo = 0;
+        let hi = 1;
+        for (let i = 0; i < 24; i++) {
+            const mid = (lo + hi) / 2;
+            if (at(mid, x1, x2) < t) lo = mid;
+            else hi = mid;
+        }
+        return at((lo + hi) / 2, y1, y2);
+    };
 }
+
+export const cssEaseInOut = cubicBezier(0.42, 0, 0.58, 1);
+export const cssEase = cubicBezier(0.25, 0.1, 0.25, 1);
 
 /** Fracción (0 a 1) de una animación infinita de `duration` s; `alternate` va y vuelve. */
 export function loopAt(time: number, duration: number, alternate: boolean): number {
@@ -39,16 +44,29 @@ export function loopAt(time: number, duration: number, alternate: boolean): numb
 }
 
 // Keyframes en 0, 50% y 100%: CSS aplica el ease-in-out a cada tramo por separado.
-function twoStep<T extends { x: number; y: number }>(t: number, a: T, b: T, c: T) {
+function twoStep(t: number, a: Point, b: Point, c: Point): Point {
     const [from, to, u] = t < 0.5 ? [a, b, t / 0.5] : [b, c, (t - 0.5) / 0.5];
     const k = cssEaseInOut(u);
     return { x: from.x + (to.x - from.x) * k, y: from.y + (to.y - from.y) * k };
+}
+
+interface Point {
+    x: number;
+    y: number;
 }
 
 const CABIN_SECONDS = 26;
 const MACAW_SECONDS = 16;
 const MACAW_SWING = { x: -40, y: -12 };
 const DRIFT_SECONDS = 48;
+
+/** Segundos de cada animación de CSS de la Escena SVG (su `currentTime`). */
+export interface Clocks {
+    cabins: number;
+    macaws: number;
+    drift: number;
+    twinkle: number;
+}
 
 export interface EscenaInputs {
     /** Progreso de scroll de la página, de 0 a 1. */
@@ -57,11 +75,12 @@ export interface EscenaInputs {
     sink: number;
     viewport: Viewport;
     frame: SceneFrame;
-    /** Segundos desde que arrancaron las animaciones. */
-    time: number;
+    clocks: Clocks;
+    /** px de 1vw y de 1vh: las nubes se miden en esas unidades. */
+    units: { vw: number; vh: number };
 }
 
-export function escenaFrame({ progress, sink, viewport, frame, time }: EscenaInputs) {
+export function escenaFrame({ progress, sink, viewport, frame, clocks, units }: EscenaInputs) {
     const height = cameraHeightAt(progress);
     const vh = viewport.height;
     const shifts = {
@@ -70,34 +89,49 @@ export function escenaFrame({ progress, sink, viewport, frame, time }: EscenaInp
         city: layerShift('city', height, vh, sink),
         towers: layerShift('towers', height, vh, sink),
     };
-    const onAvila = (x: number, y: number) => {
+    // Una cabina cuelga del cable desde su centro arriba; en pantalla, el rectángulo de su sprite.
+    const cabinRect = (x: number, y: number) => {
         const p = toScreen(frame, x, y);
-        return { x: p.x, y: p.y + shifts.avila };
+        return {
+            x: p.x - (CABIN_WIDTH / 2) * frame.scale,
+            y: p.y + shifts.avila,
+            width: CABIN_WIDTH * frame.scale,
+            height: CABIN_HEIGHT * frame.scale,
+        };
     };
+    const cabinT = loopAt(clocks.cabins, CABIN_SECONDS, true);
+    const moving = MOVING_CABINS.map(({ from, to }) => {
+        const p = twoStep(cabinT, cablePoint(from), cablePoint((from + to) / 2), cablePoint(to));
+        return cabinRect(p.x, p.y);
+    });
     const visitor = cabinPoint(height);
-    const cabinT = loopAt(time, CABIN_SECONDS, true);
-    const macawT = loopAt(time, MACAW_SECONDS, false);
-    const macaws = twoStep(macawT, { x: 0, y: 0 }, MACAW_SWING, { x: 0, y: 0 });
+    const macaws = twoStep(
+        loopAt(clocks.macaws, MACAW_SECONDS, false),
+        { x: 0, y: 0 },
+        MACAW_SWING,
+        {
+            x: 0,
+            y: 0,
+        },
+    );
+    const clouds = cloudsAt(height, vh);
+    const drift = cssEaseInOut(loopAt(clocks.drift, DRIFT_SECONDS, true));
     return {
         height,
         shifts,
-        clouds: cloudsAt(height, vh),
         skyHigh: height * SKY_DARKENING,
-        visitorCabin: {
-            x: onAvila(visitor.x, visitor.y).x - (CABIN_WIDTH / 2) * frame.scale,
-            y: onAvila(visitor.x, visitor.y).y,
-        },
-        movingCabins: MOVING_CABINS.map(({ from, to }) => {
-            const p = twoStep(
-                cabinT,
-                cablePoint(from),
-                cablePoint((from + to) / 2),
-                cablePoint(to),
-            );
-            return onAvila(p.x, p.y);
-        }),
+        cloudsOpacity: clouds.opacity,
+        /** Cada nube como elipse en px: centro y semiejes. */
+        clouds: CLOUDS.map((c) => ({
+            x: (c.left + c.width / 2 + c.drift * drift) * units.vw,
+            y: c.top * units.vh + (c.width / CLOUD_ASPECT / 2) * units.vw + clouds.y,
+            rx: (c.width / 2) * units.vw,
+            ry: (c.width / CLOUD_ASPECT / 2) * units.vw,
+        })),
+        /** Las dos cabinas que van y vienen y, al final, la del visitante. */
+        cabins: [...moving, cabinRect(visitor.x, visitor.y)],
         macaws: { x: macaws.x * frame.scale, y: macaws.y * frame.scale },
-        cloudDrift: cssEaseInOut(loopAt(time, DRIFT_SECONDS, true)),
+        twinkle: clocks.twinkle,
     };
 }
 
