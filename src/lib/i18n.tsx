@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useMemo } from 'react';
+import React, { createContext, use, useMemo } from 'react';
 
 import { resolveContent, type Locale, type ResolvedContent } from '@/content';
 
@@ -110,11 +110,11 @@ export const I18nProvider: React.FC<{ locale: Locale; children: React.ReactNode 
         }),
         [locale],
     );
-    return <I18nContext.Provider value={value}>{children}</I18nContext.Provider>;
+    return <I18nContext value={value}>{children}</I18nContext>;
 };
 
 export function useI18n() {
-    const ctx = useContext(I18nContext);
+    const ctx = use(I18nContext);
     if (!ctx) throw new Error('useI18n debe usarse dentro de I18nProvider');
     return ctx;
 }

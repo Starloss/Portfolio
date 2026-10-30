@@ -124,6 +124,9 @@ function usePageLayout(enabled: boolean, viewport: Viewport): PageLayout | null 
         if (!enabled) return;
         const update = () => {
             const next = measurePage();
+            // Medir antes del pintado es el punto: con un estado derivado en el render, la
+            // Escena se dibujaría un cuadro sin la columna de texto y saltaría.
+            // eslint-disable-next-line @eslint-react/set-state-in-effect
             setPage((prev) => (samePage(prev, next) ? prev : next));
         };
         update();
@@ -153,8 +156,8 @@ export const Scene: React.FC<{ height?: number }> = ({ height }) => {
     const reduced = usePrefersReducedMotion();
     // El tamaño sale de la propia Escena (100vh): no cambia cuando el teléfono muestra u oculta la
     // barra del navegador, así el encuadre no salta mientras se hace scroll.
-    const root = useRef<HTMLDivElement>(null);
-    const viewport = useElementViewport(root);
+    const rootRef = useRef<HTMLDivElement>(null);
+    const viewport = useElementViewport(rootRef);
     const hidden = useDocumentHidden();
     const covered = useSceneCovered();
     const paused = hidden || covered;
@@ -216,6 +219,8 @@ export const Scene: React.FC<{ height?: number }> = ({ height }) => {
                 <m.div className="scene-layer" data-layer="clouds" style={styles.clouds}>
                     {CLOUDS.map((cloud, i) => (
                         <div
+                            // CLOUDS es constante y nunca cambia de orden: el índice es una key estable.
+                            // eslint-disable-next-line @eslint-react/no-array-index-key
                             key={i}
                             className="scene-cloud"
                             data-anim={animateDesktop ? 'drift' : undefined}
@@ -267,7 +272,7 @@ export const Scene: React.FC<{ height?: number }> = ({ height }) => {
 
     return (
         <div
-            ref={root}
+            ref={rootRef}
             className="scene"
             aria-hidden="true"
             data-paused={paused || undefined}
