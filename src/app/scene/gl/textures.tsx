@@ -71,36 +71,39 @@ export async function themeLayers(
             </svg>,
         ).then(rasterize);
     const still = { night, animate: false };
-    const [far, avilaBack, avilaFront, city, towers, extra, cabin] = await Promise.all([
-        full(<FarRidge c={c} />),
-        full(<Avila c={c} {...still} slice="back" />),
-        full(
-            <>
-                <HaloGradient />
-                <Avila c={c} {...still} slice="front" />
-            </>,
-        ),
-        // De Noche, las siluetas sin ventanas: las ventanas van en las texturas de luces.
-        full(<City c={c} night={false} animate={false} />),
-        full(<Towers c={c} night={false} animate={false} />),
-        full(night ? <Stars count={60} groups={3} animate={false} /> : <Macaws animate={false} />),
-        markup(
-            <svg
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="-6 0 12 17"
-                width={Math.round(CABIN_WIDTH * frame.scale * dpr)}
-                height={Math.round(17 * frame.scale * dpr)}
-            >
-                <CabinShape c={c} />
-            </svg>,
-        ).then(rasterize),
-    ]);
-    const [cityLights, towersLights] = night
-        ? await Promise.all([
-              full(<City c={BLACK} night animate={false} />),
-              full(<Towers c={BLACK} night animate={false} />),
-          ])
-        : [];
+    const [far, avilaBack, avilaFront, city, towers, extra, cabin, cityLights, towersLights] =
+        await Promise.all([
+            full(<FarRidge c={c} />),
+            full(<Avila c={c} {...still} slice="back" />),
+            full(
+                <>
+                    <HaloGradient />
+                    <Avila c={c} {...still} slice="front" />
+                </>,
+            ),
+            // De Noche, las siluetas sin ventanas: las ventanas van en las texturas de luces.
+            full(<City c={c} night={false} animate={false} />),
+            full(<Towers c={c} night={false} animate={false} />),
+            full(
+                night ? (
+                    <Stars count={60} groups={3} animate={false} />
+                ) : (
+                    <Macaws animate={false} />
+                ),
+            ),
+            markup(
+                <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="-6 0 12 17"
+                    width={Math.round(CABIN_WIDTH * frame.scale * dpr)}
+                    height={Math.round(17 * frame.scale * dpr)}
+                >
+                    <CabinShape c={c} />
+                </svg>,
+            ).then(rasterize),
+            night ? full(<City c={BLACK} night animate={false} />) : undefined,
+            night ? full(<Towers c={BLACK} night animate={false} />) : undefined,
+        ]);
     return {
         far,
         avilaBack,
