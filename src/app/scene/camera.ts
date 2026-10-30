@@ -24,8 +24,9 @@ export function cameraHeightAt(progress: number): number {
     return HERO_HEIGHT * (1 - smoothstep(clamp(progress, 0, 1)));
 }
 
-// Muestreada para ligar las capas al scroll con tramos lineales cortos.
-const SAMPLES = 16;
+// Muestreada para ligar las capas al scroll con tramos lineales cortos: 32, porque la entrada de la
+// Avenida Bolívar se concentra en el último tramo.
+const SAMPLES = 32;
 export const CAMERA_JOURNEY: CameraJourney = {
     progress: Array.from({ length: SAMPLES + 1 }, (_, i) => i / SAMPLES),
     height: Array.from({ length: SAMPLES + 1 }, (_, i) => cameraHeightAt(i / SAMPLES)),
