@@ -20,6 +20,17 @@ const DAY_COLORS = {
     cabin: '#d62828',
     cabinWindow: '#f7f7f7',
     station: '#e9ecef',
+    // Avenida Bolívar.
+    sidewalk: '#78858f',
+    curb: '#a3a8ad',
+    road: '#4f5761',
+    laneMark: '#ebe6cc',
+    centerLine: '#f2c733',
+    lamppost: '#293642',
+    tree: '#2b4a3b',
+    vehicle: '#26303d',
+    vehicleWindow: '#59667a',
+    busWindow: '#59667a',
 };
 
 export type ScenePalette = typeof DAY_COLORS;
@@ -45,6 +56,16 @@ export const NIGHT: ScenePalette = {
     cabin: '#ffcf6e',
     cabinWindow: '#fff6dc',
     station: '#ffe8b0',
+    sidewalk: '#0f141f',
+    curb: '#1c212b',
+    road: '#080b12',
+    laneMark: '#524d3d',
+    centerLine: '#614d14',
+    lamppost: '#030509',
+    tree: '#030608',
+    vehicle: '#030406',
+    vehicleWindow: '#1f1a0e',
+    busWindow: '#d9b261',
 };
 
 /** Colores exclusivos de Noche: no cambian con el tema porque solo existen de Noche. */
@@ -54,6 +75,8 @@ export const NIGHT_LIGHTS = {
     star: '#ffffff',
     moon: '#f4f1e4',
     halo: '#ffe3a0',
+    headlight: '#fff7e0',
+    taillight: '#ff1f1a',
 } as const;
 
 const varName = (key: string) => `--scene-${key.replace(/[A-Z]/g, (c) => `-${c.toLowerCase()}`)}`;

@@ -26,12 +26,32 @@ import {
 import { useDocumentHidden, useElementViewport, useSceneCovered } from './environment';
 import { skyline } from './geometry';
 import { DAY, NIGHT, NIGHT_LIGHTS, paletteVars, VARS } from './palette';
-import { Avila, CabinShape, City, FarRidge, HaloGradient, Macaws, Stars, Towers } from './parts';
+import {
+    Avenue,
+    Avila,
+    CabinShape,
+    City,
+    FarRidge,
+    HaloGradient,
+    LampGradient,
+    Macaws,
+    Stars,
+    Towers,
+} from './parts';
+import { STREET_ABOVE, streetBand, streetHeight } from './street';
 import './scene.css';
 
 const MOBILE_QUERY = '(max-width: 767px)';
 
-type StyledPart = 'farRidge' | 'avila' | 'city' | 'towers' | 'clouds' | 'skyHigh' | 'cabin';
+type StyledPart =
+    | 'farRidge'
+    | 'avila'
+    | 'city'
+    | 'towers'
+    | 'clouds'
+    | 'skyHigh'
+    | 'cabin'
+    | 'street';
 type PartStyles = Record<StyledPart, MotionStyle>;
 
 const px = (n: number) => `${n.toFixed(1)}px`;
@@ -43,6 +63,7 @@ function stylesAt(height: number, sink: number, viewport: Viewport, frame: Scene
     const clouds = cloudsAt(height, viewport.height);
     const cabin = cabinPoint(height);
     const cabinOnScreen = toScreen(frame, cabin.x, cabin.y);
+    const street = streetBand(height, viewport.height);
     return {
         farRidge: shift('farRidge'),
         avila: shift('avila'),
@@ -52,6 +73,9 @@ function stylesAt(height: number, sink: number, viewport: Viewport, frame: Scene
         cloudsOpacity: clouds.opacity,
         skyHigh: height * SKY_DARKENING,
         cabin: `translate(${px(cabinOnScreen.x - (CABIN_WIDTH / 2) * frame.scale)}, ${px(cabinOnScreen.y)})`,
+        // La Avenida Bolívar entra desde abajo al final del Viaje (su franja empieza 0,8 H más arriba,
+        // por los postes y los árboles).
+        street: `translateY(${px(street.layerTop)})`,
     };
 }
 
@@ -66,6 +90,7 @@ function toPartStyles(s: {
         clouds: { transform: s.clouds, opacity: s.cloudsOpacity },
         skyHigh: { opacity: s.skyHigh },
         cabin: { transform: s.cabin },
+        street: { transform: s.street },
     };
 }
 
@@ -92,6 +117,7 @@ const JourneyStyles: React.FC<{
         cloudsOpacity: useTransform(scrollYProgress, journey.progress, values('cloudsOpacity')),
         skyHigh: useTransform(scrollYProgress, journey.progress, values('skyHigh')),
         cabin: useTransform(scrollYProgress, journey.progress, values('cabin')),
+        street: useTransform(scrollYProgress, journey.progress, values('street')),
     });
     return <>{children(styles)}</>;
 };
@@ -174,6 +200,7 @@ export const Scene: React.FC<{ height?: number }> = ({ height }) => {
 
     const { sink, moon } = pageFit(viewport, page, night);
     const travels = journeyMode && !reduced;
+    const H = streetHeight(viewport.height);
 
     // Animan siempre las cabinas y las estrellas; nubes, guacamayas y ventanas solo en escritorio.
     const animate = !reduced;
@@ -269,6 +296,20 @@ export const Scene: React.FC<{ height?: number }> = ({ height }) => {
             {!mobile && (
                 <m.div className="scene-layer" data-layer="towers" style={styles.towers}>
                     {svg(<Towers c={VARS} night={night} animate={animateDesktop} />)}
+                </m.div>
+            )}
+            {/* Solo en el Viaje: fija a otra altura (un Caso de estudio) nunca llega a la calle.
+                Quieta: en la Escena WebGL la gente y los vehículos se mueven. */}
+            {journeyMode && (
+                <m.div className="scene-street" data-layer="street" style={styles.street}>
+                    <svg
+                        viewBox={`0 0 ${viewport.width} ${H * (1 + STREET_ABOVE)}`}
+                        width={viewport.width}
+                        height={H * (1 + STREET_ABOVE)}
+                    >
+                        <LampGradient />
+                        <Avenue c={VARS} width={viewport.width} height={H} night={night} agents />
+                    </svg>
                 </m.div>
             )}
         </>

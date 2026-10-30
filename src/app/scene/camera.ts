@@ -1,6 +1,7 @@
 // Viaje de cámara: la coreografía de la Escena como funciones puras.
 // La altura de la cámara va de 0 (ciudad) a 1 (sobre las nubes) y solo hay movimiento vertical.
 import { cablePoint, VIEW } from './geometry';
+import { LIFT_SHARE, streetBand } from './street';
 
 /** Altura de la cámara en el Hero: arriba, con las cumbres del Ávila y cielo libre para el texto. */
 export const HERO_HEIGHT = 0.8;
@@ -23,12 +24,27 @@ export function cameraHeightAt(progress: number): number {
     return HERO_HEIGHT * (1 - smoothstep(clamp(progress, 0, 1)));
 }
 
-// Muestreada para ligar las capas al scroll con tramos lineales cortos.
-const SAMPLES = 16;
+// Muestreada para ligar las capas al scroll con tramos lineales cortos: 32, porque la entrada de la
+// Avenida Bolívar se concentra en el último tramo.
+const SAMPLES = 32;
 export const CAMERA_JOURNEY: CameraJourney = {
     progress: Array.from({ length: SAMPLES + 1 }, (_, i) => i / SAMPLES),
     height: Array.from({ length: SAMPLES + 1 }, (_, i) => cameraHeightAt(i / SAMPLES)),
 };
+
+/**
+ * Un valor de la Escena con el progreso de scroll tal como lo ve la Escena SVG: calculado en las
+ * muestras del Viaje e interpolado en línea recta entre ellas (así lo hace motion con
+ * `useTransform`). La Escena WebGL lo usa para que el fundido cruzado entre las dos no salte.
+ */
+export function journeyAt(progress: number, valueAt: (height: number) => number): number {
+    const { progress: stops, height } = CAMERA_JOURNEY;
+    const p = clamp(progress, 0, 1);
+    const i = Math.min(stops.length - 2, Math.floor(p * (stops.length - 1)));
+    const t = (p - stops[i]) / (stops[i + 1] - stops[i]);
+    const from = valueAt(height[i]);
+    return from + (valueAt(height[i + 1]) - from) * t;
+}
 
 /** Profundidad de cada capa que se mueve: cuánto se hunde por unidad de altura, en altos de ventana. */
 export const LAYER_DEPTH = {
@@ -49,7 +65,10 @@ export function layerOffset(layer: MovingLayer, height: number, viewportHeight: 
 // así que se ven al empezar y al volver a la ciudad en Contacto.
 const SINKS_WITH_HERO: readonly MovingLayer[] = ['farRidge', 'avila'];
 
-/** Desplazamiento vertical total de una capa (px): su hundimiento con la cámara más el del Hero. */
+/**
+ * Desplazamiento vertical total de una capa (px): su hundimiento con la cámara más el del Hero,
+ * menos lo que sube con la Avenida Bolívar al final del Viaje.
+ */
 export function layerShift(
     layer: MovingLayer,
     height: number,
@@ -57,7 +76,8 @@ export function layerShift(
     heroSink: number,
 ): number {
     const sink = SINKS_WITH_HERO.includes(layer) ? heroSink : 0;
-    return sink + layerOffset(layer, height, viewportHeight);
+    const lift = streetBand(height, viewportHeight).lift * LIFT_SHARE[layer];
+    return sink + layerOffset(layer, height, viewportHeight) - lift;
 }
 
 /** Las nubes bajan de −70vh a +10vh y aparecen con opacidad al subir la cámara. */

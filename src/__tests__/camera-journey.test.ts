@@ -12,7 +12,9 @@ import {
     mountainSink,
     sceneFrame,
     toScreen,
+    journeyAt,
 } from '@app/scene/camera';
+import { LIFT_SHARE, streetBand } from '@app/scene/street';
 import { STATIONS } from '@app/scene/geometry';
 
 describe('Viaje de cámara: baja del Hero a la ciudad', () => {
@@ -76,11 +78,13 @@ describe('Viaje de cámara: desplazamiento de las capas', () => {
     });
 
     it('el hundimiento del Hero baja las crestas y el Ávila, pero no la ciudad ni las Torres', () => {
-        // Con la cámara en la ciudad (Hero y Contacto), la ciudad sigue apoyada abajo.
-        expect(layerShift('farRidge', 0, 900, 150)).toBe(150);
-        expect(layerShift('avila', 0, 900, 150)).toBe(150);
-        expect(layerShift('city', 0, 900, 150)).toBe(0);
-        expect(layerShift('towers', 0, 900, 150)).toBe(0);
+        // Con la cámara en la ciudad (Contacto), la ciudad sigue apoyada abajo: solo sube con la
+        // Avenida Bolívar, igual que la montaña, que además lleva el hundimiento del Hero.
+        const lift = streetBand(0, 900).lift;
+        expect(layerShift('farRidge', 0, 900, 150)).toBeCloseTo(150 - lift * LIFT_SHARE.farRidge);
+        expect(layerShift('avila', 0, 900, 150)).toBeCloseTo(150 - lift * LIFT_SHARE.avila);
+        expect(layerShift('city', 0, 900, 150)).toBeCloseTo(-lift);
+        expect(layerShift('towers', 0, 900, 150)).toBeCloseTo(-lift);
         // Al subir, cada capa suma lo que se hunde por su profundidad.
         expect(layerShift('avila', 1, 900, 150)).toBeCloseTo(645, 5);
         expect(layerShift('city', 1, 900, 150)).toBeCloseTo(720, 5);
@@ -191,5 +195,25 @@ describe('Cabina del Teleférico atada a la altura de la cámara', () => {
         const start = cabinPoint(0);
         const end = cabinPoint(1);
         expect(cabinPoint(0.5).y).toBeGreaterThan((start.y + end.y) / 2);
+    });
+});
+
+describe('journeyAt', () => {
+    it('en las muestras del Viaje da el valor exacto', () => {
+        CAMERA_JOURNEY.progress.forEach((p, i) => {
+            expect(journeyAt(p, (h) => h * 10)).toBeCloseTo(CAMERA_JOURNEY.height[i] * 10);
+        });
+    });
+
+    it('entre dos muestras interpola en línea recta, como useTransform en la Escena SVG', () => {
+        const [p0, p1] = CAMERA_JOURNEY.progress.slice(4, 6);
+        const [h0, h1] = CAMERA_JOURNEY.height.slice(4, 6);
+        const square = (h: number) => h * h;
+        expect(journeyAt((p0 + p1) / 2, square)).toBeCloseTo((square(h0) + square(h1)) / 2);
+    });
+
+    it('fuera de 0 a 1 se queda en los extremos', () => {
+        expect(journeyAt(-0.5, (h) => h)).toBeCloseTo(CAMERA_JOURNEY.height[0]);
+        expect(journeyAt(1.5, (h) => h)).toBeCloseTo(CAMERA_JOURNEY.height.at(-1)!);
     });
 });

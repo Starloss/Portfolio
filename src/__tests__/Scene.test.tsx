@@ -15,6 +15,11 @@ interface Setup {
 // La Escena lee del entorno el tema (Día/Noche), el ancho (escritorio/móvil) y reduced-motion.
 function renderScene({ night = false, mobile = false, reducedMotion = false, height }: Setup = {}) {
     window.localStorage.setItem('theme', night ? 'dark' : 'light');
+    // En móvil, el tamaño de un teléfono: la Avenida Bolívar dibuja lo que entra a lo ancho.
+    if (mobile) {
+        vi.spyOn(window, 'innerWidth', 'get').mockReturnValue(390);
+        vi.spyOn(window, 'innerHeight', 'get').mockReturnValue(844);
+    }
     const original = window.matchMedia;
     vi.spyOn(window, 'matchMedia').mockImplementation((query: string) => ({
         ...original(query),

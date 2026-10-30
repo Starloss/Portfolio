@@ -59,6 +59,18 @@
     background: radial-gradient(closest-side, var(--scene-cloud), transparent);
 }
 
+/* La Avenida Bolívar: una franja del ancho de la pantalla que entra desde abajo. */
+.scene-street {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+}
+
+.scene-street > svg {
+    display: block;
+}
+
 .scene-cabin {
     position: absolute;
     top: 0;

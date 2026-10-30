@@ -74,7 +74,10 @@ export const Home: React.FC = () => {
                 <SkillsSection />
                 <ContactSection />
             </main>
-            <footer className="pb-10 text-center text-xs text-ink">© {currentYear()}</footer>
+            {/* Al final del Viaje queda sobre la Avenida Bolívar: lleva su propia superficie. */}
+            <footer className="pb-10 text-center text-xs text-ink">
+                <span className="rounded-full bg-surface px-3 py-1">© {currentYear()}</span>
+            </footer>
         </>
     );
 };
