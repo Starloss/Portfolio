@@ -18,7 +18,7 @@ import {
     Stars,
     Towers,
 } from '../parts';
-import { STREET_ABOVE, streetBand } from '../street';
+import { STREET_ABOVE, streetHeight } from '../street';
 
 // Fuera del ciclo de React (un efecto no puede usar flushSync), por eso cede un turno antes.
 async function markup(node: React.ReactNode): Promise<string> {
@@ -84,7 +84,7 @@ export async function themeLayers(
             </svg>,
         ).then(rasterize);
     const still = { night, animate: false };
-    const H = streetBand(0, viewport.height).height;
+    const H = streetHeight(viewport.height);
     const streetSize = { width: viewport.width, height: H * (1 + STREET_ABOVE) };
     const [
         far,

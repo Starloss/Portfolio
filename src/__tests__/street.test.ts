@@ -6,10 +6,12 @@ import { agentX, AGENT_SIZE, LIFT_SHARE, streetAgents, streetBand } from '@app/s
 // con ella para que la ciudad quede apoyada en la acera (la usan la Escena SVG y la WebGL).
 
 describe('streetBand', () => {
-    it('arriba del Viaje no hay calle ni el paisaje sube', () => {
-        const band = streetBand(HERO_HEIGHT, 900);
-        expect(band.top).toBe(900);
-        expect(band.lift).toBe(0);
+    it('arriba del Viaje la calle queda entera debajo de la pantalla, postes incluidos', () => {
+        for (const height of [HERO_HEIGHT, 0.22]) {
+            const band = streetBand(height, 900);
+            expect(band.layerTop).toBeGreaterThanOrEqual(900);
+            expect(band.lift).toBe(0);
+        }
     });
 
     it('al final del Viaje la calle se ve casi entera y el paisaje subió con ella', () => {
@@ -25,7 +27,8 @@ describe('streetBand', () => {
         for (let h = 0.2; h >= 0; h -= 0.02) {
             const lift = streetBand(h, 900).lift;
             expect(lift).toBeGreaterThanOrEqual(last);
-            expect(lift - last).toBeLessThan(25);
+            // Un paso de 0,02 de cámara (un par de % de scroll) sube menos de un tercio de la calle.
+            expect(lift - last).toBeLessThan(streetBand(0, 900).height / 3);
             last = lift;
         }
     });

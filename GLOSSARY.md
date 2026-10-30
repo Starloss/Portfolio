@@ -84,5 +84,5 @@ Los dos estados de la Escena. Siguen siempre el tema claro u oscuro que elige el
 _Avoid_: light mode, dark mode (al hablar de la Escena)
 
 **Viaje de cámara**:
-El recorrido vertical de la Escena que acompaña el scroll, contado como un viaje de bajada en el Teleférico: empieza arriba, entre las nubes y las cumbres del Ávila, y baja en un solo sentido hasta el nivel de la calle. En el último tramo entra la Avenida Bolívar y el paisaje sube con ella, así la ciudad queda apoyada en la acera; al llegar a Contacto se ven completas la ciudad y la avenida.
+El recorrido vertical de la Escena que acompaña el scroll, contado como un viaje de bajada en el Teleférico: empieza arriba, entre las nubes y las cumbres del Ávila, y baja en un solo sentido hasta el nivel de la calle, donde entra la Avenida Bolívar; al llegar a Contacto se ven completas la ciudad y la avenida.
 _Avoid_: parallax, revelado de ciudad

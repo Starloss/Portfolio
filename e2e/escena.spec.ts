@@ -1,6 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 import { DAY, NIGHT } from '../src/app/scene/palette';
-import { STREET_ABOVE, streetBand } from '../src/app/scene/street';
+import { streetBand } from '../src/app/scene/street';
 import { contrastRatio } from '../src/lib/contrast';
 
 for (const [colorScheme, palette] of [
@@ -50,8 +50,10 @@ test('el Viaje de cámara baja en un solo sentido, del Hero a la ciudad en Conta
     await page.waitForTimeout(400);
     const viewport = page.viewportSize()!;
 
-    // En el Hero la cámara está arriba: la ciudad queda hundida bajo la pantalla.
+    // En el Hero la cámara está arriba: la ciudad queda hundida bajo la pantalla, y la Avenida
+    // Bolívar, postes incluidos, todavía no asoma.
     expect(await layerTop(page, 'city')).toBeGreaterThan(0.5 * viewport.height);
+    expect(await layerTop(page, 'street')).toBeGreaterThanOrEqual(viewport.height - 1);
 
     // Al hacer scroll el paisaje solo sube: nunca vuelve a bajar.
     const tops: number[] = [];
@@ -66,7 +68,7 @@ test('el Viaje de cámara baja en un solo sentido, del Hero a la ciudad en Conta
     const band = streetBand(0, viewport.height);
     expect(await layerTop(page, 'city')).toBeCloseTo(-band.lift, 0);
     expect(await layerTop(page, 'towers')).toBeCloseTo(-band.lift, 0);
-    expect(await layerTop(page, 'street')).toBeCloseTo(band.top - STREET_ABOVE * band.height, 0);
+    expect(await layerTop(page, 'street')).toBeCloseTo(band.layerTop, 0);
 });
 
 test('con prefers-reduced-motion la Escena no se mueve al hacer scroll', async ({ page }) => {

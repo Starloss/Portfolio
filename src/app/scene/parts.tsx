@@ -15,7 +15,14 @@ import {
     VIEW,
 } from './geometry';
 import { NIGHT_LIGHTS, type ScenePalette } from './palette';
-import { AGENT_SIZE, agentX, STREET_ABOVE, streetAgents, type AgentKind } from './street';
+import {
+    AGENT_SIZE,
+    agentX,
+    LIGHT_HEIGHT,
+    STREET_ABOVE,
+    streetAgents,
+    type AgentKind,
+} from './street';
 
 interface PartProps {
     c: ScenePalette;
@@ -455,6 +462,20 @@ export const StreetAgentShape: React.FC<{
     );
     const light = (x: number, y: number, r: number, color: string) =>
         night && <circle cx={x * w} cy={-y * h} r={r * h} style={{ fill: color }} />;
+    // Un paralelogramo inclinado como el del shader: centrado en `cx`, de alto `y0` a `y1` (en h) y
+    // corrido 0,55 por unidad de alto, hacia adelante arriba.
+    const slanted = (cx: number, half: number, y0: number, y1: number, center: number) =>
+        [
+            [y0, -half],
+            [y0, half],
+            [y1, half],
+            [y1, -half],
+        ]
+            .map(([y, dx], i) => {
+                const x = cx * w + dx * w + 0.55 * (y - center) * h;
+                return `${i ? 'L' : 'M'}${x} ${-y * h}`;
+            })
+            .join(' ') + ' Z';
     if (kind === 'car') {
         return (
             <g>
@@ -466,22 +487,23 @@ export const StreetAgentShape: React.FC<{
                     rx={0.12 * h}
                     style={{ fill: c.vehicle }}
                 />
-                <path
-                    d={`M${-0.36 * w} ${-0.5 * h} L${-0.2 * w} ${-0.88 * h} L${0.12 * w} ${-0.88 * h} L${0.26 * w} ${-0.5 * h} Z`}
-                    style={{ fill: c.vehicle }}
-                />
-                <path
-                    d={`M${-0.27 * w} ${-0.58 * h} L${-0.16 * w} ${-0.8 * h} L${0.1 * w} ${-0.8 * h} L${0.18 * w} ${-0.58 * h} Z`}
-                    style={{ fill: c.vehicleWindow }}
-                />
+                <path d={slanted(-0.06, 0.27, 0.48, 0.88, 0.68)} style={{ fill: c.vehicle }} />
+                <path d={slanted(-0.06, 0.21, 0.58, 0.8, 0.68)} style={{ fill: c.vehicleWindow }} />
                 {wheel(0.31, 0.14, 0.15)}
                 {wheel(-0.31, 0.14, 0.15)}
-                {light(0.5, 0.36, 0.05, NIGHT_LIGHTS.headlight)}
-                {light(-0.5, 0.36, 0.045, NIGHT_LIGHTS.taillight)}
+                {light(0.5, LIGHT_HEIGHT.car, 0.05, NIGHT_LIGHTS.headlight)}
+                {light(-0.5, LIGHT_HEIGHT.car, 0.045, NIGHT_LIGHTS.taillight)}
             </g>
         );
     }
     if (kind === 'bus') {
+        // Las ventanas, entre los parantes cada 0,12 w desde el frente, como en el shader.
+        const windows = [0, 1, 2, 3, 4, 5, 6, 7]
+            .map((k) => [
+                Math.max(-0.41, -0.5 + k * 0.12 + 0.01),
+                Math.min(0.47, -0.5 + (k + 1) * 0.12 - 0.01),
+            ])
+            .filter(([from, to]) => to > from);
         return (
             <g>
                 <rect
@@ -492,20 +514,20 @@ export const StreetAgentShape: React.FC<{
                     rx={0.1 * h}
                     style={{ fill: c.vehicle }}
                 />
-                {[0, 1, 2, 3, 4, 5, 6].map((i) => (
+                {windows.map(([from, to]) => (
                     <rect
-                        key={i}
-                        x={(-0.41 + i * 0.12) * w}
+                        key={from}
+                        x={from * w}
                         y={-0.79 * h}
-                        width={0.1 * w}
+                        width={(to - from) * w}
                         height={0.22 * h}
                         style={{ fill: c.busWindow }}
                     />
                 ))}
                 {wheel(0.33, 0.13, 0.13)}
                 {wheel(-0.33, 0.13, 0.13)}
-                {light(0.5, 0.28, 0.05, NIGHT_LIGHTS.headlight)}
-                {light(-0.5, 0.28, 0.045, NIGHT_LIGHTS.taillight)}
+                {light(0.5, LIGHT_HEIGHT.bus, 0.05, NIGHT_LIGHTS.headlight)}
+                {light(-0.5, LIGHT_HEIGHT.bus, 0.045, NIGHT_LIGHTS.taillight)}
             </g>
         );
     }
@@ -539,8 +561,8 @@ export const StreetAgentShape: React.FC<{
                     fill={c.vehicle}
                 />
                 <circle cx={0.1 * w} cy={-0.9 * h} r={0.1 * h} style={{ fill: c.vehicle }} />
-                {light(0.5, 0.5, 0.05, NIGHT_LIGHTS.headlight)}
-                {light(-0.5, 0.5, 0.04, NIGHT_LIGHTS.taillight)}
+                {light(0.5, LIGHT_HEIGHT.moto, 0.05, NIGHT_LIGHTS.headlight)}
+                {light(-0.5, LIGHT_HEIGHT.moto, 0.04, NIGHT_LIGHTS.taillight)}
             </g>
         );
     }

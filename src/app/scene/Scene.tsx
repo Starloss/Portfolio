@@ -38,7 +38,7 @@ import {
     Stars,
     Towers,
 } from './parts';
-import { STREET_ABOVE, streetBand } from './street';
+import { STREET_ABOVE, streetBand, streetHeight } from './street';
 import './scene.css';
 
 const MOBILE_QUERY = '(max-width: 767px)';
@@ -75,7 +75,7 @@ function stylesAt(height: number, sink: number, viewport: Viewport, frame: Scene
         cabin: `translate(${px(cabinOnScreen.x - (CABIN_WIDTH / 2) * frame.scale)}, ${px(cabinOnScreen.y)})`,
         // La Avenida Bolívar entra desde abajo al final del Viaje (su franja empieza 0,8 H más arriba,
         // por los postes y los árboles).
-        street: `translateY(${px(street.top - STREET_ABOVE * street.height)})`,
+        street: `translateY(${px(street.layerTop)})`,
     };
 }
 
@@ -200,7 +200,7 @@ export const Scene: React.FC<{ height?: number }> = ({ height }) => {
 
     const { sink, moon } = pageFit(viewport, page, night);
     const travels = journeyMode && !reduced;
-    const streetHeight = streetBand(0, viewport.height).height;
+    const H = streetHeight(viewport.height);
 
     // Animan siempre las cabinas y las estrellas; nubes, guacamayas y ventanas solo en escritorio.
     const animate = !reduced;
@@ -298,23 +298,20 @@ export const Scene: React.FC<{ height?: number }> = ({ height }) => {
                     {svg(<Towers c={VARS} night={night} animate={animateDesktop} />)}
                 </m.div>
             )}
-            {/* Quieta: en la Escena WebGL la gente y los vehículos se mueven. */}
-            <m.div className="scene-street" data-layer="street" style={styles.street}>
-                <svg
-                    viewBox={`0 0 ${viewport.width} ${streetHeight * (1 + STREET_ABOVE)}`}
-                    width={viewport.width}
-                    height={streetHeight * (1 + STREET_ABOVE)}
-                >
-                    <LampGradient />
-                    <Avenue
-                        c={VARS}
+            {/* Solo en el Viaje: fija a otra altura (un Caso de estudio) nunca llega a la calle.
+                Quieta: en la Escena WebGL la gente y los vehículos se mueven. */}
+            {journeyMode && (
+                <m.div className="scene-street" data-layer="street" style={styles.street}>
+                    <svg
+                        viewBox={`0 0 ${viewport.width} ${H * (1 + STREET_ABOVE)}`}
                         width={viewport.width}
-                        height={streetHeight}
-                        night={night}
-                        agents
-                    />
-                </svg>
-            </m.div>
+                        height={H * (1 + STREET_ABOVE)}
+                    >
+                        <LampGradient />
+                        <Avenue c={VARS} width={viewport.width} height={H} night={night} agents />
+                    </svg>
+                </m.div>
+            )}
         </>
     );
 

@@ -7,24 +7,37 @@ const clamp = (v: number, min: number, max: number) => Math.min(max, Math.max(mi
 
 // La calle entra en el último tramo del Viaje, debajo de esta altura de cámara.
 const STREET_FROM_HEIGHT = 0.2;
+// Lo que hay por encima de la calzada (postes y árboles) mide hasta 0,8 del alto de la calzada.
+export const STREET_ABOVE = 0.8;
+// Al final se ve el 95% de la calzada (el borde de abajo de la acera queda justo afuera), y el
+// paisaje sube un poco menos que la calle, para que la ciudad asome sobre los árboles.
+const SHOWN = 0.95;
+const LIFT = 0.92;
+
+/** Alto de la calzada (px): crece con la ventana, entre 90 y 150 px. */
+export const streetHeight = (viewportHeight: number) => clamp(0.14 * viewportHeight, 90, 150);
 
 /**
- * La franja de la calle con la cámara a una altura dada: su alto (px), dónde queda su borde de
- * arriba y cuánto sube el paisaje con ella. Cuando entra la calle, la cámara llega al nivel de la
- * acera: si el paisaje no subiera, la calle taparía la ciudad.
+ * La franja de la calle con la cámara a una altura dada: el alto de la calzada (`height`, px),
+ * dónde queda su borde de arriba (`top`), dónde empieza la capa con sus postes y árboles
+ * (`layerTop`) y cuánto sube el paisaje con ella (`lift`). Antes de entrar queda entera debajo de
+ * la pantalla. Cuando entra, la cámara llega al nivel de la acera: si el paisaje no subiera, la
+ * calle taparía la ciudad.
  */
 export function streetBand(height: number, viewportHeight: number) {
-    const H = clamp(0.14 * viewportHeight, 90, 150);
+    const H = streetHeight(viewportHeight);
     const enter = smoothstep(clamp(1 - height / STREET_FROM_HEIGHT, 0, 1));
-    const top = viewportHeight - H * 0.95 * enter;
-    return { height: H, top, lift: (viewportHeight - top) * 0.92 };
+    const top = viewportHeight + STREET_ABOVE * H * (1 - enter) - SHOWN * H * enter;
+    return {
+        height: H,
+        top,
+        layerTop: top - STREET_ABOVE * H,
+        lift: Math.max(0, viewportHeight - top) * LIFT,
+    };
 }
 
 /** Qué parte del alzado sube cada capa: la ciudad, que está a nivel de calle, sube entera. */
 export const LIFT_SHARE = { farRidge: 0.55, avila: 0.75, city: 1, towers: 1 } as const;
-
-// Lo que hay por encima de la calzada (postes y árboles) mide hasta 0,8 H.
-export const STREET_ABOVE = 0.8;
 
 export type AgentKind = 'car' | 'bus' | 'moto' | 'walker';
 
@@ -48,6 +61,13 @@ export const AGENT_SIZE: Record<AgentKind, [number, number]> = {
     bus: [0.78, 0.31],
     moto: [0.3, 0.24],
     walker: [0.11, 0.24],
+};
+
+/** A qué alto (fracción del vehículo) van sus faros y luces traseras. */
+export const LIGHT_HEIGHT: Record<Exclude<AgentKind, 'walker'>, number> = {
+    car: 0.36,
+    bus: 0.28,
+    moto: 0.5,
 };
 
 // Carriles: los de atrás van hacia la izquierda y los de adelante hacia la derecha.

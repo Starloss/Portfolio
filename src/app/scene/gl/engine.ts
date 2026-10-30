@@ -611,7 +611,7 @@ export class EscenaGL {
                 uCell: frame.scale,
             },
             street: {
-                uOffset: [parallax.street, f.street.top - STREET_ABOVE * f.street.height],
+                uOffset: [parallax.street, f.street.layerTop],
                 uSize: [viewport.width, f.street.height * (1 + STREET_ABOVE)],
                 uDusk: dusk,
             },
@@ -625,7 +625,7 @@ export class EscenaGL {
             },
         };
         // Con la calle a la vista, la gente y los vehículos avanzan a su ritmo.
-        const streetVisible = f.street.top < viewport.height;
+        const streetVisible = f.street.layerTop < viewport.height;
         if (streetVisible) {
             writeInstances(this.instances, this.agents, {
                 time,
