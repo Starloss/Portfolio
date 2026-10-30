@@ -3,6 +3,7 @@
 import React from 'react';
 
 import {
+    MOVING_CABINS,
     CABLE_PATH,
     cablePoint,
     HUMBOLDT,
@@ -169,11 +170,6 @@ export const CabinShape: React.FC<{ c: ScenePalette }> = ({ c }) => (
     </>
 );
 
-// Cabinas que avanzan solas por un tramo del cable, ida y vuelta.
-export const MOVING_CABINS = [
-    { from: 0.56, to: 0.7 },
-    { from: 0.86, to: 0.74 },
-];
 const STILL_CABINS = [0.3, 0.6, 0.82];
 
 const px = (n: number) => `${n.toFixed(1)}px`;

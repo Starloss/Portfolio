@@ -184,3 +184,19 @@ export function moonPosition(
 export function cabinPoint(height: number): { x: number; y: number } {
     return cablePoint(clamp(height, 0, 1));
 }
+
+// Cuánto se oscurece el cielo arriba de todo con la cámara sobre las nubes; poco, para que el
+// texto del Hero siga contrastando.
+export const SKY_DARKENING = 0.3;
+/** Cabina del visitante, en unidades SVG (viewBox -6 0 12 17). */
+export const CABIN_WIDTH = 12;
+export const CABIN_HEIGHT = 17;
+/** Las nubes son elipses de ancho / alto = 3,2. */
+export const CLOUD_ASPECT = 3.2;
+
+/** Nubes lejanas: posición y ancho en vw y vh, y cuánto derivan (vw). */
+export const CLOUDS = [
+    { left: 8, top: 20, width: 28, drift: 6 },
+    { left: 55, top: 12, width: 34, drift: -5 },
+    { left: 30, top: 45, width: 40, drift: 4 },
+];

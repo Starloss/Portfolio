@@ -16,9 +16,8 @@ test('con ?escena=webgl entra con un fundido y la SVG deja de pintarse', async (
 test('si se pierde el contexto WebGL, vuelve a la Escena SVG', async ({ page }) => {
     await page.goto('/?escena=webgl');
     await expect(page.locator('html')).toHaveAttribute('data-escena', 'webgl', { timeout: 20_000 });
-    await page.locator(canvas).evaluate((el: HTMLCanvasElement) =>
-        el.getContext('webgl2')?.getExtension('WEBGL_lose_context')?.loseContext(),
-    );
+    // El canvas es del Worker: con ?escena=webgl, un evento le pide que pierda el contexto.
+    await page.evaluate(() => window.dispatchEvent(new Event('escena:perder-contexto')));
     await expect(page.locator('.scene-gl')).toHaveCount(0);
     await expect(page.locator('html')).not.toHaveAttribute('data-escena');
     await expect(page.locator('.scene')).toHaveCSS('visibility', 'visible');

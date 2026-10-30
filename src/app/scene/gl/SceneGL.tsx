@@ -7,10 +7,10 @@ import { sceneFrame } from '../camera';
 import { useDocumentHidden, useElementViewport, useSceneCovered } from '../environment';
 import { pageFit, usePageLayout } from '../Scene';
 
-import { EscenaGL } from './engine';
-import { createWatchdog } from './watchdog';
+import { EscenaClient } from './client';
+import type { FallbackReason } from './protocol';
 
-export type FallbackReason = 'slow' | 'context-lost' | 'init-failed';
+export type { FallbackReason } from './protocol';
 
 // Lo que dura el fundido cruzado (scene.css, .scene-gl > canvas).
 const FADE_MS = 600;
@@ -24,8 +24,7 @@ export const SceneGL: React.FC<{
     const night = theme === 'dark';
     const boxRef = useRef<HTMLDivElement>(null);
     const canvasRef = useRef<HTMLCanvasElement>(null);
-    const engineRef = useRef<EscenaGL | null>(null);
-    const watchdogRef = useRef<ReturnType<typeof createWatchdog> | null>(null);
+    const engineRef = useRef<EscenaClient | null>(null);
     const viewport = useElementViewport(boxRef);
     const page = usePageLayout(true, viewport);
     const hidden = useDocumentHidden();
@@ -36,9 +35,12 @@ export const SceneGL: React.FC<{
     const fallBack = useEffectEvent((reason: FallbackReason) => onFallback(reason));
 
     useEffect(() => {
-        let engine: EscenaGL;
+        let engine: EscenaClient;
         try {
-            engine = new EscenaGL(canvasRef.current!, Math.min(window.devicePixelRatio || 1, 2));
+            engine = new EscenaClient(canvasRef.current!, {
+                dpr: Math.min(window.devicePixelRatio || 1, 2),
+                watch,
+            });
         } catch {
             // Nada llegó a verse: vuelve a la SVG sin fundido.
             fallBack('init-failed');
@@ -46,21 +48,11 @@ export const SceneGL: React.FC<{
         }
         engineRef.current = engine;
         engine.onFirstFrame = () => setVisible(true);
+        // El vigilante de FPS corre en el Worker: si la ve lenta, llega como 'slow'.
         engine.onFailed = (reason) => setLeaving(reason);
-        if (watch) {
-            const watchdog = createWatchdog(performance.now());
-            watchdogRef.current = watchdog;
-            engine.onFrame = (now) => {
-                if (watchdog.frame(now) === 'fallback') {
-                    engine.stop();
-                    setLeaving('slow');
-                }
-            };
-        }
         return () => {
             engine.destroy();
             engineRef.current = null;
-            watchdogRef.current = null;
         };
     }, [watch]);
 
@@ -78,13 +70,8 @@ export const SceneGL: React.FC<{
     useEffect(() => {
         const engine = engineRef.current;
         if (!engine || leaving) return;
-        if (paused) {
-            engine.stop();
-        } else {
-            // Al volver de una pausa, el vigilante no mide el arranque.
-            watchdogRef.current?.restart(performance.now());
-            engine.start();
-        }
+        if (paused) engine.stop();
+        else engine.start();
     }, [paused, leaving, watch]);
 
     // Con la WebGL ya a la vista, la SVG de abajo deja de pintarse; al irse, vuelve antes del fundido.

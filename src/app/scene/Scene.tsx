@@ -4,8 +4,12 @@ import { useMediaQuery, usePrefersReducedMotion } from '@lib/motion';
 import { useTheme } from '@lib/theme';
 
 import {
+    CABIN_HEIGHT,
+    CABIN_WIDTH,
     cabinPoint,
     CAMERA_JOURNEY,
+    CLOUD_ASPECT,
+    CLOUDS,
     cloudsAt,
     HERO_HEIGHT,
     layerShift,
@@ -13,6 +17,7 @@ import {
     moonPosition,
     mountainSink,
     sceneFrame,
+    SKY_DARKENING,
     toScreen,
     type SceneFrame,
     type TextColumn,
@@ -25,15 +30,6 @@ import { Avila, CabinShape, City, FarRidge, HaloGradient, Macaws, Stars, Towers 
 import './scene.css';
 
 const MOBILE_QUERY = '(max-width: 767px)';
-
-// Cuánto se oscurece el cielo arriba de todo con la cámara sobre las nubes; poco, para que el
-// texto del Hero siga contrastando.
-export const SKY_DARKENING = 0.3;
-/** Cabina del visitante, en unidades SVG (viewBox -6 0 12 17). */
-export const CABIN_WIDTH = 12;
-export const CABIN_HEIGHT = 17;
-/** Las nubes son elipses de ancho / alto = 3,2. */
-export const CLOUD_ASPECT = 3.2;
 
 type StyledPart = 'farRidge' | 'avila' | 'city' | 'towers' | 'clouds' | 'skyHigh' | 'cabin';
 type PartStyles = Record<StyledPart, MotionStyle>;
@@ -154,12 +150,6 @@ export function pageFit(viewport: Viewport, page: PageLayout | null, night: bool
             : { x: viewport.width - 90, y: 140 },
     };
 }
-
-export const CLOUDS = [
-    { left: 8, top: 20, width: 28, drift: 6 },
-    { left: 55, top: 12, width: 34, drift: -5 },
-    { left: 30, top: 45, width: 40, drift: 4 },
-];
 
 /**
  * La Escena de Caracas detrás del contenido. Sin `height`, hace el Viaje de cámara con el

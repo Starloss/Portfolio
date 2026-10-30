@@ -2,17 +2,20 @@
 // cámara que la Escena SVG (camera.ts) y repite sus animaciones de CSS con sus mismas curvas, sobre
 // el reloj de esas mismas animaciones: así el fundido cruzado entre las dos no salta.
 import {
+    CABIN_HEIGHT,
+    CABIN_WIDTH,
     cabinPoint,
     cameraHeightAt,
+    CLOUD_ASPECT,
+    CLOUDS,
     cloudsAt,
     layerShift,
+    SKY_DARKENING,
     toScreen,
     type SceneFrame,
     type Viewport,
 } from '../camera';
-import { cablePoint } from '../geometry';
-import { MOVING_CABINS } from '../parts';
-import { CABIN_HEIGHT, CABIN_WIDTH, CLOUD_ASPECT, CLOUDS, SKY_DARKENING } from '../Scene';
+import { cablePoint, MOVING_CABINS } from '../geometry';
 
 /** Una curva `cubic-bezier()` de CSS, como función del progreso. */
 export function cubicBezier(x1: number, y1: number, x2: number, y2: number) {
@@ -66,6 +69,22 @@ export interface Clocks {
     macaws: number;
     drift: number;
     twinkle: number;
+}
+
+/** Los relojes de CSS en un instante (ms desde el epoch): el Worker los avanza con el suyo. */
+export interface ClockAnchor {
+    at: number;
+    clocks: Clocks;
+}
+
+export function advanceClocks({ at, clocks }: ClockAnchor, now: number): Clocks {
+    const elapsed = (now - at) / 1000;
+    return {
+        cabins: clocks.cabins + elapsed,
+        macaws: clocks.macaws + elapsed,
+        drift: clocks.drift + elapsed,
+        twinkle: clocks.twinkle + elapsed,
+    };
 }
 
 export interface EscenaInputs {

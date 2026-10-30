@@ -1,18 +1,22 @@
 import { afterEach, describe, it, expect } from 'vitest';
 import {
+    CABIN_HEIGHT,
+    CABIN_WIDTH,
     cabinPoint,
     cameraHeightAt,
+    CLOUD_ASPECT,
+    CLOUDS,
     cloudsAt,
     layerShift,
     sceneFrame,
+    SKY_DARKENING,
     toScreen,
 } from '@app/scene/camera';
-import { cablePoint } from '@app/scene/geometry';
-import { MOVING_CABINS } from '@app/scene/parts';
-import { CABIN_HEIGHT, CABIN_WIDTH, CLOUD_ASPECT, CLOUDS, SKY_DARKENING } from '@app/scene/Scene';
+import { cablePoint, MOVING_CABINS } from '@app/scene/geometry';
 import {
     cssEase,
     cssEaseInOut,
+    advanceClocks,
     cubicBezier,
     escenaFrame,
     loopAt,
@@ -113,6 +117,18 @@ describe('curvas de CSS y loopAt', () => {
         expect(loopAt(15, 10, false)).toBeCloseTo(0.5);
         expect(loopAt(15, 10, true)).toBeCloseTo(0.5);
         expect(loopAt(12, 10, true)).toBeCloseTo(0.8);
+    });
+});
+
+describe('advanceClocks', () => {
+    it('el Worker avanza los relojes de CSS con el tiempo que pasó desde el ancla', () => {
+        const anchor = { at: 10_000, clocks: { cabins: 1, macaws: 2, drift: 3, twinkle: 4 } };
+        expect(advanceClocks(anchor, 12_500)).toEqual({
+            cabins: 3.5,
+            macaws: 4.5,
+            drift: 5.5,
+            twinkle: 6.5,
+        });
     });
 });
 

@@ -4,35 +4,35 @@ import { act, render } from '@testing-library/react';
 import { SceneGL, type FallbackReason } from '@app/scene/gl/SceneGL';
 import { ThemeProvider } from '@lib/theme';
 
-// La Escena WebGL como componente: fundido de entrada, vuelta a la SVG y vigilante. El motor ogl
-// necesita una GPU, así que aquí es un doble; el de verdad lo prueba Playwright.
+// La Escena WebGL como componente: fundido de entrada y vuelta a la SVG. El cliente del Worker que
+// dibuja necesita una GPU, así que aquí es un doble; el de verdad lo prueba Playwright.
 
 const engines = vi.hoisted(() => ({
     last: null as null | Record<string, unknown>,
+    options: null as null | { dpr: number; watch: boolean },
     failOnCreate: false,
 }));
 
-vi.mock('@app/scene/gl/engine', () => ({
-    EscenaGL: class {
+vi.mock('@app/scene/gl/client', () => ({
+    EscenaClient: class {
         onFirstFrame?: () => void;
-        onFrame?: (now: number) => void;
-        onFailed?: (reason: 'context-lost' | 'init-failed') => void;
+        onFailed?: (reason: FallbackReason) => void;
         setNight = vi.fn(() => Promise.resolve());
         setLayout = vi.fn();
         start = vi.fn();
         stop = vi.fn();
         destroy = vi.fn();
-        constructor() {
-            if (engines.failOnCreate) throw new Error('Sin WebGL2');
+        constructor(_canvas: HTMLCanvasElement, options: { dpr: number; watch: boolean }) {
+            if (engines.failOnCreate) throw new Error('Sin OffscreenCanvas');
             engines.last = this as unknown as Record<string, unknown>;
+            engines.options = options;
         }
     },
 }));
 
 type Fake = {
     onFirstFrame: () => void;
-    onFrame?: (now: number) => void;
-    onFailed: (reason: 'context-lost' | 'init-failed') => void;
+    onFailed: (reason: FallbackReason) => void;
     setNight: ReturnType<typeof vi.fn>;
     setLayout: ReturnType<typeof vi.fn>;
     start: ReturnType<typeof vi.fn>;
@@ -104,32 +104,26 @@ describe('SceneGL', () => {
         expect(onFallback).toHaveBeenCalledWith('context-lost');
     });
 
-    it('si ogl no arranca, vuelve a la SVG sin que nada llegue a verse', () => {
+    it('si el canvas no se puede pasar al Worker, vuelve a la SVG sin que nada llegue a verse', () => {
         engines.failOnCreate = true;
         engines.last = null;
         const { onFallback } = mount();
         expect(onFallback).toHaveBeenCalledWith('init-failed');
     });
 
-    it('si el vigilante la ve lenta, se funde de vuelta a la SVG', () => {
+    it('si el vigilante (en el Worker) la ve lenta, se funde de vuelta a la SVG', () => {
         const { onFallback, canvas } = mount();
-        const e = engine();
-        act(() => e.onFirstFrame());
-        // 10 fps durante 6 s, desde el arranque.
-        const start = performance.now();
-        act(() => {
-            for (let t = 0; t < 6000; t += 100) e.onFrame!(start + t);
-        });
-        expect(e.stop).toHaveBeenCalled();
+        act(() => engine().onFirstFrame());
+        act(() => engine().onFailed('slow'));
         expect(canvas().style.opacity).toBe('0');
         expect(onFallback).not.toHaveBeenCalled();
         act(() => vi.advanceTimersByTime(600));
         expect(onFallback).toHaveBeenCalledWith('slow');
     });
 
-    it('con ?escena=webgl no hay vigilante', () => {
+    it('con ?escena=webgl le pide al Worker que no vigile', () => {
         mount(false);
-        expect(engine().onFrame).toBeUndefined();
+        expect(engines.options?.watch).toBe(false);
     });
 
     it('con la pestaña oculta se detiene, y al volver arranca de nuevo', () => {

@@ -4,10 +4,9 @@ import React from 'react';
 import { flushSync } from 'react-dom';
 import { createRoot } from 'react-dom/client';
 
-import type { SceneFrame, Viewport } from '../camera';
+import { CABIN_WIDTH, type SceneFrame, type Viewport } from '../camera';
 import { DAY, NIGHT } from '../palette';
 import { Avila, CabinShape, City, FarRidge, HaloGradient, Macaws, Stars, Towers } from '../parts';
-import { CABIN_WIDTH } from '../Scene';
 
 // Fuera del ciclo de React (un efecto no puede usar flushSync), por eso cede un turno antes.
 async function markup(node: React.ReactNode): Promise<string> {

@@ -1,13 +1,12 @@
-// Adaptador delgado sobre ogl (ADR 0003): sube las texturas, fija los uniforms que calcula
-// frame.ts y dibuja las capas en orden. La lógica vive en frame.ts y watchdog.ts, con tests; esto
-// se prueba con Playwright.
+// Adaptador delgado sobre ogl (ADR 0003). Corre en un Worker, con el canvas transferido a un
+// OffscreenCanvas: crear el contexto y dibujar nunca traban la página. Sube las texturas, fija los
+// uniforms que calcula frame.ts y dibuja las capas en orden. La lógica vive en frame.ts y
+// watchdog.ts, con tests; esto se prueba con Playwright.
 import { Geometry, Mesh, Program, Renderer, Texture, Triangle } from 'ogl';
 
-import type { SceneFrame, Viewport } from '../camera';
-
-import { readClocks } from './clocks';
 import { isSoftwareGpu, rendererName } from './detect';
-import { cssEase, escenaFrame, type Clocks } from './frame';
+import { advanceClocks, cssEase, escenaFrame, type ClockAnchor, type Clocks } from './frame';
+import type { FallbackReason, Layout, TextureRequest } from './protocol';
 import {
     CLOUDS_FRAGMENT,
     FULLSCREEN_VERTEX,
@@ -17,14 +16,8 @@ import {
     SPRITE_FRAGMENT,
     SPRITE_VERTEX,
 } from './shaders';
-import { themeLayers, type LayerName } from './textures';
-
-export interface Layout {
-    viewport: Viewport;
-    frame: SceneFrame;
-    sink: number;
-    moon: { x: number; y: number } | null;
-}
+import type { LayerName } from './textures';
+import { createWatchdog } from './watchdog';
 
 type Theme = 'day' | 'night';
 type Uniforms = Record<string, { value: unknown }>;
@@ -58,15 +51,31 @@ const MOON_RADIUS = 26;
 const STILL: Clocks = { cabins: 0, macaws: 0, drift: 0, twinkle: 0 };
 const SOFTWARE_DPR = 0.5;
 
+// requestAnimationFrame existe en los Workers de Chrome, Firefox y Safari 17 con OffscreenCanvas.
+const nextFrame = (run: (now: number) => void): number =>
+    typeof requestAnimationFrame === 'function'
+        ? requestAnimationFrame(run)
+        : (setTimeout(() => run(performance.now()), 16) as unknown as number);
+const cancelFrame = (id: number) =>
+    typeof cancelAnimationFrame === 'function' ? cancelAnimationFrame(id) : clearTimeout(id);
+const epoch = () => performance.timeOrigin + performance.now();
+
+export interface EngineOptions {
+    dpr: number;
+    /** Con `?escena=webgl` no hay vigilante de FPS. */
+    watch: boolean;
+    /** La página rasteriza las piezas SVG y devuelve las texturas como ImageBitmap. */
+    requestTextures: (request: TextureRequest) => Promise<Record<string, ImageBitmap>>;
+}
+
 export class EscenaGL {
     onFirstFrame?: () => void;
-    /** Cada cuadro dibujado, con su hora: lo usa el vigilante de FPS. */
-    onFrame?: (now: number) => void;
-    /** Se perdió el contexto o no se pudieron preparar las texturas: hay que volver a la SVG. */
-    onFailed?: (reason: 'context-lost' | 'init-failed') => void;
+    /** Hay que volver a la SVG: lento (vigilante), contexto perdido o texturas que fallaron. */
+    onFailed?: (reason: FallbackReason) => void;
 
     private renderer: Renderer;
     private gl: Renderer['gl'];
+    private dpr: number;
     private textures = new Map<string, Texture>();
     private passes: Record<Pass, PassSpec>;
     private layout: Layout | null = null;
@@ -76,56 +85,59 @@ export class EscenaGL {
     private generation = 0;
     private ready: Record<Theme, number> = { day: -1, night: -1 };
     private pending: Partial<Record<Theme, { generation: number; promise: Promise<void> }>> = {};
+    // Se sube una textura por cuadro, para que ningún cuadro se alargue.
+    private uploads: Array<{
+        theme: Theme;
+        generation: number;
+        texture: Texture;
+        image: ImageBitmap;
+    }> = [];
     private wanted = 0;
     private night = 0;
     private target = 0;
     private themeFrom = 0;
     private themeStart = -1;
+    private progress = 0;
+    private units = { vw: 1, vh: 1 };
+    private clocks: ClockAnchor = { at: epoch(), clocks: STILL };
     private raf = 0;
     private running = false;
     private disposed = false;
     private drawn = false;
-    // Con una GPU por software (solo forzada, en CI), cada cuadro bloquea el hilo principal unos
-    // 100 ms: entonces dibuja solo cuando algo cambia (scroll, tamaño, tema, texturas), con las
-    // animaciones quietas como con reduced-motion y a media resolución.
+    private watchdog: ReturnType<typeof createWatchdog> | null;
+    // Con una GPU por software (solo forzada, en CI) cada cuadro cuesta unos 100 ms de CPU: dibuja
+    // solo cuando algo cambia (scroll, tamaño, tema, texturas), con las animaciones quietas como con
+    // reduced-motion y a media resolución.
     private onDemand: boolean;
     private dirty = true;
-    // Subir una textura SVG la rasteriza en el hilo principal: se sube una por cuadro, para que
-    // ninguna tarea se alargue.
-    private uploads: Array<{
-        theme: Theme;
-        generation: number;
-        texture: Texture;
-        image: HTMLImageElement;
-    }> = [];
 
     constructor(
-        private canvas: HTMLCanvasElement,
-        private dpr: number,
+        private canvas: OffscreenCanvas,
+        private options: EngineOptions,
     ) {
-        this.renderer = new Renderer({ canvas, webgl: 2, dpr, alpha: false, antialias: false });
+        this.dpr = options.dpr;
+        this.renderer = new Renderer({
+            canvas: canvas as unknown as HTMLCanvasElement,
+            webgl: 2,
+            dpr: this.dpr,
+            alpha: false,
+            antialias: false,
+        });
         if (!this.renderer.isWebgl2) throw new Error('Sin WebGL2');
         this.renderer.autoClear = false;
         this.gl = this.renderer.gl;
         this.onDemand = isSoftwareGpu(rendererName(this.gl as unknown as WebGL2RenderingContext));
         if (this.onDemand) this.dpr = this.renderer.dpr = SOFTWARE_DPR;
+        this.watchdog = options.watch ? createWatchdog(performance.now()) : null;
         canvas.addEventListener('webglcontextlost', this.onContextLost);
-        if (this.onDemand) window.addEventListener('scroll', this.markDirty, { passive: true });
         this.passes = this.build();
     }
-
-    private markDirty = () => {
-        this.dirty = true;
-    };
 
     private texture(name: string): Texture {
         let t = this.textures.get(name);
         if (!t) {
-            t = new Texture(this.gl, {
-                generateMipmaps: false,
-                premultiplyAlpha: true,
-                flipY: false,
-            });
+            // Las ImageBitmap llegan ya premultiplicadas y sin voltear.
+            t = new Texture(this.gl, { generateMipmaps: false, flipY: false });
             this.textures.set(name, t);
         }
         return t;
@@ -212,18 +224,34 @@ export class EscenaGL {
 
     private onContextLost = (event: Event) => {
         event.preventDefault();
-        this.stop();
-        this.onFailed?.('context-lost');
+        this.fail('context-lost');
     };
 
-    /** Rasteriza y sube las capas de un tema para el tamaño actual; una sola vez por generación. */
+    private fail(reason: FallbackReason) {
+        if (this.disposed) return;
+        this.stop();
+        this.onFailed?.(reason);
+    }
+
+    /** Solo con ?escena=webgl: Playwright prueba así la vuelta a la SVG. */
+    loseContext() {
+        this.gl.getExtension('WEBGL_lose_context')?.loseContext();
+    }
+
+    /** Pide y encola las capas de un tema para el tamaño actual; una sola vez por generación. */
     private load(theme: Theme): Promise<void> {
         const layout = this.layout;
         const generation = this.generation;
         if (!layout || this.ready[theme] === generation) return Promise.resolve();
         const pending = this.pending[theme];
         if (pending?.generation === generation) return pending.promise;
-        const promise = themeLayers(theme === 'night', layout.frame, layout.viewport, this.dpr)
+        const promise = this.options
+            .requestTextures({
+                night: theme === 'night',
+                viewport: layout.viewport,
+                frame: layout.frame,
+                dpr: this.dpr,
+            })
             .then((images) => {
                 // Si la pantalla cambió de tamaño mientras tanto, ya viene otra generación.
                 if (this.disposed || generation !== this.generation) return;
@@ -236,16 +264,27 @@ export class EscenaGL {
                     });
                 }
             })
-            .catch(() => {
-                if (this.disposed) return;
-                this.stop();
-                this.onFailed?.('init-failed');
-            })
+            .catch(() => this.fail('init-failed'))
             .finally(() => {
                 if (this.pending[theme]?.promise === promise) delete this.pending[theme];
             });
         this.pending[theme] = { generation, promise };
         return promise;
+    }
+
+    /** Sube la próxima textura en cola; el tema queda listo cuando subió todas las suyas. */
+    private upload() {
+        const next = this.uploads.shift();
+        if (!next) return;
+        const { theme, generation, texture, image } = next;
+        if (generation !== this.generation) return;
+        texture.image = image as unknown as HTMLImageElement;
+        texture.needsUpdate = true;
+        texture.update();
+        if (!this.uploads.some((u) => u.theme === theme && u.generation === generation)) {
+            this.ready[theme] = generation;
+            this.dirty = true;
+        }
     }
 
     private get theme(): Theme {
@@ -254,11 +293,11 @@ export class EscenaGL {
 
     setLayout(layout: Layout) {
         this.layout = layout;
+        this.dirty = true;
         const key = `${layout.viewport.width}x${layout.viewport.height}`;
         if (key === this.sizeKey) return;
         this.sizeKey = key;
         this.generation++;
-        this.dirty = true;
         this.renderer.setSize(layout.viewport.width, layout.viewport.height);
         const current = this.theme;
         const other: Theme = current === 'night' ? 'day' : 'night';
@@ -284,43 +323,43 @@ export class EscenaGL {
         this.themeStart = performance.now();
     }
 
+    setScroll(progress: number) {
+        this.progress = progress;
+        this.dirty = true;
+    }
+
+    setUnits(units: { vw: number; vh: number }) {
+        this.units = units;
+        this.dirty = true;
+    }
+
+    setClocks(anchor: ClockAnchor) {
+        this.clocks = anchor;
+    }
+
     start() {
         if (this.running || this.disposed) return;
         this.running = true;
+        // Al volver de una pausa, el vigilante no mide el arranque.
+        this.watchdog?.restart(performance.now());
         const loop = (now: number) => {
             if (!this.running) return;
             this.upload();
             this.draw(now);
-            this.raf = requestAnimationFrame(loop);
+            if (this.running) this.raf = nextFrame(loop);
         };
-        this.raf = requestAnimationFrame(loop);
-    }
-
-    /** Sube la próxima textura en cola; el tema queda listo cuando subió todas las suyas. */
-    private upload() {
-        const next = this.uploads.shift();
-        if (!next) return;
-        const { theme, generation, texture, image } = next;
-        if (generation !== this.generation) return;
-        texture.image = image;
-        texture.needsUpdate = true;
-        texture.update();
-        if (!this.uploads.some((u) => u.theme === theme && u.generation === generation)) {
-            this.ready[theme] = generation;
-            this.dirty = true;
-        }
+        this.raf = nextFrame(loop);
     }
 
     stop() {
         this.running = false;
-        cancelAnimationFrame(this.raf);
+        cancelFrame(this.raf);
     }
 
     destroy() {
         this.stop();
         this.disposed = true;
         this.canvas.removeEventListener('webglcontextlost', this.onContextLost);
-        window.removeEventListener('scroll', this.markDirty);
         this.gl.getExtension('WEBGL_lose_context')?.loseContext();
     }
 
@@ -336,16 +375,14 @@ export class EscenaGL {
             this.night = this.themeFrom + (this.target - this.themeFrom) * cssEase(t);
             if (t >= 1) this.themeStart = -1;
         }
-        const doc = document.documentElement;
         const f = escenaFrame({
-            progress: window.scrollY / Math.max(1, doc.scrollHeight - window.innerHeight),
+            progress: this.progress,
             sink,
             viewport,
             frame,
-            clocks: this.onDemand ? STILL : readClocks(now / 1000),
-            units: { vw: window.innerWidth / 100, vh: window.innerHeight / 100 },
+            clocks: this.onDemand ? STILL : advanceClocks(this.clocks, epoch()),
+            units: this.units,
         });
-
         const rect = (r: { x: number; y: number; width: number; height: number }) => [
             r.x,
             r.y,
@@ -387,6 +424,6 @@ export class EscenaGL {
             // Con la Escena ya a la vista, el otro tema se prepara para cambiar sin espera.
             void this.load(this.theme === 'night' ? 'day' : 'night');
         }
-        this.onFrame?.(now);
+        if (this.watchdog?.frame(now) === 'fallback') this.fail('slow');
     }
 }

@@ -40,7 +40,7 @@ let decision: Promise<Upgrade | null> | null = null;
 function decide(): Promise<Upgrade | null> {
     decision ??= import('./gl/detect')
         .then(async ({ chooseEscena, readSignals, rememberFallback }) => {
-            const choice = chooseEscena(readSignals());
+            const choice = chooseEscena(await readSignals());
             trackEscena(choice.version, choice.reason);
             if (choice.version !== 'webgl') return null;
             const { SceneGL } = await import('./gl/SceneGL');

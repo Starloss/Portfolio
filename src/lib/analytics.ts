@@ -1,5 +1,5 @@
 import type { EscenaReason, EscenaVersion } from '@app/scene/gl/detect';
-import type { FallbackReason } from '@app/scene/gl/SceneGL';
+import type { FallbackReason } from '@app/scene/gl/protocol';
 
 import type { Locale } from '@/content';
 

@@ -10,6 +10,9 @@ const __dirname = path.dirname(__filename);
 
 export default defineConfig({
   plugins: [react(), tailwindcss()],
+  // Los Workers de la Escena WebGL (ADR 0003) son módulos: los navegadores con OffscreenCanvas
+  // ya los soportan.
+  worker: { format: 'es' },
   resolve: {
     alias: {
       '@': path.resolve(__dirname, 'src'),

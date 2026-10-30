@@ -27,6 +27,7 @@ export interface DeviceSignals {
     reducedMotion: boolean;
     saveData: boolean;
     mobile: boolean;
+    /** WebGL2 en un OffscreenCanvas: la Escena WebGL dibuja desde un Worker. */
     webgl2: boolean;
     /** Nombre de la GPU que da WebGL, si lo da. */
     renderer: string | null;
@@ -96,17 +97,37 @@ export function rendererName(gl: WebGL2RenderingContext): string | null {
     return String(gl.getParameter(info ? info.UNMASKED_RENDERER_WEBGL : gl.RENDERER) ?? '') || null;
 }
 
-// Pide un contexto WebGL2 de prueba para saber si existe y qué GPU hay detrás, y lo suelta.
-function probeWebGL(): { webgl2: boolean; renderer: string | null } {
-    try {
-        const gl = document.createElement('canvas').getContext('webgl2');
-        if (!gl) return { webgl2: false, renderer: null };
-        const renderer = rendererName(gl);
-        gl.getExtension('WEBGL_lose_context')?.loseContext();
-        return { webgl2: true, renderer };
-    } catch {
-        return { webgl2: false, renderer: null };
+// La Escena WebGL dibuja desde un Worker con OffscreenCanvas: hace falta WebGL2 ahí. La prueba
+// también va en un Worker, porque crear un contexto (sobre todo por software) traba el hilo que lo
+// pide. Si el Worker no responde a tiempo, se toma como que no hay WebGL2.
+const PROBE_TIMEOUT_MS = 3000;
+
+function probeWebGL(): Promise<{ webgl2: boolean; renderer: string | null }> {
+    const none = { webgl2: false, renderer: null };
+    if (
+        typeof OffscreenCanvas === 'undefined' ||
+        typeof Worker === 'undefined' ||
+        !('transferControlToOffscreen' in HTMLCanvasElement.prototype)
+    ) {
+        return Promise.resolve(none);
     }
+    return new Promise((resolve) => {
+        let worker: Worker;
+        try {
+            worker = new Worker(new URL('./probe.worker.ts', import.meta.url), { type: 'module' });
+        } catch {
+            resolve(none);
+            return;
+        }
+        const done = (result: { webgl2: boolean; renderer: string | null }) => {
+            window.clearTimeout(timer);
+            worker.terminate();
+            resolve(result);
+        };
+        const timer = window.setTimeout(() => done(none), PROBE_TIMEOUT_MS);
+        worker.onmessage = (event) => done(event.data);
+        worker.onerror = () => done(none);
+    });
 }
 
 const matches = (query: string) =>
@@ -121,7 +142,7 @@ const isPhone = () =>
         PHONE_SHORT_SIDE;
 
 /** Lee del navegador lo que necesita `chooseEscena`. */
-export function readSignals(): DeviceSignals {
+export async function readSignals(): Promise<DeviceSignals> {
     const nav = navigator as Navigator & {
         deviceMemory?: number;
         connection?: { saveData?: boolean };
@@ -141,5 +162,5 @@ export function readSignals(): DeviceSignals {
     const unasked = { webgl2: true, renderer: null };
     const decided = chooseEscena({ ...cheap, ...unasked });
     if (decided.version === 'svg' || decided.reason === 'forced') return { ...cheap, ...unasked };
-    return { ...cheap, ...probeWebGL() };
+    return { ...cheap, ...(await probeWebGL()) };
 }

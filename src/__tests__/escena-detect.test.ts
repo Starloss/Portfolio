@@ -120,77 +120,100 @@ describe('isFallbackRemembered', () => {
 });
 
 describe('readSignals', () => {
-    afterEach(() => {
-        vi.restoreAllMocks();
-        window.history.replaceState(null, '', '/');
-        localStorage.clear();
-    });
-
-    // Un contexto WebGL2 falso que dice qué GPU tiene detrás.
-    const fakeGpu = (renderer: string) => {
-        const loseContext = vi.fn();
-        vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue({
-            RENDERER: 1,
-            getExtension: (name: string) =>
-                name === 'WEBGL_debug_renderer_info'
-                    ? { UNMASKED_RENDERER_WEBGL: 2 }
-                    : { loseContext },
-            getParameter: (p: number) => (p === 2 ? renderer : 'WebKit WebGL'),
-        } as unknown as RenderingContext);
-        return loseContext;
+    // jsdom no tiene OffscreenCanvas ni Workers: un Worker de prueba que contesta lo que se le pida.
+    const workers = { created: 0 };
+    const fakeProbe = (answer: { webgl2: boolean; renderer: string | null } | 'silence') => {
+        vi.stubGlobal('OffscreenCanvas', class {});
+        vi.stubGlobal(
+            'Worker',
+            class {
+                onmessage: ((event: { data: unknown }) => void) | null = null;
+                onerror: (() => void) | null = null;
+                constructor() {
+                    workers.created++;
+                    if (answer !== 'silence') {
+                        setTimeout(() => this.onmessage?.({ data: answer }));
+                    }
+                }
+                terminate() {}
+            },
+        );
+        Object.defineProperty(HTMLCanvasElement.prototype, 'transferControlToOffscreen', {
+            value: () => ({}),
+            configurable: true,
+        });
     };
 
-    it('pregunta por la GPU y suelta el contexto de prueba', () => {
-        const loseContext = fakeGpu('ANGLE (NVIDIA GeForce RTX 3060 Ti)');
-        const s = readSignals();
-        expect(s.webgl2).toBe(true);
-        expect(s.renderer).toBe('ANGLE (NVIDIA GeForce RTX 3060 Ti)');
-        expect(loseContext).toHaveBeenCalled();
+    afterEach(() => {
+        vi.restoreAllMocks();
+        vi.unstubAllGlobals();
+        vi.useRealTimers();
+        Reflect.deleteProperty(HTMLCanvasElement.prototype, 'transferControlToOffscreen');
+        window.history.replaceState(null, '', '/');
+        localStorage.clear();
+        workers.created = 0;
     });
 
-    it('sin WebGL2 lo dice', () => {
-        vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(null);
-        expect(readSignals()).toMatchObject({ webgl2: false, renderer: null });
+    it('pregunta por la GPU desde un Worker, sin trabar la página', async () => {
+        fakeProbe({ webgl2: true, renderer: 'ANGLE (NVIDIA GeForce RTX 3060 Ti)' });
+        const s = await readSignals();
+        expect(s).toMatchObject({ webgl2: true, renderer: 'ANGLE (NVIDIA GeForce RTX 3060 Ti)' });
+        expect(chooseEscena(s)).toEqual({ version: 'webgl', reason: 'capable' });
     });
 
-    it('con ?escena=webgl no pide un contexto de prueba', () => {
-        const getContext = vi.spyOn(HTMLCanvasElement.prototype, 'getContext');
+    it('sin OffscreenCanvas (Safari viejo) no hay Escena WebGL', async () => {
+        expect(await readSignals()).toMatchObject({ webgl2: false, renderer: null });
+    });
+
+    it('si el Worker de prueba no contesta, se queda la SVG', async () => {
+        vi.useFakeTimers();
+        fakeProbe('silence');
+        const pending = readSignals();
+        await vi.advanceTimersByTimeAsync(3000);
+        expect(chooseEscena(await pending)).toEqual({ version: 'svg', reason: 'no-webgl2' });
+    });
+
+    it('con ?escena=webgl no hace la prueba', async () => {
+        fakeProbe({ webgl2: true, renderer: 'x' });
         window.history.replaceState(null, '', '/?escena=webgl');
-        expect(chooseEscena(readSignals())).toEqual({ version: 'webgl', reason: 'forced' });
-        expect(getContext).not.toHaveBeenCalled();
+        expect(chooseEscena(await readSignals())).toEqual({ version: 'webgl', reason: 'forced' });
+        expect(workers.created).toBe(0);
     });
 
-    it('descarta por poca memoria con esa razón, sin pedir contexto', () => {
-        const getContext = vi.spyOn(HTMLCanvasElement.prototype, 'getContext');
+    it('descarta por poca memoria con esa razón, sin hacer la prueba', async () => {
+        fakeProbe({ webgl2: true, renderer: 'x' });
         Object.defineProperty(navigator, 'deviceMemory', { value: 2, configurable: true });
         try {
-            expect(chooseEscena(readSignals())).toEqual({ version: 'svg', reason: 'low-memory' });
-            expect(getContext).not.toHaveBeenCalled();
+            expect(chooseEscena(await readSignals())).toEqual({
+                version: 'svg',
+                reason: 'low-memory',
+            });
+            expect(workers.created).toBe(0);
         } finally {
             Reflect.deleteProperty(navigator, 'deviceMemory');
         }
     });
 
-    it('descarta por pocos núcleos con esa razón, sin pedir contexto', () => {
-        const getContext = vi.spyOn(HTMLCanvasElement.prototype, 'getContext');
+    it('descarta por pocos núcleos con esa razón, sin hacer la prueba', async () => {
+        fakeProbe({ webgl2: true, renderer: 'x' });
         vi.spyOn(navigator, 'hardwareConcurrency', 'get').mockReturnValue(2);
-        expect(chooseEscena(readSignals())).toEqual({ version: 'svg', reason: 'few-cores' });
-        expect(getContext).not.toHaveBeenCalled();
+        expect(chooseEscena(await readSignals())).toEqual({ version: 'svg', reason: 'few-cores' });
+        expect(workers.created).toBe(0);
     });
 
-    it('un teléfono acostado (ventana ancha, pantalla chica) es un teléfono', () => {
+    it('un teléfono acostado (ventana ancha, pantalla chica) es un teléfono', async () => {
         vi.spyOn(window.screen, 'width', 'get').mockReturnValue(390);
         vi.spyOn(window.screen, 'height', 'get').mockReturnValue(844);
-        expect(chooseEscena(readSignals())).toEqual({ version: 'svg', reason: 'mobile' });
+        expect(chooseEscena(await readSignals())).toEqual({ version: 'svg', reason: 'mobile' });
     });
 
-    it('si ya se descartó por otra razón, tampoco lo pide', () => {
-        const getContext = vi.spyOn(HTMLCanvasElement.prototype, 'getContext');
+    it('con una caída recordada tampoco hace la prueba', async () => {
+        fakeProbe({ webgl2: true, renderer: 'x' });
         rememberFallback();
-        expect(chooseEscena(readSignals())).toEqual({
+        expect(chooseEscena(await readSignals())).toEqual({
             version: 'svg',
             reason: 'fallback-remembered',
         });
-        expect(getContext).not.toHaveBeenCalled();
+        expect(workers.created).toBe(0);
     });
 });
