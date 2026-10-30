@@ -18,8 +18,11 @@ import {
     cssEaseInOut,
     advanceClocks,
     cubicBezier,
+    duskAt,
     escenaFrame,
+    followPointer,
     loopAt,
+    PARALLAX_PX,
     type Clocks,
 } from '@app/scene/gl/frame';
 import { readClocks } from '@app/scene/gl/clocks';
@@ -31,8 +34,16 @@ const viewport = { width: 1440, height: 900 };
 const frame = sceneFrame(viewport);
 const units = { vw: 14.4, vh: 9 };
 const still: Clocks = { cabins: 0, macaws: 0, drift: 0, twinkle: 0 };
-const at = (progress: number, clocks: Partial<Clocks> = {}) =>
-    escenaFrame({ progress, sink: 30, viewport, frame, clocks: { ...still, ...clocks }, units });
+const at = (progress: number, clocks: Partial<Clocks> = {}, pointer = { x: 0, y: 0 }) =>
+    escenaFrame({
+        progress,
+        sink: 30,
+        viewport,
+        frame,
+        clocks: { ...still, ...clocks },
+        units,
+        pointer,
+    });
 
 describe('escenaFrame', () => {
     it('las capas se hunden igual que en la Escena SVG', () => {
@@ -144,5 +155,56 @@ describe('readClocks', () => {
 
     it('si una animación no está montada, usa el reloj de respaldo', () => {
         expect(readClocks(7)).toEqual({ cabins: 7, macaws: 7, drift: 7, twinkle: 7 });
+    });
+});
+
+describe('efectos', () => {
+    it('el atardecer o amanecer aparece solo a mitad del cambio de tema', () => {
+        expect(duskAt(0)).toBe(0);
+        expect(duskAt(1)).toBe(0);
+        expect(duskAt(0.5)).toBe(1);
+        expect(duskAt(0.2)).toBeGreaterThan(0.5);
+        expect(duskAt(0.2)).toBeCloseTo(duskAt(0.8));
+    });
+
+    it('el puntero se sigue con suavidad, sin pasarse del objetivo', () => {
+        const target = { x: 1, y: -1 };
+        const half = followPointer({ x: 0, y: 0 }, target, 0.1);
+        expect(half.x).toBeGreaterThan(0);
+        expect(half.x).toBeLessThan(1);
+        expect(half.y).toBeCloseTo(-half.x);
+        expect(followPointer({ x: 0, y: 0 }, target, 5)).toEqual(target);
+    });
+
+    it('con el puntero a un lado, lo lejano se mueve menos que lo cercano y en sentido contrario', () => {
+        const f = at(0.5, {}, { x: 1, y: 0 });
+        expect(f.parallax.farRidge).toBeLessThan(0);
+        expect(Math.abs(f.parallax.farRidge)).toBeLessThan(Math.abs(f.parallax.avila));
+        expect(Math.abs(f.parallax.avila)).toBeLessThan(Math.abs(f.parallax.city));
+        expect(Math.abs(f.parallax.city)).toBeLessThanOrEqual(PARALLAX_PX * 1.2);
+        // Las cabinas cuelgan del Ávila: se mueven con él.
+        expect(f.cabins[2].x - at(0.5).cabins[2].x).toBeCloseTo(f.parallax.avila);
+        expect(at(0.5).parallax).toEqual({ farRidge: 0, avila: 0, city: 0, towers: 0, sky: 0 });
+    });
+
+    it('las nubes cercanas se cruzan a mitad del Viaje, no arriba ni en la ciudad', () => {
+        const height = (progress: number) => at(progress).height;
+        const peak = [0, 0.2, 0.4, 0.5, 0.6, 0.8, 1].reduce((best, p) =>
+            at(p).frontClouds > at(best).frontClouds ? p : best,
+        );
+        expect(at(peak).frontClouds).toBeGreaterThan(0.5);
+        expect(Math.abs(height(peak) - 0.6)).toBeLessThan(0.15);
+        expect(at(1).frontClouds).toBeLessThan(0.01);
+    });
+
+    it('la niebla se pega a las laderas: baja con su capa', () => {
+        const top = at(0);
+        const bottom = at(1);
+        expect(top.mist.avila - bottom.mist.avila).toBeCloseTo(
+            top.shifts.avila - bottom.shifts.avila,
+        );
+        expect(top.mist.farRidge - bottom.mist.farRidge).toBeCloseTo(
+            top.shifts.farRidge - bottom.shifts.farRidge,
+        );
     });
 });

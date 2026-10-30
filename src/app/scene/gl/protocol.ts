@@ -3,7 +3,7 @@
 // animaciones de CSS, y le rasteriza las texturas cuando las pide.
 import type { SceneFrame, Viewport } from '../camera';
 
-import type { ClockAnchor } from './frame';
+import type { ClockAnchor, Pointer } from './frame';
 
 export type FallbackReason = 'slow' | 'context-lost' | 'init-failed';
 
@@ -28,6 +28,7 @@ export type ToWorker =
     | { type: 'scroll'; progress: number }
     | { type: 'units'; units: { vw: number; vh: number } }
     | { type: 'clocks'; anchor: ClockAnchor }
+    | { type: 'pointer'; pointer: Pointer }
     | { type: 'run'; running: boolean }
     | { type: 'textures'; id: number; images: Record<string, ImageBitmap> | null }
     // Solo con ?escena=webgl: lo usa Playwright para probar la vuelta a la SVG.

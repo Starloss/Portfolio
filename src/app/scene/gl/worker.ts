@@ -50,6 +50,8 @@ self.onmessage = (event: MessageEvent<ToWorker>) => {
             return engine.setUnits(message.units);
         case 'clocks':
             return engine.setClocks(message.anchor);
+        case 'pointer':
+            return engine.setPointer(message.pointer);
         case 'run':
             return message.running ? engine.start() : engine.stop();
         case 'lose-context':

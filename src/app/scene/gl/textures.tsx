@@ -5,7 +5,7 @@ import { flushSync } from 'react-dom';
 import { createRoot } from 'react-dom/client';
 
 import { CABIN_WIDTH, type SceneFrame, type Viewport } from '../camera';
-import { DAY, NIGHT } from '../palette';
+import { DAY, NIGHT, type ScenePalette } from '../palette';
 import { Avila, CabinShape, City, FarRidge, HaloGradient, Macaws, Stars, Towers } from '../parts';
 
 // Fuera del ciclo de React (un efecto no puede usar flushSync), por eso cede un turno antes.
@@ -42,7 +42,13 @@ export type LayerName =
     | 'towers'
     | 'stars'
     | 'macaws'
-    | 'cabin';
+    | 'cabin'
+    | 'cityLights'
+    | 'towersLights';
+
+// Las luces de Noche van aparte, sobre las siluetas en negro: así las de atrás quedan tapadas por
+// los edificios de adelante, y el shader puede hacerlas titilar y brillar sin tocar las siluetas.
+const BLACK = Object.fromEntries(Object.keys(DAY).map((k) => [k, '#000'])) as ScenePalette;
 
 /** Las capas de un tema, al tamaño de la pantalla × dpr. Las de un solo tema faltan en el otro. */
 export async function themeLayers(
@@ -74,8 +80,9 @@ export async function themeLayers(
                 <Avila c={c} {...still} slice="front" />
             </>,
         ),
-        full(<City c={c} {...still} />),
-        full(<Towers c={c} {...still} />),
+        // De Noche, las siluetas sin ventanas: las ventanas van en las texturas de luces.
+        full(<City c={c} night={false} animate={false} />),
+        full(<Towers c={c} night={false} animate={false} />),
         full(night ? <Stars count={60} groups={3} animate={false} /> : <Macaws animate={false} />),
         markup(
             <svg
@@ -88,6 +95,12 @@ export async function themeLayers(
             </svg>,
         ).then(rasterize),
     ]);
+    const [cityLights, towersLights] = night
+        ? await Promise.all([
+              full(<City c={BLACK} night animate={false} />),
+              full(<Towers c={BLACK} night animate={false} />),
+          ])
+        : [];
     return {
         far,
         avilaBack,
@@ -95,6 +108,6 @@ export async function themeLayers(
         city,
         towers,
         cabin,
-        ...(night ? { stars: extra } : { macaws: extra }),
+        ...(night ? { stars: extra, cityLights, towersLights } : { macaws: extra }),
     };
 }
