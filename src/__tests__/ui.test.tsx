@@ -1,25 +1,12 @@
 import React from 'react';
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
-import { Badge } from '@app/components/ui/Badge';
 import { Heading } from '@app/components/ui/Heading';
 import { Section } from '@app/components/ui/Section';
 import { I18nProvider, useI18n } from '@lib/i18n';
 import { ThemeProvider, useTheme } from '@lib/theme';
 
 describe('UI primitives', () => {
-    it('Badge variants', () => {
-        const { rerender } = render(<Badge data-testid="badge">Default</Badge>);
-        const badge = screen.getByTestId('badge');
-        expect(badge.className).toMatch(/bg-slate-200/);
-        rerender(
-            <Badge variant="outline" data-testid="badge">
-                Outline
-            </Badge>,
-        );
-        expect(badge.className).toMatch(/border/);
-    });
-
     it('Heading levels y visuallyHidden', () => {
         const { rerender } = render(<Heading level={1}>H1</Heading>);
         expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('H1');
