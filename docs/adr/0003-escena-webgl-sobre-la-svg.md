@@ -1,10 +1,10 @@
 ---
-status: proposed
+status: accepted
 ---
 
 # La Escena tiene una versión WebGL para escritorio, encima de la versión SVG
 
-Si el prototipo da luz verde, esta ADR reemplaza a la 0001. La Escena SVG por capas sigue siendo la base: es lo primero que se pinta, la única versión en móviles y el respaldo de cualquier equipo que no rinda. Encima, en escritorio y tablet con una GPU capaz, una versión WebGL 2.5D hecha con `ogl` dibuja las mismas siluetas como texturas. A eso le agrega nubes y niebla volumétricas, la luz del atardecer y el amanecer, una ciudad nocturna viva, parallax con el mouse y una Avenida Bolívar con gente y carros en movimiento. El objetivo es un impacto visual que la SVG no alcanza, sin que ese costo recaiga en la carga inicial ni en los equipos que no pueden con él.
+El prototipo (#40) dio luz verde y esta ADR reemplaza a la 0001. La Escena SVG por capas sigue siendo la base: es lo primero que se pinta, la única versión en móviles y el respaldo de cualquier equipo que no rinda. Encima, en escritorio y tablet con una GPU capaz, una versión WebGL 2.5D hecha con `ogl` dibuja las mismas siluetas como texturas. A eso le agrega nubes y niebla volumétricas, la luz del atardecer y el amanecer, una ciudad nocturna viva, parallax con el mouse y una Avenida Bolívar con gente y carros en movimiento. El objetivo es un impacto visual que la SVG no alcanza, sin que ese costo recaiga en la carga inicial ni en los equipos que no pueden con él.
 
 ## Considered Options
 
@@ -16,6 +16,8 @@ Si el prototipo da luz verde, esta ADR reemplaza a la 0001. La Escena SVG por ca
 ## Consequences
 
 - El presupuesto de Lighthouse (≥90 y 150 kB) aplica a la carga inicial. La detección y la versión WebGL se cargan en chunks diferidos.
+- La versión WebGL dibuja desde un Worker con OffscreenCanvas, y la prueba de la detección también corre en un Worker. Crear un contexto WebGL es una llamada síncrona: sin GPU (SwiftShader, en CI) bloqueaba la página ~900 ms. Ahora la página solo pasa el scroll, las medidas, el tema y el reloj de las animaciones de CSS, y rasteriza las texturas cuando el Worker las pide. Sin WebGL2 en OffscreenCanvas (Safari anterior a 17) se queda la SVG.
+- Con una GPU por software, que solo llega con `?escena=webgl`, la Escena WebGL dibuja solo cuando algo cambia, a media resolución y con las animaciones quietas.
 - Una corrida de Lighthouse de escritorio con `?escena=webgl` también exige rendimiento ≥90.
 - La detección previa es un chunk diminuto que se carga cuando el navegador está ocioso, y decide antes de descargar la versión WebGL. Deja la SVG si hay reduced-motion, Save-Data, falta WebGL2, el hardware es bajo, la GPU es de gama baja o por software, o el dispositivo es móvil.
 - En ejecución, un vigilante vuelve a la SVG si la Escena se sostiene por debajo de unos 45 fps, y recuerda la decisión para ese visitante. Los valores exactos del vigilante los fija la spec.

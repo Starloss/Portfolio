@@ -1,3 +1,6 @@
+import type { EscenaReason, EscenaVersion } from '@app/scene/gl/detect';
+import type { FallbackReason } from '@app/scene/gl/protocol';
+
 import type { Locale } from '@/content';
 
 // Señales de interés medidas con Umami (ver docs/adr/0002). El script vive en index.html y solo
@@ -25,3 +28,10 @@ const track = (event: string, data: Record<string, string>) => {
 export const trackCvDownload = (lang: Locale) => track('cv-download', { lang });
 
 export const trackContact = (channel: ContactChannel) => track('contact', { channel });
+
+// Eventos técnicos de la Escena (ADR 0003). No son Señales de interés: dicen qué versión recibió
+// el visitante y cuándo el vigilante la devolvió a la SVG.
+export const trackEscena = (version: EscenaVersion, reason: EscenaReason) =>
+    track('escena', { version, reason });
+
+export const trackEscenaFallback = (reason: FallbackReason) => track('escena-caida', { reason });

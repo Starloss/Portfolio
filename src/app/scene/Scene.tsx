@@ -4,8 +4,12 @@ import { useMediaQuery, usePrefersReducedMotion } from '@lib/motion';
 import { useTheme } from '@lib/theme';
 
 import {
+    CABIN_HEIGHT,
+    CABIN_WIDTH,
     cabinPoint,
     CAMERA_JOURNEY,
+    CLOUD_ASPECT,
+    CLOUDS,
     cloudsAt,
     HERO_HEIGHT,
     layerShift,
@@ -13,6 +17,7 @@ import {
     moonPosition,
     mountainSink,
     sceneFrame,
+    SKY_DARKENING,
     toScreen,
     type SceneFrame,
     type TextColumn,
@@ -25,11 +30,6 @@ import { Avila, CabinShape, City, FarRidge, HaloGradient, Macaws, Stars, Towers 
 import './scene.css';
 
 const MOBILE_QUERY = '(max-width: 767px)';
-
-// Cuánto se oscurece el cielo arriba de todo con la cámara sobre las nubes; poco, para que el
-// texto del Hero siga contrastando.
-const SKY_DARKENING = 0.3;
-const CABIN_WIDTH = 12;
 
 type StyledPart = 'farRidge' | 'avila' | 'city' | 'towers' | 'clouds' | 'skyHigh' | 'cabin';
 type PartStyles = Record<StyledPart, MotionStyle>;
@@ -118,7 +118,7 @@ function measurePage(): PageLayout {
 
 const samePage = (a: PageLayout | null, b: PageLayout) => JSON.stringify(a) === JSON.stringify(b);
 
-function usePageLayout(enabled: boolean, viewport: Viewport): PageLayout | null {
+export function usePageLayout(enabled: boolean, viewport: Viewport): PageLayout | null {
     const [page, setPage] = useState<PageLayout | null>(null);
     useLayoutEffect(() => {
         if (!enabled) return;
@@ -138,11 +138,18 @@ function usePageLayout(enabled: boolean, viewport: Viewport): PageLayout | null 
     return enabled ? page : null;
 }
 
-const CLOUDS = [
-    { left: 8, top: 20, width: 28, drift: 6 },
-    { left: 55, top: 12, width: 34, drift: -5 },
-    { left: 30, top: 45, width: 40, drift: 4 },
-];
+/**
+ * Lo que la Escena ajusta a la página: cuánto hundir la montaña en el Hero y dónde va la luna. Lo
+ * comparten la Escena SVG y la WebGL.
+ */
+export function pageFit(viewport: Viewport, page: PageLayout | null, night: boolean) {
+    return {
+        sink: page?.column ? mountainSink(viewport, page.column, skyline(night)) : 0,
+        moon: page?.column
+            ? moonPosition(viewport, page.column, page.headerBottom)
+            : { x: viewport.width - 90, y: 140 },
+    };
+}
 
 /**
  * La Escena de Caracas detrás del contenido. Sin `height`, hace el Viaje de cámara con el
@@ -165,10 +172,7 @@ export const Scene: React.FC<{ height?: number }> = ({ height }) => {
     const journeyMode = height === undefined;
     const page = usePageLayout(journeyMode, viewport);
 
-    const sink = page?.column ? mountainSink(viewport, page.column, skyline(night)) : 0;
-    const moon = page?.column
-        ? moonPosition(viewport, page.column, page.headerBottom)
-        : { x: viewport.width - 90, y: 140 };
+    const { sink, moon } = pageFit(viewport, page, night);
     const travels = journeyMode && !reduced;
 
     // Animan siempre las cabinas y las estrellas; nubes, guacamayas y ventanas solo en escritorio.
@@ -229,7 +233,7 @@ export const Scene: React.FC<{ height?: number }> = ({ height }) => {
                                     left: `${cloud.left}vw`,
                                     top: `${cloud.top}vh`,
                                     width: `${cloud.width}vw`,
-                                    height: `${cloud.width / 3.2}vw`,
+                                    height: `${cloud.width / CLOUD_ASPECT}vw`,
                                     '--drift': `${cloud.drift}vw`,
                                 } as React.CSSProperties
                             }
@@ -253,7 +257,7 @@ export const Scene: React.FC<{ height?: number }> = ({ height }) => {
                     <svg
                         viewBox="-6 0 12 17"
                         width={CABIN_WIDTH * frame.scale}
-                        height={17 * frame.scale}
+                        height={CABIN_HEIGHT * frame.scale}
                     >
                         <CabinShape c={VARS} />
                     </svg>

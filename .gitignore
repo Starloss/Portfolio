@@ -27,5 +27,6 @@ Thumbs.db
 
 # Lighthouse CI y Playwright
 .lighthouseci
+.lighthouseci-desktop
 playwright-report
 test-results

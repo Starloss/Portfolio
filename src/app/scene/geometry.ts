@@ -102,3 +102,9 @@ export function skyline(night: boolean): number[] {
         );
     });
 }
+
+// Cabinas que avanzan solas por un tramo del cable, ida y vuelta.
+export const MOVING_CABINS = [
+    { from: 0.56, to: 0.7 },
+    { from: 0.86, to: 0.74 },
+];

@@ -87,12 +87,21 @@ jobs:
       - name: Lighthouse CI
         run: pnpm dlx @lhci/cli@0.15.1 autorun
 
+      # Escritorio con la Escena WebGL forzada (ADR 0003): también ≥90. Sin GPU, dibuja SwiftShader.
+      - name: Lighthouse CI (escritorio, Escena WebGL)
+        if: always()
+        run: |
+          pnpm dlx @lhci/cli@0.15.1 autorun --config=lighthouserc.desktop.json
+          node scripts/check-lighthouse-webgl.mjs .lighthouseci-desktop
+
       - name: Upload Lighthouse reports
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: lighthouse
-          path: .lighthouseci
+          path: |
+            .lighthouseci
+            .lighthouseci-desktop
           # La carpeta empieza con punto: sin esto, upload-artifact v4 no sube nada.
           include-hidden-files: true
 
