@@ -170,7 +170,7 @@ export const CabinShape: React.FC<{ c: ScenePalette }> = ({ c }) => (
 );
 
 // Cabinas que avanzan solas por un tramo del cable, ida y vuelta.
-const MOVING_CABINS = [
+export const MOVING_CABINS = [
     { from: 0.56, to: 0.7 },
     { from: 0.86, to: 0.74 },
 ];
@@ -190,11 +190,12 @@ function cabinTrip(from: number, to: number): React.CSSProperties {
     } as React.CSSProperties;
 }
 
-const CableCar: React.FC<PartProps & { stillCabins: boolean }> = ({
+const CableCar: React.FC<PartProps & { stillCabins: boolean; cabins: boolean }> = ({
     c,
     night,
     animate,
     stillCabins,
+    cabins,
 }) => {
     const station = (x: number, y: number, key: string) => (
         <g key={key} transform={`translate(${x},${y})`}>
@@ -219,48 +220,64 @@ const CableCar: React.FC<PartProps & { stillCabins: boolean }> = ({
                     />
                 );
             })}
-            {stillCabins
-                ? STILL_CABINS.map((t) => {
-                      const { x, y } = cablePoint(t);
-                      return (
-                          <g key={t} transform={`translate(${x},${y})`}>
-                              <CabinShape c={c} />
-                          </g>
-                      );
-                  })
-                : MOVING_CABINS.map(({ from, to }) => {
-                      const { x, y } = cablePoint(from);
-                      return (
-                          <g key={from} transform={`translate(${x},${y})`}>
-                              <g
-                                  data-anim={animate ? 'cabin' : undefined}
-                                  style={animate ? cabinTrip(from, to) : undefined}
-                              >
-                                  <CabinShape c={c} />
-                              </g>
-                          </g>
-                      );
-                  })}
+            {!cabins
+                ? null
+                : stillCabins
+                  ? STILL_CABINS.map((t) => {
+                        const { x, y } = cablePoint(t);
+                        return (
+                            <g key={t} transform={`translate(${x},${y})`}>
+                                <CabinShape c={c} />
+                            </g>
+                        );
+                    })
+                  : MOVING_CABINS.map(({ from, to }) => {
+                        const { x, y } = cablePoint(from);
+                        return (
+                            <g key={from} transform={`translate(${x},${y})`}>
+                                <g
+                                    data-anim={animate ? 'cabin' : undefined}
+                                    style={animate ? cabinTrip(from, to) : undefined}
+                                >
+                                    <CabinShape c={c} />
+                                </g>
+                            </g>
+                        );
+                    })}
             {station(STATIONS.lower.x, STATIONS.lower.y, 'lower')}
             {station(STATIONS.upper.x, STATIONS.upper.y, 'upper')}
         </g>
     );
 };
 
-/** Crestas media y cercana, Teleférico y Humboldt. En móvil también lleva la cresta lejana. */
-export const Avila: React.FC<PartProps & { withFarRidge?: boolean; stillCabins?: boolean }> = ({
-    c,
-    night,
-    animate,
-    withFarRidge = false,
-    stillCabins = false,
-}) => (
+/**
+ * Crestas media y cercana, Teleférico y Humboldt. En móvil también lleva la cresta lejana.
+ * `slice` parte la montaña para la Escena WebGL, que dibuja las cabinas que se mueven entre las
+ * dos mitades: `back` es la cresta media con el cable, sin cabinas; `front`, la cercana y el Humboldt.
+ */
+export const Avila: React.FC<
+    PartProps & { withFarRidge?: boolean; stillCabins?: boolean; slice?: 'back' | 'front' }
+> = ({ c, night, animate, withFarRidge = false, stillCabins = false, slice }) => (
     <g data-part="avila">
         {withFarRidge && <FarRidge c={c} />}
-        <path d={RIDGE_PATHS.mid} style={{ fill: c.ridgeMid }} />
-        <CableCar c={c} night={night} animate={animate} stillCabins={stillCabins} />
-        <path d={RIDGE_PATHS.near} style={{ fill: c.ridgeNear }} />
-        <Humboldt c={c} night={night} />
+        {slice !== 'front' && (
+            <>
+                <path d={RIDGE_PATHS.mid} style={{ fill: c.ridgeMid }} />
+                <CableCar
+                    c={c}
+                    night={night}
+                    animate={animate}
+                    stillCabins={stillCabins}
+                    cabins={slice === undefined}
+                />
+            </>
+        )}
+        {slice !== 'back' && (
+            <>
+                <path d={RIDGE_PATHS.near} style={{ fill: c.ridgeNear }} />
+                <Humboldt c={c} night={night} />
+            </>
+        )}
     </g>
 );
 

@@ -8,9 +8,10 @@ MotionGlobalConfig.skipAnimations = true;
 
 afterEach(() => cleanup());
 
-// jsdom no trae matchMedia, IntersectionObserver ni scrollIntoView, y su scrollTo solo avisa que no está
-// implementado. Valores por defecto inertes: cada test puede
-// reemplazarlos (p. ej. para simular prefers-reduced-motion o una sección visible).
+// jsdom no trae matchMedia, IntersectionObserver ni scrollIntoView, y su scrollTo y su getContext
+// solo avisan que no están implementados (sin canvas no hay WebGL: la Escena se queda en SVG).
+// Valores por defecto inertes: cada test puede reemplazarlos (p. ej. para simular
+// prefers-reduced-motion o una sección visible).
 if (typeof window !== 'undefined') {
     if (!window.matchMedia) {
         window.matchMedia = (query: string) =>
@@ -27,6 +28,7 @@ if (typeof window !== 'undefined') {
     }
     Element.prototype.scrollIntoView ??= () => {};
     window.scrollTo = () => {};
+    HTMLCanvasElement.prototype.getContext = () => null;
     if (!('IntersectionObserver' in window)) {
         class InertIntersectionObserver {
             observe() {}

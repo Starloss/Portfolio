@@ -9,6 +9,7 @@ import { ExperienceSection } from '../features/experience/ExperienceSection';
 import { ImpactSection } from '../features/impact/ImpactSection';
 import { FeaturedProjects } from '../features/projects/FeaturedProjects';
 import { SkillsSection } from '../features/skills/SkillsSection';
+import { EscenaUpgrade } from '../scene/EscenaUpgrade';
 import { Scene } from '../scene/Scene';
 
 /**
@@ -63,6 +64,7 @@ export const Home: React.FC = () => {
     return (
         <>
             <Scene />
+            <EscenaUpgrade />
             <MainHeader activeId={activeId} isHome />
             <main className="mx-auto max-w-[892px] space-y-[20vh] px-4 pb-[20vh] md:space-y-[35vh]">
                 <Hero />

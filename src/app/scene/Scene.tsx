@@ -28,8 +28,8 @@ const MOBILE_QUERY = '(max-width: 767px)';
 
 // Cuánto se oscurece el cielo arriba de todo con la cámara sobre las nubes; poco, para que el
 // texto del Hero siga contrastando.
-const SKY_DARKENING = 0.3;
-const CABIN_WIDTH = 12;
+export const SKY_DARKENING = 0.3;
+export const CABIN_WIDTH = 12;
 
 type StyledPart = 'farRidge' | 'avila' | 'city' | 'towers' | 'clouds' | 'skyHigh' | 'cabin';
 type PartStyles = Record<StyledPart, MotionStyle>;
@@ -96,7 +96,7 @@ const JourneyStyles: React.FC<{
     return <>{children(styles)}</>;
 };
 
-interface PageLayout {
+export interface PageLayout {
     column: TextColumn | null;
     headerBottom: number;
 }
@@ -118,7 +118,7 @@ function measurePage(): PageLayout {
 
 const samePage = (a: PageLayout | null, b: PageLayout) => JSON.stringify(a) === JSON.stringify(b);
 
-function usePageLayout(enabled: boolean, viewport: Viewport): PageLayout | null {
+export function usePageLayout(enabled: boolean, viewport: Viewport): PageLayout | null {
     const [page, setPage] = useState<PageLayout | null>(null);
     useLayoutEffect(() => {
         if (!enabled) return;
@@ -138,7 +138,7 @@ function usePageLayout(enabled: boolean, viewport: Viewport): PageLayout | null 
     return enabled ? page : null;
 }
 
-const CLOUDS = [
+export const CLOUDS = [
     { left: 8, top: 20, width: 28, drift: 6 },
     { left: 55, top: 12, width: 34, drift: -5 },
     { left: 30, top: 45, width: 40, drift: 4 },
@@ -294,4 +294,5 @@ export const Scene: React.FC<{ height?: number }> = ({ height }) => {
     );
 };
 
-const skyGradient = (c: typeof DAY) => `linear-gradient(to bottom, ${c.skyTop}, ${c.skyBottom})`;
+export const skyGradient = (c: typeof DAY) =>
+    `linear-gradient(to bottom, ${c.skyTop}, ${c.skyBottom})`;

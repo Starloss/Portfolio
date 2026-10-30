@@ -25,3 +25,10 @@ const track = (event: string, data: Record<string, string>) => {
 export const trackCvDownload = (lang: Locale) => track('cv-download', { lang });
 
 export const trackContact = (channel: ContactChannel) => track('contact', { channel });
+
+// Eventos técnicos de la Escena (ADR 0003). No son Señales de interés: dicen qué versión recibió
+// el visitante y cuándo el vigilante la devolvió a la SVG.
+export const trackEscena = (version: string, reason: string) =>
+    track('escena', { version, reason });
+
+export const trackEscenaFallback = (reason: string) => track('escena-caida', { reason });

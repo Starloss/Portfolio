@@ -20,7 +20,7 @@ The personal site of Diego Rangel, a Full-Stack Lead Developer. It is written fo
 
 The decisions are recorded as ADRs in [`docs/adr/`](docs/adr). They are written in Spanish, like the domain glossary in [`GLOSSARY.md`](GLOSSARY.md).
 
-- **The scene is layered SVG and CSS, not WebGL** ([ADR 0001](docs/adr/0001-escena-svg-por-capas-sin-webgl.md)). El Ávila, the other landmarks and the skyline are SVG silhouettes in separate layers. Scroll moves each layer with a compositor-friendly `transform`. El Ávila's profile is generated from real NASA SRTM elevation data by `scripts/avila-profile.ts`. WebGL would not fit the mobile performance budget. The scene stays still under `prefers-reduced-motion`.
+- **The scene is layered SVG, with a WebGL version on capable desktops** ([ADR 0003](docs/adr/0003-escena-webgl-sobre-la-svg.md), which replaces [ADR 0001](docs/adr/0001-escena-svg-por-capas-sin-webgl.md)). El Ávila, the other landmarks and the skyline are SVG silhouettes in separate layers, and scroll moves each layer with a compositor-friendly `transform`. El Ávila's profile is generated from real NASA SRTM elevation data by `scripts/avila-profile.ts`. The SVG always paints first and is the only version on phones. After load, a tiny deferred check looks at the device (reduced motion, Save-Data, WebGL2, memory, cores, GPU). On a capable desktop or tablet it loads a WebGL version built with `ogl`, which rasterizes the same SVG parts as textures and cross-fades in at the current scroll position. An FPS watchdog fades it back to the SVG if it runs slow, and remembers that for the visitor.
 - **Analytics run on Umami, not Vercel Web Analytics** ([ADR 0002](docs/adr/0002-analitica-con-umami-no-vercel.md)). The site measures the actions that signal hiring interest: CV downloads, clicks to email or LinkedIn, and case-study views. On Vercel, custom events need a paid plan. Umami is free, sets no cookies and only records data on the production domain. Links inside the CV carry UTM tags.
 - **One content source, many outputs.** Work history, projects and case studies live as typed, bilingual data in `src/content/data/`. That data drives the pages and, at build time, the CV PDF in each language, a per-route `<head>` (title, description, canonical, `hreflang`, Open Graph), the Open Graph images, the sitemap and `robots.txt`.
 - **Content is validated at build time.** The build fails on any unconfirmed claim, missing translation, or screenshot without published files or known dimensions. Nothing unverified ships.
@@ -29,9 +29,9 @@ The decisions are recorded as ADRs in [`docs/adr/`](docs/adr). They are written 
 
 Every pull request runs these checks in CI:
 
-- **Lighthouse CI** on the home page in both languages and every case study (Spanish routes), at mobile settings. Performance and accessibility must score **≥ 90**. Transfer budgets: **155 kB** of script, **15 kB** of CSS and **30 kB** of fonts.
+- **Lighthouse CI** on the home page in both languages and every case study (Spanish routes), at mobile settings. Performance and accessibility must score **≥ 90**. Transfer budgets: **155 kB** of script, **15 kB** of CSS and **30 kB** of fonts. A second desktop run forces the WebGL scene (`?escena=webgl`) and must also score **≥ 90**.
 - **Unit tests** with a coverage threshold of **80%** for lines, statements, functions and branches, reported to Codecov.
-- **End-to-end tests** with Playwright against the production build. They cover language routing, the per-route `<head>`, the scroll-driven scene, reduced motion, view transitions and keyboard focus in the gallery viewer.
+- **End-to-end tests** with Playwright against the production build. They cover language routing, the per-route `<head>`, the scroll-driven scene, reduced motion, view transitions, keyboard focus in the gallery viewer, and the WebGL scene with its fallback to the SVG.
 - **ESLint 10** with zero warnings: React 19 rules (`@eslint-react` and the hooks rules), accessibility (`jsx-a11y`) and import order. It runs on Node 22 and 24.
 
 ## Running it locally
@@ -66,7 +66,7 @@ src/
     config/       Canonical site URL
     features/     Home sections: impact, experience, projects, skills, contact
     pages/        Home and case study
-    scene/        The Caracas scene: SVG parts, geometry, palette, camera journey
+    scene/        The Caracas scene: SVG parts, geometry, palette, camera journey; gl/ is the WebGL version
     theme/        Design tokens
   assets/         Self-hosted display font
   build/          The build-time outputs listed under "One content source, many outputs"

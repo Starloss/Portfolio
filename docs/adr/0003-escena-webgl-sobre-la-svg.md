@@ -1,10 +1,10 @@
 ---
-status: proposed
+status: accepted
 ---
 
 # La Escena tiene una versión WebGL para escritorio, encima de la versión SVG
 
-Si el prototipo da luz verde, esta ADR reemplaza a la 0001. La Escena SVG por capas sigue siendo la base: es lo primero que se pinta, la única versión en móviles y el respaldo de cualquier equipo que no rinda. Encima, en escritorio y tablet con una GPU capaz, una versión WebGL 2.5D hecha con `ogl` dibuja las mismas siluetas como texturas. A eso le agrega nubes y niebla volumétricas, la luz del atardecer y el amanecer, una ciudad nocturna viva, parallax con el mouse y una Avenida Bolívar con gente y carros en movimiento. El objetivo es un impacto visual que la SVG no alcanza, sin que ese costo recaiga en la carga inicial ni en los equipos que no pueden con él.
+El prototipo (#40) dio luz verde y esta ADR reemplaza a la 0001. La Escena SVG por capas sigue siendo la base: es lo primero que se pinta, la única versión en móviles y el respaldo de cualquier equipo que no rinda. Encima, en escritorio y tablet con una GPU capaz, una versión WebGL 2.5D hecha con `ogl` dibuja las mismas siluetas como texturas. A eso le agrega nubes y niebla volumétricas, la luz del atardecer y el amanecer, una ciudad nocturna viva, parallax con el mouse y una Avenida Bolívar con gente y carros en movimiento. El objetivo es un impacto visual que la SVG no alcanza, sin que ese costo recaiga en la carga inicial ni en los equipos que no pueden con él.
 
 ## Considered Options
 
