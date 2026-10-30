@@ -14,7 +14,7 @@
       "assertions": {
         "categories:performance": ["error", { "minScore": 0.9, "aggregationMethod": "median-run" }],
         "categories:accessibility": ["error", { "minScore": 0.9, "aggregationMethod": "median-run" }],
-        "errors-in-console": ["error", { "maxLength": 0 }]
+        "errors-in-console": ["error", { "maxLength": 0, "aggregationMethod": "pessimistic" }]
       }
     },
     "upload": {

@@ -37,9 +37,12 @@ interface Upgrade {
 // caída la WebGL no vuelve hasta la próxima visita.
 let decision: Promise<Upgrade | null> | null = null;
 
-// Qué versión quedó, a la vista en <html data-escena-elegida>: lo leen Playwright y quien depure.
-const announce = (version: 'svg' | 'webgl') =>
-    (document.documentElement.dataset.escenaElegida = version);
+// Qué versión quedó y por qué, a la vista en <html data-escena-elegida data-escena-razon>: lo leen
+// Playwright y quien depure.
+const announce = (version: 'svg' | 'webgl', reason: string) => {
+    document.documentElement.dataset.escenaElegida = version;
+    document.documentElement.dataset.escenaRazon = reason;
+};
 
 function decide(): Promise<Upgrade | null> {
     decision ??= import('./gl/detect')
@@ -47,17 +50,17 @@ function decide(): Promise<Upgrade | null> {
             const choice = chooseEscena(await readSignals());
             trackEscena(choice.version, choice.reason);
             if (choice.version !== 'webgl') {
-                announce('svg');
+                announce('svg', choice.reason);
                 return null;
             }
             const { SceneGL } = await import('./gl/SceneGL');
-            announce('webgl');
+            announce('webgl', choice.reason);
             return { SceneGL, watch: choice.reason !== 'forced', rememberFallback };
         })
         // Un chunk que no llega (red caída, deploy nuevo) deja la Escena SVG, que ya está.
         .catch((error: unknown) => {
             console.error('Escena: no se pudo cargar la detección o la versión WebGL', error);
-            announce('svg');
+            announce('svg', 'load-failed');
             return null;
         });
     return decision;
@@ -87,7 +90,7 @@ export const EscenaUpgrade: React.FC = () => {
         // consola, así el Lighthouse de escritorio no mide la SVG creyendo que mide la WebGL.
         if (watch) rememberFallback();
         else console.error(`Escena WebGL forzada: volvió a la SVG (${reason})`);
-        announce('svg');
+        announce('svg', reason);
         decision = Promise.resolve(null);
         setUpgrade(null);
     };

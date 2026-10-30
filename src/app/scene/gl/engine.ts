@@ -87,6 +87,9 @@ export class EscenaGL {
     private ready: Record<Theme, number> = { day: -1, night: -1 };
     private pending: Partial<Record<Theme, { generation: number; promise: Promise<boolean> }>> = {};
     private resizeTimer: ReturnType<typeof setTimeout> | undefined;
+    // Quienes esperan que un tema termine de subirse (load), por generación.
+    private waiting: Array<{ theme: Theme; generation: number; resolve: (ok: boolean) => void }> =
+        [];
     private maxTexture: number;
     // Se sube una textura por cuadro, para que ningún cuadro se alargue.
     private uploads: Array<{
@@ -231,8 +234,17 @@ export class EscenaGL {
         this.fail('context-lost');
     };
 
+    private settle(which: (w: { theme: Theme; generation: number }) => boolean, ok: boolean) {
+        this.waiting = this.waiting.filter((w) => {
+            if (!which(w)) return true;
+            w.resolve(ok);
+            return false;
+        });
+    }
+
     private fail(reason: FallbackReason) {
         if (this.disposed) return;
+        this.settle(() => true, false);
         this.stop();
         this.onFailed?.(reason);
     }
@@ -276,7 +288,10 @@ export class EscenaGL {
                         image,
                     });
                 }
-                return true;
+                // Listo recién cuando se subieron todas (una por cuadro), no cuando quedan en cola.
+                return new Promise<boolean>((resolve) =>
+                    this.waiting.push({ theme, generation, resolve }),
+                );
             })
             .catch(() => {
                 // Una generación vieja o el tema que no se ve no detienen la Escena: si hace falta,
@@ -313,6 +328,7 @@ export class EscenaGL {
         if (!this.uploads.some((u) => u.theme === theme && u.generation === generation)) {
             this.ready[theme] = generation;
             this.dirty = true;
+            this.settle((w) => w.theme === theme && w.generation === generation, true);
         }
     }
 
@@ -328,6 +344,8 @@ export class EscenaGL {
         const first = this.sizeKey === '';
         this.sizeKey = key;
         this.generation++;
+        // Las esperas de la generación anterior ya no importan: quien esperaba sigue adelante.
+        this.settle(() => true, true);
         this.renderer.setSize(layout.viewport.width, layout.viewport.height);
         // Mientras se arrastra el borde de la ventana, se dibuja con las texturas anteriores y se
         // rasteriza una sola vez, cuando el tamaño se queda quieto.

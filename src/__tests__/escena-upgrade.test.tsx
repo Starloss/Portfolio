@@ -55,6 +55,7 @@ beforeEach(async () => {
 afterEach(() => {
     delete window.umami;
     delete document.documentElement.dataset.escenaElegida;
+    delete document.documentElement.dataset.escenaRazon;
     vi.restoreAllMocks();
     track.mockReset();
     detect.remember.mockReset();
@@ -69,6 +70,7 @@ describe('EscenaUpgrade', () => {
         );
         expect(screen.queryByTestId('escena-gl')).not.toBeInTheDocument();
         expect(document.documentElement.dataset.escenaElegida).toBe('svg');
+        expect(document.documentElement.dataset.escenaRazon).toBe('mobile');
     });
 
     it('si elige la WebGL, la monta con el vigilante encendido', async () => {
