@@ -32,6 +32,20 @@ export const CAMERA_JOURNEY: CameraJourney = {
     height: Array.from({ length: SAMPLES + 1 }, (_, i) => cameraHeightAt(i / SAMPLES)),
 };
 
+/**
+ * Un valor de la Escena con el progreso de scroll tal como lo ve la Escena SVG: calculado en las
+ * muestras del Viaje e interpolado en línea recta entre ellas (así lo hace motion con
+ * `useTransform`). La Escena WebGL lo usa para que el fundido cruzado entre las dos no salte.
+ */
+export function journeyAt(progress: number, valueAt: (height: number) => number): number {
+    const { progress: stops, height } = CAMERA_JOURNEY;
+    const p = clamp(progress, 0, 1);
+    const i = Math.min(stops.length - 2, Math.floor(p * (stops.length - 1)));
+    const t = (p - stops[i]) / (stops[i + 1] - stops[i]);
+    const from = valueAt(height[i]);
+    return from + (valueAt(height[i + 1]) - from) * t;
+}
+
 /** Profundidad de cada capa que se mueve: cuánto se hunde por unidad de altura, en altos de ventana. */
 export const LAYER_DEPTH = {
     farRidge: 0.35,

@@ -12,6 +12,7 @@ import {
     mountainSink,
     sceneFrame,
     toScreen,
+    journeyAt,
 } from '@app/scene/camera';
 import { LIFT_SHARE, streetBand } from '@app/scene/street';
 import { STATIONS } from '@app/scene/geometry';
@@ -194,5 +195,25 @@ describe('Cabina del Teleférico atada a la altura de la cámara', () => {
         const start = cabinPoint(0);
         const end = cabinPoint(1);
         expect(cabinPoint(0.5).y).toBeGreaterThan((start.y + end.y) / 2);
+    });
+});
+
+describe('journeyAt', () => {
+    it('en las muestras del Viaje da el valor exacto', () => {
+        CAMERA_JOURNEY.progress.forEach((p, i) => {
+            expect(journeyAt(p, (h) => h * 10)).toBeCloseTo(CAMERA_JOURNEY.height[i] * 10);
+        });
+    });
+
+    it('entre dos muestras interpola en línea recta, como useTransform en la Escena SVG', () => {
+        const [p0, p1] = CAMERA_JOURNEY.progress.slice(4, 6);
+        const [h0, h1] = CAMERA_JOURNEY.height.slice(4, 6);
+        const square = (h: number) => h * h;
+        expect(journeyAt((p0 + p1) / 2, square)).toBeCloseTo((square(h0) + square(h1)) / 2);
+    });
+
+    it('fuera de 0 a 1 se queda en los extremos', () => {
+        expect(journeyAt(-0.5, (h) => h)).toBeCloseTo(CAMERA_JOURNEY.height[0]);
+        expect(journeyAt(1.5, (h) => h)).toBeCloseTo(CAMERA_JOURNEY.height.at(-1)!);
     });
 });

@@ -5,11 +5,12 @@ import {
     CABIN_HEIGHT,
     CABIN_WIDTH,
     cabinPoint,
-    cameraHeightAt,
+    journeyAt,
     cloudsAt,
     layerShift,
     SKY_DARKENING,
     toScreen,
+    type MovingLayer,
     type SceneFrame,
     type Viewport,
 } from '../camera';
@@ -135,22 +136,26 @@ export interface EscenaInputs {
 }
 
 export function escenaFrame({ progress, sink, viewport, frame, clocks, pointer }: EscenaInputs) {
-    const height = cameraHeightAt(progress);
+    // Lo que depende de la altura de la cámara se interpola entre las muestras del Viaje, igual que
+    // en la Escena SVG: así el fundido cruzado entre las dos no salta.
+    const sample = (valueAt: (height: number) => number) => journeyAt(progress, valueAt);
+    const height = sample((h) => h);
     const vh = viewport.height;
+    const shift = (layer: MovingLayer) => sample((h) => layerShift(layer, h, vh, sink));
     const shifts = {
-        farRidge: layerShift('farRidge', height, vh, sink),
-        avila: layerShift('avila', height, vh, sink),
-        city: layerShift('city', height, vh, sink),
-        towers: layerShift('towers', height, vh, sink),
+        farRidge: shift('farRidge'),
+        avila: shift('avila'),
+        city: shift('city'),
+        towers: shift('towers'),
     };
-    const shift = (depth: number) => -pointer * PARALLAX_PX * depth || 0;
+    const sway = (depth: number) => -pointer * PARALLAX_PX * depth || 0;
     const parallax = {
-        sky: shift(PARALLAX_DEPTH.sky),
-        farRidge: shift(PARALLAX_DEPTH.farRidge),
-        avila: shift(PARALLAX_DEPTH.avila),
-        city: shift(PARALLAX_DEPTH.city),
-        towers: shift(PARALLAX_DEPTH.towers),
-        street: shift(PARALLAX_DEPTH.street),
+        sky: sway(PARALLAX_DEPTH.sky),
+        farRidge: sway(PARALLAX_DEPTH.farRidge),
+        avila: sway(PARALLAX_DEPTH.avila),
+        city: sway(PARALLAX_DEPTH.city),
+        towers: sway(PARALLAX_DEPTH.towers),
+        street: sway(PARALLAX_DEPTH.street),
     };
     // Una cabina cuelga del cable desde su centro arriba; en pantalla, el rectángulo de su sprite.
     const cabinRect = (x: number, y: number) => {
@@ -167,7 +172,14 @@ export function escenaFrame({ progress, sink, viewport, frame, clocks, pointer }
         const p = twoStep(cabinT, cablePoint(from), cablePoint((from + to) / 2), cablePoint(to));
         return cabinRect(p.x, p.y);
     });
-    const visitor = cabinPoint(height);
+    // La cabina del visitante, como su transform en la SVG: punto del cable más el Ávila.
+    const visitorAt = (h: number) => toScreen(frame, cabinPoint(h).x, cabinPoint(h).y);
+    const visitor = {
+        x: sample((h) => visitorAt(h).x) - (CABIN_WIDTH / 2) * frame.scale + parallax.avila,
+        y: sample((h) => visitorAt(h).y + layerShift('avila', h, vh, sink)),
+        width: CABIN_WIDTH * frame.scale,
+        height: CABIN_HEIGHT * frame.scale,
+    };
     const macaws = twoStep(
         loopAt(clocks.macaws, MACAW_SECONDS, false),
         { x: 0, y: 0 },
@@ -177,21 +189,30 @@ export function escenaFrame({ progress, sink, viewport, frame, clocks, pointer }
             y: 0,
         },
     );
-    const clouds = cloudsAt(height, vh);
+    const clouds = {
+        y: sample((h) => cloudsAt(h, vh).y),
+        opacity: sample((h) => cloudsAt(h, vh).opacity),
+    };
+    const band = (key: 'top' | 'layerTop' | 'lift') => sample((h) => streetBand(h, vh)[key]);
     return {
         height,
         shifts,
-        skyHigh: height * SKY_DARKENING,
+        skyHigh: sample((h) => h * SKY_DARKENING),
         cloudsOpacity: clouds.opacity,
         /** Cuánto bajó la capa de nubes lejanas con la cámara (px). */
         cloudsShift: clouds.y,
         /** Las dos cabinas que van y vienen y, al final, la del visitante. */
-        cabins: [...moving, cabinRect(visitor.x, visitor.y)],
+        cabins: [...moving, visitor],
         macaws: { x: macaws.x * frame.scale + parallax.sky, y: macaws.y * frame.scale },
         twinkle: clocks.twinkle,
         parallax,
         /** La franja de la Avenida Bolívar (street.ts): su borde de arriba y su alto, en px. */
-        street: streetBand(height, vh),
+        street: {
+            height: streetBand(height, vh).height,
+            top: band('top'),
+            layerTop: band('layerTop'),
+            lift: band('lift'),
+        },
         /** Densidad de las nubes cercanas que cruza la cámara (0 a 1). */
         frontClouds:
             FRONT_CLOUDS.density *

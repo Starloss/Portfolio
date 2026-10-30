@@ -4,6 +4,7 @@ import {
     CABIN_WIDTH,
     cabinPoint,
     cameraHeightAt,
+    journeyAt,
     cloudsAt,
     layerShift,
     sceneFrame,
@@ -43,29 +44,30 @@ const at = (progress: number, clocks: Partial<Clocks> = {}, pointer = 0) =>
     });
 
 describe('escenaFrame', () => {
-    it('las capas se hunden igual que en la Escena SVG', () => {
+    it('las capas se hunden igual que en la Escena SVG: interpoladas entre las mismas muestras', () => {
         for (const progress of [0, 0.3, 0.7, 1]) {
-            const h = cameraHeightAt(progress);
             const f = at(progress);
-            expect(f.height).toBeCloseTo(h);
-            expect(f.shifts.farRidge).toBeCloseTo(layerShift('farRidge', h, 900, 30));
-            expect(f.shifts.avila).toBeCloseTo(layerShift('avila', h, 900, 30));
-            expect(f.shifts.city).toBeCloseTo(layerShift('city', h, 900, 30));
-            expect(f.shifts.towers).toBeCloseTo(layerShift('towers', h, 900, 30));
-            expect(f.cloudsOpacity).toBeCloseTo(cloudsAt(h, 900).opacity);
-            expect(f.skyHigh).toBeCloseTo(h * SKY_DARKENING);
+            const svg = (valueAt: (h: number) => number) => journeyAt(progress, valueAt);
+            expect(f.height).toBeCloseTo(svg((h) => h));
+            for (const layer of ['farRidge', 'avila', 'city', 'towers'] as const) {
+                expect(f.shifts[layer]).toBeCloseTo(svg((h) => layerShift(layer, h, 900, 30)));
+            }
+            expect(f.cloudsOpacity).toBeCloseTo(svg((h) => cloudsAt(h, 900).opacity));
+            expect(f.skyHigh).toBeCloseTo(svg((h) => h * SKY_DARKENING));
         }
+        // En las muestras coincide con la curva exacta.
+        expect(at(1).shifts.city).toBeCloseTo(layerShift('city', cameraHeightAt(1), 900, 30));
     });
 
     it('la cabina del visitante cuelga del cable donde la pone la SVG, y baja con el Ávila', () => {
-        const f = at(0.4);
-        const p = toScreen(frame, cabinPoint(f.height).x, cabinPoint(f.height).y);
-        expect(f.cabins[2]).toEqual({
-            x: p.x - (CABIN_WIDTH / 2) * frame.scale,
-            y: p.y + f.shifts.avila,
-            width: CABIN_WIDTH * frame.scale,
-            height: CABIN_HEIGHT * frame.scale,
-        });
+        const progress = 0.4;
+        const f = at(progress);
+        const svg = (valueAt: (h: number) => number) => journeyAt(progress, valueAt);
+        const point = (h: number) => toScreen(frame, cabinPoint(h).x, cabinPoint(h).y);
+        expect(f.cabins[2].x).toBeCloseTo(svg((h) => point(h).x) - (CABIN_WIDTH / 2) * frame.scale);
+        expect(f.cabins[2].y).toBeCloseTo(svg((h) => point(h).y + layerShift('avila', h, 900, 30)));
+        expect(f.cabins[2].width).toBeCloseTo(CABIN_WIDTH * frame.scale);
+        expect(f.cabins[2].height).toBeCloseTo(CABIN_HEIGHT * frame.scale);
     });
 
     it('las cabinas que se mueven arrancan en su punto del cable y llegan al otro a los 26 s', () => {
