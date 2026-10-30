@@ -40,6 +40,9 @@ export interface DeviceSignals {
 const MIN_MEMORY_GB = 4;
 const MIN_CORES = 4;
 const SOFTWARE_GPU = /swiftshader|llvmpipe|softpipe|software|basic render/i;
+
+/** GPU emulada en la CPU: solo llega a la Escena WebGL forzada con ?escena=webgl. */
+export const isSoftwareGpu = (renderer: string | null) => !!renderer && SOFTWARE_GPU.test(renderer);
 // Integradas viejas y GPUs de teléfono. Las Intel recientes (UHD, Iris) pasan: si no rinden, el
 // vigilante de FPS las devuelve a la SVG.
 const LOW_END_GPU = /\bHD Graphics\b|\bMali\b|\bAdreno\b|\bPowerVR\b/i;
@@ -55,7 +58,7 @@ export function chooseEscena(s: DeviceSignals): EscenaChoice {
     if (!s.webgl2) return svg('no-webgl2');
     if (s.memory !== undefined && s.memory < MIN_MEMORY_GB) return svg('low-memory');
     if (s.cores !== undefined && s.cores < MIN_CORES) return svg('few-cores');
-    if (s.renderer && SOFTWARE_GPU.test(s.renderer)) return svg('software-gpu');
+    if (isSoftwareGpu(s.renderer)) return svg('software-gpu');
     if (s.renderer && LOW_END_GPU.test(s.renderer)) return svg('low-end-gpu');
     return { version: 'webgl', reason: 'capable' };
 }
@@ -87,17 +90,20 @@ function storedFallback(): string | null {
     }
 }
 
+/** Nombre de la GPU detrás de un contexto WebGL, si el navegador lo da. */
+export function rendererName(gl: WebGL2RenderingContext): string | null {
+    const info = gl.getExtension('WEBGL_debug_renderer_info');
+    return String(gl.getParameter(info ? info.UNMASKED_RENDERER_WEBGL : gl.RENDERER) ?? '') || null;
+}
+
 // Pide un contexto WebGL2 de prueba para saber si existe y qué GPU hay detrás, y lo suelta.
 function probeWebGL(): { webgl2: boolean; renderer: string | null } {
     try {
         const gl = document.createElement('canvas').getContext('webgl2');
         if (!gl) return { webgl2: false, renderer: null };
-        const info = gl.getExtension('WEBGL_debug_renderer_info');
-        const renderer = String(
-            gl.getParameter(info ? info.UNMASKED_RENDERER_WEBGL : gl.RENDERER) ?? '',
-        );
+        const renderer = rendererName(gl);
         gl.getExtension('WEBGL_lose_context')?.loseContext();
-        return { webgl2: true, renderer: renderer || null };
+        return { webgl2: true, renderer };
     } catch {
         return { webgl2: false, renderer: null };
     }

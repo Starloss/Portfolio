@@ -6,7 +6,8 @@ import { Geometry, Mesh, Program, Renderer, Texture, Triangle } from 'ogl';
 import type { SceneFrame, Viewport } from '../camera';
 
 import { readClocks } from './clocks';
-import { cssEase, escenaFrame } from './frame';
+import { isSoftwareGpu, rendererName } from './detect';
+import { cssEase, escenaFrame, type Clocks } from './frame';
 import {
     CLOUDS_FRAGMENT,
     FULLSCREEN_VERTEX,
@@ -27,6 +28,11 @@ export interface Layout {
 
 type Theme = 'day' | 'night';
 type Uniforms = Record<string, { value: unknown }>;
+/** Un pase: su malla (con un programa compartido) y los uniforms que no cambian entre cuadros. */
+interface PassSpec {
+    mesh: Mesh;
+    fixed: Record<string, unknown>;
+}
 
 // Las capas, de atrás hacia adelante, en el mismo orden que las de la Escena SVG.
 const ORDER = [
@@ -49,6 +55,8 @@ type Pass = (typeof ORDER)[number];
 // El mismo cambio de colores que la SVG (transition: 0.6s ease).
 const THEME_SECONDS = 0.6;
 const MOON_RADIUS = 26;
+const STILL: Clocks = { cabins: 0, macaws: 0, drift: 0, twinkle: 0 };
+const SOFTWARE_DPR = 0.5;
 
 export class EscenaGL {
     onFirstFrame?: () => void;
@@ -60,7 +68,7 @@ export class EscenaGL {
     private renderer: Renderer;
     private gl: Renderer['gl'];
     private textures = new Map<string, Texture>();
-    private passes: Record<Pass, Mesh>;
+    private passes: Record<Pass, PassSpec>;
     private layout: Layout | null = null;
     private sizeKey = '';
     // Cada cambio de tamaño es una generación nueva de texturas. Mientras se rasterizan, se sigue
@@ -77,6 +85,19 @@ export class EscenaGL {
     private running = false;
     private disposed = false;
     private drawn = false;
+    // Con una GPU por software (solo forzada, en CI), cada cuadro bloquea el hilo principal unos
+    // 100 ms: entonces dibuja solo cuando algo cambia (scroll, tamaño, tema, texturas), con las
+    // animaciones quietas como con reduced-motion y a media resolución.
+    private onDemand: boolean;
+    private dirty = true;
+    // Subir una textura SVG la rasteriza en el hilo principal: se sube una por cuadro, para que
+    // ninguna tarea se alargue.
+    private uploads: Array<{
+        theme: Theme;
+        generation: number;
+        texture: Texture;
+        image: HTMLImageElement;
+    }> = [];
 
     constructor(
         private canvas: HTMLCanvasElement,
@@ -86,9 +107,16 @@ export class EscenaGL {
         if (!this.renderer.isWebgl2) throw new Error('Sin WebGL2');
         this.renderer.autoClear = false;
         this.gl = this.renderer.gl;
+        this.onDemand = isSoftwareGpu(rendererName(this.gl as unknown as WebGL2RenderingContext));
+        if (this.onDemand) this.dpr = this.renderer.dpr = SOFTWARE_DPR;
         canvas.addEventListener('webglcontextlost', this.onContextLost);
+        if (this.onDemand) window.addEventListener('scroll', this.markDirty, { passive: true });
         this.passes = this.build();
     }
+
+    private markDirty = () => {
+        this.dirty = true;
+    };
 
     private texture(name: string): Texture {
         let t = this.textures.get(name);
@@ -103,7 +131,7 @@ export class EscenaGL {
         return t;
     }
 
-    private mesh(geometry: Geometry, vertex: string, fragment: string, uniforms: Uniforms) {
+    private program(vertex: string, fragment: string, uniforms: Uniforms = {}) {
         const program = new Program(this.gl, {
             vertex,
             fragment,
@@ -120,44 +148,57 @@ export class EscenaGL {
             cullFace: false,
         });
         program.setBlendFunc(this.gl.ONE, this.gl.ONE_MINUS_SRC_ALPHA);
-        return new Mesh(this.gl, { geometry, program, frustumCulled: false });
+        return program;
     }
 
-    private build(): Record<Pass, Mesh> {
-        const fullscreen = new Triangle(this.gl);
-        const quad = new Geometry(this.gl, {
+    // Cinco programas para trece pases: compilar shaders es lo más caro del arranque (con una GPU
+    // por software, cientos de ms). Cada pase fija sus uniforms justo antes de dibujarse.
+    private build(): Record<Pass, PassSpec> {
+        const gl = this.gl;
+        const fullscreen = new Triangle(gl);
+        const quad = new Geometry(gl, {
             position: { size: 2, data: new Float32Array([0, 0, 1, 0, 1, 1, 0, 0, 1, 1, 0, 1]) },
         });
+        const textures = { tDay: { value: null }, tNight: { value: null } };
+        const sky = this.program(FULLSCREEN_VERTEX, SKY_FRAGMENT, { uSkyHigh: { value: 0 } });
+        const moon = this.program(FULLSCREEN_VERTEX, MOON_FRAGMENT, {
+            uMoon: { value: [0, 0, 0] },
+        });
+        const clouds = this.program(FULLSCREEN_VERTEX, CLOUDS_FRAGMENT, {
+            uOpacity: { value: 0 },
+            uCloud0: { value: [0, 0, 1, 1] },
+            uCloud1: { value: [0, 0, 1, 1] },
+            uCloud2: { value: [0, 0, 1, 1] },
+        });
+        const layer = this.program(FULLSCREEN_VERTEX, LAYER_FRAGMENT, {
+            ...textures,
+            uOffset: { value: [0, 0] },
+            uOpacity: { value: 1 },
+            uTwinkle: { value: -1 },
+        });
+        const sprite = this.program(SPRITE_VERTEX, SPRITE_FRAGMENT, {
+            ...textures,
+            uRect: { value: [0, 0, 0, 0] },
+        });
+        const pass = (geometry: Geometry, program: Program, fixed: PassSpec['fixed'] = {}) => ({
+            mesh: new Mesh(gl, { geometry, program, frustumCulled: false }),
+            fixed,
+        });
         // Una capa rasterizada; las de un solo tema usan la misma textura de los dos lados.
-        const layer = (day: string, night: string, extra: Uniforms = {}) =>
-            this.mesh(fullscreen, FULLSCREEN_VERTEX, LAYER_FRAGMENT, {
-                tDay: { value: this.texture(day) },
-                tNight: { value: this.texture(night) },
-                uOffset: { value: [0, 0] },
-                uOpacity: { value: 1 },
-                uTwinkle: { value: -1 },
-                ...extra,
-            });
-        const both = (name: LayerName) => layer(`${name}:day`, `${name}:night`);
-        const cabin = () =>
-            this.mesh(quad, SPRITE_VERTEX, SPRITE_FRAGMENT, {
-                tDay: { value: this.texture('cabin:day') },
-                tNight: { value: this.texture('cabin:night') },
-                uRect: { value: [0, 0, 0, 0] },
-            });
+        const still = { uOffset: [0, 0], uOpacity: 1, uTwinkle: -1 };
+        const tex = (day: string, night: string) => ({
+            tDay: this.texture(day),
+            tNight: this.texture(night),
+        });
+        const both = (name: LayerName) =>
+            pass(fullscreen, layer, { ...still, ...tex(`${name}:day`, `${name}:night`) });
+        const cabin = () => pass(quad, sprite, tex('cabin:day', 'cabin:night'));
         return {
-            sky: this.mesh(fullscreen, FULLSCREEN_VERTEX, SKY_FRAGMENT, { uSkyHigh: { value: 0 } }),
-            stars: layer('stars:night', 'stars:night', { uTwinkle: { value: 0 } }),
-            moon: this.mesh(fullscreen, FULLSCREEN_VERTEX, MOON_FRAGMENT, {
-                uMoon: { value: [0, 0, 0] },
-            }),
-            macaws: layer('macaws:day', 'macaws:day'),
-            clouds: this.mesh(fullscreen, FULLSCREEN_VERTEX, CLOUDS_FRAGMENT, {
-                uOpacity: { value: 0 },
-                uCloud0: { value: [0, 0, 1, 1] },
-                uCloud1: { value: [0, 0, 1, 1] },
-                uCloud2: { value: [0, 0, 1, 1] },
-            }),
+            sky: pass(fullscreen, sky),
+            stars: pass(fullscreen, layer, { ...still, ...tex('stars:night', 'stars:night') }),
+            moon: pass(fullscreen, moon),
+            macaws: pass(fullscreen, layer, { ...still, ...tex('macaws:day', 'macaws:day') }),
+            clouds: pass(fullscreen, clouds),
             far: both('far'),
             avilaBack: both('avilaBack'),
             cabin0: cabin(),
@@ -187,11 +228,13 @@ export class EscenaGL {
                 // Si la pantalla cambió de tamaño mientras tanto, ya viene otra generación.
                 if (this.disposed || generation !== this.generation) return;
                 for (const [name, image] of Object.entries(images)) {
-                    const t = this.texture(`${name}:${theme}`);
-                    t.image = image;
-                    t.needsUpdate = true;
+                    this.uploads.push({
+                        theme,
+                        generation,
+                        texture: this.texture(`${name}:${theme}`),
+                        image,
+                    });
                 }
-                this.ready[theme] = generation;
             })
             .catch(() => {
                 if (this.disposed) return;
@@ -215,6 +258,7 @@ export class EscenaGL {
         if (key === this.sizeKey) return;
         this.sizeKey = key;
         this.generation++;
+        this.dirty = true;
         this.renderer.setSize(layout.viewport.width, layout.viewport.height);
         const current = this.theme;
         const other: Theme = current === 'night' ? 'day' : 'night';
@@ -245,10 +289,26 @@ export class EscenaGL {
         this.running = true;
         const loop = (now: number) => {
             if (!this.running) return;
+            this.upload();
             this.draw(now);
             this.raf = requestAnimationFrame(loop);
         };
         this.raf = requestAnimationFrame(loop);
+    }
+
+    /** Sube la próxima textura en cola; el tema queda listo cuando subió todas las suyas. */
+    private upload() {
+        const next = this.uploads.shift();
+        if (!next) return;
+        const { theme, generation, texture, image } = next;
+        if (generation !== this.generation) return;
+        texture.image = image;
+        texture.needsUpdate = true;
+        texture.update();
+        if (!this.uploads.some((u) => u.theme === theme && u.generation === generation)) {
+            this.ready[theme] = generation;
+            this.dirty = true;
+        }
     }
 
     stop() {
@@ -260,12 +320,15 @@ export class EscenaGL {
         this.stop();
         this.disposed = true;
         this.canvas.removeEventListener('webglcontextlost', this.onContextLost);
+        window.removeEventListener('scroll', this.markDirty);
         this.gl.getExtension('WEBGL_lose_context')?.loseContext();
     }
 
     private draw(now: number) {
         const layout = this.layout;
         if (!layout || this.ready[this.theme] < 0) return;
+        if (this.onDemand && !this.dirty && this.themeStart < 0) return;
+        this.dirty = false;
         const { viewport, frame, sink, moon } = layout;
 
         if (this.themeStart >= 0) {
@@ -279,41 +342,44 @@ export class EscenaGL {
             sink,
             viewport,
             frame,
-            clocks: readClocks(now / 1000),
+            clocks: this.onDemand ? STILL : readClocks(now / 1000),
             units: { vw: window.innerWidth / 100, vh: window.innerHeight / 100 },
         });
 
-        const p = this.passes;
-        const set = (pass: Pass, values: Record<string, unknown> = {}) => {
-            const u = p[pass].program.uniforms;
-            u.uRes.value = [viewport.width, viewport.height];
-            u.uNight.value = this.night;
-            for (const [k, v] of Object.entries(values)) u[k].value = v;
-        };
         const rect = (r: { x: number; y: number; width: number; height: number }) => [
             r.x,
             r.y,
             r.width,
             r.height,
         ];
-        set('sky', { uSkyHigh: f.skyHigh });
-        set('stars', { uOpacity: this.night, uTwinkle: f.twinkle });
-        set('moon', { uMoon: moon ? [moon.x, moon.y, MOON_RADIUS] : [0, 0, 0] });
-        set('macaws', { uOffset: [f.macaws.x, f.macaws.y], uOpacity: 1 - this.night });
-        set('clouds', {
-            uOpacity: f.cloudsOpacity,
-            ...Object.fromEntries(f.clouds.map((c, i) => [`uCloud${i}`, [c.x, c.y, c.rx, c.ry]])),
+        const values: Record<Pass, Record<string, unknown>> = {
+            sky: { uSkyHigh: f.skyHigh },
+            stars: { uOpacity: this.night, uTwinkle: f.twinkle },
+            moon: { uMoon: moon ? [moon.x, moon.y, MOON_RADIUS] : [0, 0, 0] },
+            macaws: { uOffset: [f.macaws.x, f.macaws.y], uOpacity: 1 - this.night },
+            clouds: {
+                uOpacity: f.cloudsOpacity,
+                ...Object.fromEntries(
+                    f.clouds.map((c, i) => [`uCloud${i}`, [c.x, c.y, c.rx, c.ry]]),
+                ),
+            },
+            far: { uOffset: [0, f.shifts.farRidge] },
+            avilaBack: { uOffset: [0, f.shifts.avila] },
+            cabin0: { uRect: rect(f.cabins[0]) },
+            cabin1: { uRect: rect(f.cabins[1]) },
+            avilaFront: { uOffset: [0, f.shifts.avila] },
+            visitor: { uRect: rect(f.cabins[2]) },
+            city: { uOffset: [0, f.shifts.city] },
+            towers: { uOffset: [0, f.shifts.towers] },
+        };
+        ORDER.forEach((pass, i) => {
+            const { mesh, fixed } = this.passes[pass];
+            const u = mesh.program.uniforms;
+            u.uRes.value = [viewport.width, viewport.height];
+            u.uNight.value = this.night;
+            for (const [k, v] of Object.entries({ ...fixed, ...values[pass] })) u[k].value = v;
+            this.renderer.render({ scene: mesh, clear: i === 0 });
         });
-        set('far', { uOffset: [0, f.shifts.farRidge] });
-        set('avilaBack', { uOffset: [0, f.shifts.avila] });
-        set('cabin0', { uRect: rect(f.cabins[0]) });
-        set('cabin1', { uRect: rect(f.cabins[1]) });
-        set('avilaFront', { uOffset: [0, f.shifts.avila] });
-        set('visitor', { uRect: rect(f.cabins[2]) });
-        set('city', { uOffset: [0, f.shifts.city] });
-        set('towers', { uOffset: [0, f.shifts.towers] });
-
-        ORDER.forEach((pass, i) => this.renderer.render({ scene: p[pass], clear: i === 0 }));
 
         if (!this.drawn) {
             this.drawn = true;

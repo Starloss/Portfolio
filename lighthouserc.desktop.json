@@ -7,7 +7,7 @@
       "url": ["http://localhost/?escena=webgl"],
       "settings": {
         "preset": "desktop",
-        "chromeFlags": "--enable-unsafe-swiftshader"
+        "chromeFlags": "--use-angle=swiftshader --enable-unsafe-swiftshader"
       }
     },
     "assert": {
