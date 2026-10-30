@@ -6,8 +6,6 @@ import {
     CABIN_WIDTH,
     cabinPoint,
     cameraHeightAt,
-    CLOUD_ASPECT,
-    CLOUDS,
     cloudsAt,
     layerShift,
     SKY_DARKENING,
@@ -61,13 +59,11 @@ interface Point {
 const CABIN_SECONDS = 26;
 const MACAW_SECONDS = 16;
 const MACAW_SWING = { x: -40, y: -12 };
-const DRIFT_SECONDS = 48;
 
 /** Segundos de cada animación de CSS de la Escena SVG (su `currentTime`). */
 export interface Clocks {
     cabins: number;
     macaws: number;
-    drift: number;
     twinkle: number;
 }
 
@@ -82,10 +78,41 @@ export function advanceClocks({ at, clocks }: ClockAnchor, now: number): Clocks 
     return {
         cabins: clocks.cabins + elapsed,
         macaws: clocks.macaws + elapsed,
-        drift: clocks.drift + elapsed,
         twinkle: clocks.twinkle + elapsed,
     };
 }
+
+/**
+ * Cuánto se ve el atardecer o el amanecer según el avance del cambio de tema (0 Día, 1 Noche): nada
+ * en los extremos, todo a la mitad. El ×1,15 lo satura un poco antes, así el momento dorado dura.
+ */
+export function duskAt(night: number): number {
+    return Math.min(1, 4 * night * (1 - night) * 1.15);
+}
+
+/**
+ * Dónde está el sol en el cambio de tema, como fracción de la pantalla. Mirando al Ávila (al norte),
+ * se pone a la izquierda, al oeste, al pasar a Noche, y sale a la derecha, al este, al volver al
+ * Día. En los dos casos está más bajo cuanto más cerca de la Noche.
+ */
+export function sunAt(night: number, setting: boolean): { x: number; y: number } {
+    return { x: setting ? 0.12 : 0.88, y: 0.48 + 0.24 * night };
+}
+
+/** El puntero en x, de -1 (izquierda) a 1, seguido con suavidad: nunca salta ni se pasa. */
+export function followPointer(current: number, target: number, dt: number): number {
+    return current + (target - current) * Math.min(1, dt * 3);
+}
+
+/** px que se corre la capa más cercana con el puntero en un borde. */
+export const PARALLAX_PX = 14;
+// Profundidad de cada capa para el parallax: lo lejano se mueve menos.
+const PARALLAX_DEPTH = { sky: 0.15, farRidge: 0.3, avila: 0.5, city: 0.8, towers: 0.9 };
+
+// Altura de la cámara donde la atraviesan las nubes cercanas, y cuánto dura el cruce.
+const FRONT_CLOUDS = { height: 0.6, spread: 0.11, density: 0.9 };
+// La niebla se pega a las laderas a esta altura (y SVG) y con este alto (unidades SVG).
+const MIST = { y: 560, halfHeight: 42 };
 
 export interface EscenaInputs {
     /** Progreso de scroll de la página, de 0 a 1. */
@@ -95,11 +122,11 @@ export interface EscenaInputs {
     viewport: Viewport;
     frame: SceneFrame;
     clocks: Clocks;
-    /** px de 1vw y de 1vh: las nubes se miden en esas unidades. */
-    units: { vw: number; vh: number };
+    /** El puntero en x ya suavizado (`followPointer`); 0, al centro, si no hay mouse. */
+    pointer: number;
 }
 
-export function escenaFrame({ progress, sink, viewport, frame, clocks, units }: EscenaInputs) {
+export function escenaFrame({ progress, sink, viewport, frame, clocks, pointer }: EscenaInputs) {
     const height = cameraHeightAt(progress);
     const vh = viewport.height;
     const shifts = {
@@ -108,11 +135,19 @@ export function escenaFrame({ progress, sink, viewport, frame, clocks, units }: 
         city: layerShift('city', height, vh, sink),
         towers: layerShift('towers', height, vh, sink),
     };
+    const shift = (depth: number) => -pointer * PARALLAX_PX * depth || 0;
+    const parallax = {
+        sky: shift(PARALLAX_DEPTH.sky),
+        farRidge: shift(PARALLAX_DEPTH.farRidge),
+        avila: shift(PARALLAX_DEPTH.avila),
+        city: shift(PARALLAX_DEPTH.city),
+        towers: shift(PARALLAX_DEPTH.towers),
+    };
     // Una cabina cuelga del cable desde su centro arriba; en pantalla, el rectángulo de su sprite.
     const cabinRect = (x: number, y: number) => {
         const p = toScreen(frame, x, y);
         return {
-            x: p.x - (CABIN_WIDTH / 2) * frame.scale,
+            x: p.x - (CABIN_WIDTH / 2) * frame.scale + parallax.avila,
             y: p.y + shifts.avila,
             width: CABIN_WIDTH * frame.scale,
             height: CABIN_HEIGHT * frame.scale,
@@ -134,23 +169,29 @@ export function escenaFrame({ progress, sink, viewport, frame, clocks, units }: 
         },
     );
     const clouds = cloudsAt(height, vh);
-    const drift = cssEaseInOut(loopAt(clocks.drift, DRIFT_SECONDS, true));
     return {
         height,
         shifts,
         skyHigh: height * SKY_DARKENING,
         cloudsOpacity: clouds.opacity,
-        /** Cada nube como elipse en px: centro y semiejes. */
-        clouds: CLOUDS.map((c) => ({
-            x: (c.left + c.width / 2 + c.drift * drift) * units.vw,
-            y: c.top * units.vh + (c.width / CLOUD_ASPECT / 2) * units.vw + clouds.y,
-            rx: (c.width / 2) * units.vw,
-            ry: (c.width / CLOUD_ASPECT / 2) * units.vw,
-        })),
+        /** Cuánto bajó la capa de nubes lejanas con la cámara (px). */
+        cloudsShift: clouds.y,
         /** Las dos cabinas que van y vienen y, al final, la del visitante. */
         cabins: [...moving, cabinRect(visitor.x, visitor.y)],
-        macaws: { x: macaws.x * frame.scale, y: macaws.y * frame.scale },
+        macaws: { x: macaws.x * frame.scale + parallax.sky, y: macaws.y * frame.scale },
         twinkle: clocks.twinkle,
+        parallax,
+        /** Densidad de las nubes cercanas que cruza la cámara (0 a 1). */
+        frontClouds:
+            FRONT_CLOUDS.density *
+            Math.exp(-(((height - FRONT_CLOUDS.height) / FRONT_CLOUDS.spread) ** 2)),
+        /** Centro (y en px) de la franja de niebla de cada cresta, y su medio alto. */
+        mist: {
+            // La de la cresta lejana va un poco más arriba: esa cresta es la más alta.
+            farRidge: toScreen(frame, 0, MIST.y).y + shifts.farRidge - 0.08 * vh,
+            avila: toScreen(frame, 0, MIST.y).y + shifts.avila,
+            halfHeight: MIST.halfHeight * frame.scale,
+        },
     };
 }
 

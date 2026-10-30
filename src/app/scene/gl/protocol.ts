@@ -26,8 +26,8 @@ export type ToWorker =
     | { type: 'layout'; layout: Layout }
     | { type: 'night'; night: boolean }
     | { type: 'scroll'; progress: number }
-    | { type: 'units'; units: { vw: number; vh: number } }
     | { type: 'clocks'; anchor: ClockAnchor }
+    | { type: 'pointer'; x: number }
     | { type: 'run'; running: boolean }
     | { type: 'textures'; id: number; images: Record<string, ImageBitmap> | null }
     // Solo con ?escena=webgl: lo usa Playwright para probar la vuelta a la SVG.

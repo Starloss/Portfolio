@@ -82,6 +82,29 @@ describe('EscenaUpgrade', () => {
         expect(track).toHaveBeenCalledWith('escena', { version: 'webgl', reason: 'capable' });
     });
 
+    it('si en plena visita se pide menos movimiento, la WebGL se va sin registrar una caída', async () => {
+        detect.choice = { version: 'webgl', reason: 'capable' };
+        let reduced = false;
+        const listeners = new Set<() => void>();
+        vi.spyOn(window, 'matchMedia').mockImplementation(
+            (query: string) =>
+                ({
+                    get matches() {
+                        return query.includes('reduce') && reduced;
+                    },
+                    addEventListener: (_: string, fn: () => void) => listeners.add(fn),
+                    removeEventListener: (_: string, fn: () => void) => listeners.delete(fn),
+                }) as unknown as MediaQueryList,
+        );
+        render(<EscenaUpgrade />);
+        await screen.findByTestId('escena-gl');
+        reduced = true;
+        act(() => listeners.forEach((fn) => fn()));
+        expect(screen.queryByTestId('escena-gl')).not.toBeInTheDocument();
+        expect(track).not.toHaveBeenCalledWith('escena-caida', expect.anything());
+        expect(detect.remember).not.toHaveBeenCalled();
+    });
+
     it('con ?escena=webgl la monta sin vigilante', async () => {
         detect.choice = { version: 'webgl', reason: 'forced' };
         render(<EscenaUpgrade />);
