@@ -27,6 +27,7 @@ float hash(vec2 q) { return fract(sin(dot(q, vec2(127.1, 311.7))) * 43758.5453);
 `;
 
 // Ruido en mosaico (noise.ts) y los colores de nubes y niebla, que viran con la Noche y el atardecer.
+// Son sus propios tonos de luz y sombra, no los de palette.ts: allí las nubes son planas.
 const ATMOSPHERE = /* glsl */ `
 uniform sampler2D tNoise;
 uniform float uTime;
@@ -53,6 +54,7 @@ out vec4 outColor;
 ${SCREEN}
 ${ATMOSPHERE}
 uniform float uSkyHigh;
+uniform vec2 uSun;
 
 const vec3 DAY_TOP = ${vec(DAY.skyTop, 3)};
 const vec3 DAY_BOTTOM = ${vec(DAY.skyBottom, 3)};
@@ -70,11 +72,13 @@ void main() {
     sky = mix(sky, mix(DUSK_TOP, DUSK_BOTTOM, smoothstep(0.0, 0.85, t)), uDusk * 0.85);
     sky = mix(sky, mix(DAY_HIGH, NIGHT_HIGH, uNight), uSkyHigh * max(0.0, 1.0 - t / 0.75));
     if (uDusk > 0.01) {
-        // El sol bajo a la izquierda, con su resplandor y rayos que giran despacio.
-        vec2 sun = vec2(0.12 * uRes.x, 0.6 * uRes.y);
+        // El sol bajo (sunAt: al oeste si se pone, al este si sale), con resplandor y rayos.
+        vec2 sun = uSun * uRes;
         float d = length(p - sun) / uRes.y;
-        sky += vec3(1.0, 0.55, 0.25) * uDusk * (exp(-d * 5.0) * 0.55 + smoothstep(0.04, 0.035, d));
-        float rays = noise1(vec2(atan(p.y - sun.y, p.x - sun.x) * 0.3, uTime * 0.004));
+        sky += vec3(1.0, 0.55, 0.25) * uDusk * (exp(-d * 5.0) * 0.55 + 1.0 - smoothstep(0.035, 0.04, d));
+        // Los rayos salen de la dirección desde el sol: con el ángulo (atan) habría una costura en ±π.
+        vec2 dir = normalize(p - sun + 1e-4);
+        float rays = noise1(dir * 0.35 + vec2(uTime * 0.004, 0.0));
         sky += vec3(1.0, 0.72, 0.42) * uDusk * smoothstep(0.5, 0.8, rays) * exp(-d * 2.2) * 0.3;
     }
     outColor = vec4(sky, 1.0);
@@ -100,7 +104,7 @@ void main() {
     // tanh de un número grande da NaN en algunas GPUs: a partir de 4 ya vale 1.
     z = min(z, 4.0);
     float glow = 0.45 * 0.5 * (1.0 - tanh(1.12838 * z + 0.10213 * z * z * z));
-    float disc = smoothstep(uMoon.z + 0.75, uMoon.z - 0.75, d);
+    float disc = 1.0 - smoothstep(uMoon.z - 0.75, uMoon.z + 0.75, d);
     float a = (disc + (1.0 - disc) * glow) * uNight * step(0.0, uMoon.z - 0.5);
     vec3 c = mix(MOON_GLOW, MOON, disc);
     outColor = vec4(c * a, a);
@@ -109,7 +113,7 @@ void main() {
 
 /**
  * Una capa rasterizada: la de Día y la de Noche, mezcladas en el cambio de tema, corridas
- * `uOffset` px (el Viaje en y, el parallax en x). `uTwinkle` hace titilar las estrellas por celdas,
+ * `uOffset` px (el Viaje de cámara en y, el parallax del mouse en x). `uTwinkle` hace titilar las estrellas por celdas,
  * como sus grupos en la SVG, y `uRim` ilumina el borde de una cresta en el atardecer.
  */
 export const LAYER_FRAGMENT = /* glsl */ `#version 300 es
@@ -124,6 +128,7 @@ uniform vec2 uOffset;
 uniform float uOpacity;
 uniform float uTwinkle;
 uniform float uRim;
+uniform float uSunSide;
 
 void main() {
     vec2 uv = (screen() - uOffset) / uRes;
@@ -132,8 +137,8 @@ void main() {
     uv.x = clamp(uv.x, 0.0, 1.0);
     vec4 c = mix(texture(tDay, uv), texture(tNight, uv), uNight) * uOpacity;
     if (uRim > 0.0 && uDusk > 0.01) {
-        // Opaca aquí y transparente hacia el sol (arriba a la izquierda): el borde que da a la luz.
-        float edge = c.a * (1.0 - texture(tDay, uv + vec2(-2.5, -3.0) / uRes).a);
+        // Opaca aquí y transparente hacia el sol (arriba, del lado del sol): el borde que da a la luz.
+        float edge = c.a * (1.0 - texture(tDay, uv + vec2(2.5 * uSunSide, -3.0) / uRes).a);
         c.rgb += vec3(1.0, 0.62, 0.3) * uDusk * uRim * edge;
     }
     if (uTwinkle >= 0.0) {
@@ -141,7 +146,7 @@ void main() {
         float group = floor(hash(floor(screen() / 24.0)) * 3.0);
         float phase = fract((uTwinkle - group * 1.7) / 5.0);
         // Keyframes 0,85 → 0,25 → 0,85, con ease-in-out en cada tramo (smoothstep se le parece).
-        float k = phase < 0.5 ? smoothstep(0.0, 1.0, phase * 2.0) : smoothstep(1.0, 0.0, phase * 2.0 - 1.0);
+        float k = phase < 0.5 ? smoothstep(0.0, 1.0, phase * 2.0) : 1.0 - smoothstep(0.0, 1.0, phase * 2.0 - 1.0);
         c *= mix(0.85, 0.25, k);
     }
     outColor = c;
@@ -160,13 +165,15 @@ uniform sampler2D tLights;
 uniform float uNight;
 uniform float uTime;
 uniform vec2 uOffset;
+uniform float uCell;
 
 void main() {
     vec2 local = screen() - uOffset;
     vec2 uv = local / uRes;
     if (uNight < 0.01 || uv.y < 0.0 || uv.y > 1.0) discard;
     uv.x = clamp(uv.x, 0.0, 1.0);
-    float h = hash(floor(local / vec2(26.0, 20.0)));
+    // Celdas del tamaño de unas pocas ventanas, que escalan con la Escena (uCell = frame.scale).
+    float h = hash(floor(local / (vec2(26.0, 20.0) * uCell)));
     float flicker = (0.72 + 0.28 * sin(uTime * (0.5 + h * 2.0) + h * 30.0))
         * step(0.06, fract(h * 7.0 + uTime * 0.015));
     vec3 light = texture(tLights, uv).rgb * flicker + textureLod(tLights, uv, 4.0).rgb * 3.0;

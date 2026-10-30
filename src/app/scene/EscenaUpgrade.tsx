@@ -2,6 +2,7 @@
 // navegador ocioso, trae la detección en su propio chunk y, solo si conviene, la versión WebGL.
 import React, { useEffect, useState } from 'react';
 import { trackEscena, trackEscenaFallback } from '@lib/analytics';
+import { usePrefersReducedMotion } from '@lib/motion';
 
 import type { FallbackReason, SceneGL as SceneGLType } from './gl/SceneGL';
 
@@ -68,6 +69,9 @@ function decide(): Promise<Upgrade | null> {
 
 export const EscenaUpgrade: React.FC = () => {
     const [upgrade, setUpgrade] = useState<Upgrade | null>(null);
+    // Si en plena visita se pide menos movimiento, la WebGL se va: la SVG ya lo respeta. No es una
+    // caída, así que no se registra ni se recuerda.
+    const reduced = usePrefersReducedMotion();
 
     useEffect(() => {
         let active = true;
@@ -82,7 +86,7 @@ export const EscenaUpgrade: React.FC = () => {
         };
     }, []);
 
-    if (!upgrade) return null;
+    if (!upgrade || (reduced && upgrade.watch)) return null;
     const { SceneGL, watch, rememberFallback } = upgrade;
     const onFallback = (reason: FallbackReason) => {
         trackEscenaFallback(reason);

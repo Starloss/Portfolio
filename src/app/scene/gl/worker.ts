@@ -46,12 +46,10 @@ self.onmessage = (event: MessageEvent<ToWorker>) => {
             return void engine.setNight(message.night);
         case 'scroll':
             return engine.setScroll(message.progress);
-        case 'units':
-            return engine.setUnits(message.units);
         case 'clocks':
             return engine.setClocks(message.anchor);
         case 'pointer':
-            return engine.setPointer(message.pointer);
+            return engine.setPointer(message.x);
         case 'run':
             return message.running ? engine.start() : engine.stop();
         case 'lose-context':

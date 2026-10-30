@@ -38,4 +38,14 @@ describe('noiseData', () => {
         const values = Array.from({ length: SIZE * SIZE }, (_, i) => data[i * 4]);
         expect(Math.max(...values) - Math.min(...values)).toBeGreaterThan(100);
     });
+
+    it('no deja un hueco oscuro en la esquina de cada mosaico', () => {
+        const mean = (x0: number, y0: number, n: number) => {
+            let sum = 0;
+            for (let y = y0; y < y0 + n; y++)
+                for (let x = x0; x < x0 + n; x++) sum += at(data, x, y);
+            return sum / (n * n);
+        };
+        expect(mean(-2, -2, 4)).toBeGreaterThan(mean(0, 0, SIZE) * 0.6);
+    });
 });

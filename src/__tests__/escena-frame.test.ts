@@ -4,8 +4,6 @@ import {
     CABIN_WIDTH,
     cabinPoint,
     cameraHeightAt,
-    CLOUD_ASPECT,
-    CLOUDS,
     cloudsAt,
     layerShift,
     sceneFrame,
@@ -23,6 +21,7 @@ import {
     followPointer,
     loopAt,
     PARALLAX_PX,
+    sunAt,
     type Clocks,
 } from '@app/scene/gl/frame';
 import { readClocks } from '@app/scene/gl/clocks';
@@ -32,16 +31,14 @@ import { readClocks } from '@app/scene/gl/clocks';
 
 const viewport = { width: 1440, height: 900 };
 const frame = sceneFrame(viewport);
-const units = { vw: 14.4, vh: 9 };
-const still: Clocks = { cabins: 0, macaws: 0, drift: 0, twinkle: 0 };
-const at = (progress: number, clocks: Partial<Clocks> = {}, pointer = { x: 0, y: 0 }) =>
+const still: Clocks = { cabins: 0, macaws: 0, twinkle: 0 };
+const at = (progress: number, clocks: Partial<Clocks> = {}, pointer = 0) =>
     escenaFrame({
         progress,
         sink: 30,
         viewport,
         frame,
         clocks: { ...still, ...clocks },
-        units,
         pointer,
     });
 
@@ -93,19 +90,11 @@ describe('escenaFrame', () => {
         expect(at(0, { macaws: 16 }).macaws.x).toBeCloseTo(0);
     });
 
-    it('las nubes son las mismas elipses que en CSS, en vw y vh, y derivan cada 48 s', () => {
-        const f = at(0.5);
-        const y = cloudsAt(f.height, 900).y;
-        CLOUDS.forEach((c, i) => {
-            expect(f.clouds[i].x).toBeCloseTo((c.left + c.width / 2) * units.vw);
-            expect(f.clouds[i].y).toBeCloseTo(
-                c.top * units.vh + (c.width / CLOUD_ASPECT / 2) * units.vw + y,
-            );
-            expect(f.clouds[i].rx / f.clouds[i].ry).toBeCloseTo(CLOUD_ASPECT);
-        });
-        const drifted = at(0.5, { drift: 48 });
-        expect(drifted.clouds[0].x - f.clouds[0].x).toBeCloseTo(CLOUDS[0].drift * units.vw);
-        expect(at(0.5, { drift: 96 }).clouds[0].x).toBeCloseTo(f.clouds[0].x);
+    it('las nubes lejanas bajan con la cámara, como la capa de nubes de la SVG', () => {
+        for (const progress of [0, 0.5, 1]) {
+            const f = at(progress);
+            expect(f.cloudsShift).toBeCloseTo(cloudsAt(f.height, 900).y);
+        }
     });
 });
 
@@ -133,13 +122,8 @@ describe('curvas de CSS y loopAt', () => {
 
 describe('advanceClocks', () => {
     it('el Worker avanza los relojes de CSS con el tiempo que pasó desde el ancla', () => {
-        const anchor = { at: 10_000, clocks: { cabins: 1, macaws: 2, drift: 3, twinkle: 4 } };
-        expect(advanceClocks(anchor, 12_500)).toEqual({
-            cabins: 3.5,
-            macaws: 4.5,
-            drift: 5.5,
-            twinkle: 6.5,
-        });
+        const anchor = { at: 10_000, clocks: { cabins: 1, macaws: 2, twinkle: 4 } };
+        expect(advanceClocks(anchor, 12_500)).toEqual({ cabins: 3.5, macaws: 4.5, twinkle: 6.5 });
     });
 });
 
@@ -150,11 +134,11 @@ describe('readClocks', () => {
         document.body.innerHTML = `<div class="scene"><g data-anim="cabin"></g></div>`;
         const cabin = document.querySelector<HTMLElement>('[data-anim="cabin"]')!;
         cabin.getAnimations = () => [{ currentTime: 12_500 } as Animation];
-        expect(readClocks(3)).toEqual({ cabins: 12.5, macaws: 3, drift: 3, twinkle: 3 });
+        expect(readClocks(3)).toEqual({ cabins: 12.5, macaws: 3, twinkle: 3 });
     });
 
     it('si una animación no está montada, usa el reloj de respaldo', () => {
-        expect(readClocks(7)).toEqual({ cabins: 7, macaws: 7, drift: 7, twinkle: 7 });
+        expect(readClocks(7)).toEqual({ cabins: 7, macaws: 7, twinkle: 7 });
     });
 });
 
@@ -168,16 +152,22 @@ describe('efectos', () => {
     });
 
     it('el puntero se sigue con suavidad, sin pasarse del objetivo', () => {
-        const target = { x: 1, y: -1 };
-        const half = followPointer({ x: 0, y: 0 }, target, 0.1);
-        expect(half.x).toBeGreaterThan(0);
-        expect(half.x).toBeLessThan(1);
-        expect(half.y).toBeCloseTo(-half.x);
-        expect(followPointer({ x: 0, y: 0 }, target, 5)).toEqual(target);
+        const half = followPointer(0, 1, 0.1);
+        expect(half).toBeGreaterThan(0);
+        expect(half).toBeLessThan(1);
+        expect(followPointer(0, 1, 5)).toBe(1);
+    });
+
+    it('el sol se pone al oeste (izquierda) y sale al este (derecha), más bajo hacia la Noche', () => {
+        expect(sunAt(0.5, true).x).toBeLessThan(0.5);
+        expect(sunAt(0.5, false).x).toBeGreaterThan(0.5);
+        // Al atardecer baja a medida que avanza hacia la Noche; al amanecer sube al volver al Día.
+        expect(sunAt(0.8, true).y).toBeGreaterThan(sunAt(0.2, true).y);
+        expect(sunAt(0.2, false).y).toBeLessThan(sunAt(0.8, false).y);
     });
 
     it('con el puntero a un lado, lo lejano se mueve menos que lo cercano y en sentido contrario', () => {
-        const f = at(0.5, {}, { x: 1, y: 0 });
+        const f = at(0.5, {}, 1);
         expect(f.parallax.farRidge).toBeLessThan(0);
         expect(Math.abs(f.parallax.farRidge)).toBeLessThan(Math.abs(f.parallax.avila));
         expect(Math.abs(f.parallax.avila)).toBeLessThan(Math.abs(f.parallax.city));

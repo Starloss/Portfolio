@@ -13,7 +13,7 @@ import {
     followPointer,
     type ClockAnchor,
     type Clocks,
-    type Pointer,
+    sunAt,
 } from './frame';
 import { noiseData } from './noise';
 import type { FallbackReason, Layout, TextureRequest } from './protocol';
@@ -63,10 +63,13 @@ const ORDER = [
 ] as const;
 type Pass = (typeof ORDER)[number];
 
-// El cambio de tema dura más que en la SVG (0,6 s): a la mitad pasa el atardecer o el amanecer.
-const THEME_SECONDS = 2.4;
+// El cambio de tema dura algo más que en la SVG (0,6 s), para que se vea el atardecer o el amanecer
+// a la mitad, pero no tanto como para que el texto, que cambia enseguida, quede sobre el otro cielo.
+const THEME_SECONDS = 1.2;
+// Las luces llevan mipmaps: un nivel chico es su resplandor.
+const MIPMAPPED: readonly LayerName[] = ['cityLights', 'towersLights'];
 const MOON_RADIUS = 26;
-const STILL: Clocks = { cabins: 0, macaws: 0, drift: 0, twinkle: 0 };
+const STILL: Clocks = { cabins: 0, macaws: 0, twinkle: 0 };
 const SOFTWARE_DPR = 0.5;
 const RESIZE_SETTLE_MS = 250;
 
@@ -122,10 +125,11 @@ export class EscenaGL {
     private themeFrom = 0;
     private themeStart = -1;
     private progress = 0;
-    private pointer: Pointer = { x: 0, y: 0 };
-    private pointerTarget: Pointer = { x: 0, y: 0 };
+    private pointer = 0;
+    private pointerTarget = 0;
+    // Al ir hacia la Noche el sol se pone (al oeste); al volver al Día, sale (al este).
+    private setting = true;
     private lastFrame = 0;
-    private units = { vw: 1, vh: 1 };
     private clocks: ClockAnchor = { at: epoch(), clocks: STILL };
     private raf = 0;
     private running = false;
@@ -165,14 +169,9 @@ export class EscenaGL {
     private texture(name: string): Texture {
         let t = this.textures.get(name);
         if (!t) {
-            // Las ImageBitmap llegan ya premultiplicadas y sin voltear. Las luces llevan mipmaps:
-            // un nivel chico es su resplandor.
-            const lights = name.includes('Lights');
-            t = new Texture(this.gl, {
-                generateMipmaps: lights,
-                minFilter: lights ? this.gl.LINEAR_MIPMAP_LINEAR : this.gl.LINEAR,
-                flipY: false,
-            });
+            // Las ImageBitmap llegan ya premultiplicadas y sin voltear. Los mipmaps se piden al
+            // subir la imagen: antes, un filtro con mipmaps dejaría la textura incompleta.
+            t = new Texture(this.gl, { generateMipmaps: false, flipY: false });
             this.textures.set(name, t);
         }
         return t;
@@ -216,6 +215,7 @@ export class EscenaGL {
             flipY: false,
         });
         const textures = { tDay: { value: null }, tNight: { value: null } };
+        // Ruido, tiempo y atardecer: lo comparten el cielo, las nubes y la niebla.
         const atmosphere = {
             tNoise: { value: noise },
             uTime: { value: 0 },
@@ -224,6 +224,7 @@ export class EscenaGL {
         const sky = this.program(FULLSCREEN_VERTEX, SKY_FRAGMENT, {
             ...atmosphere,
             uSkyHigh: { value: 0 },
+            uSun: { value: [0.12, 0.6] },
         });
         const moon = this.program(FULLSCREEN_VERTEX, MOON_FRAGMENT, {
             uMoon: { value: [0, 0, 0] },
@@ -248,6 +249,7 @@ export class EscenaGL {
             tLights: { value: null },
             uTime: { value: 0 },
             uOffset: { value: [0, 0] },
+            uCell: { value: 1 },
         });
         // Las luces suman: alfa 0 con ONE, ONE_MINUS_SRC_ALPHA.
         const layer = this.program(FULLSCREEN_VERTEX, LAYER_FRAGMENT, {
@@ -257,6 +259,7 @@ export class EscenaGL {
             uOpacity: { value: 1 },
             uTwinkle: { value: -1 },
             uRim: { value: 0 },
+            uSunSide: { value: -1 },
         });
         const sprite = this.program(SPRITE_VERTEX, SPRITE_FRAGMENT, {
             ...textures,
@@ -279,9 +282,16 @@ export class EscenaGL {
                 uRim: rim,
                 ...tex(`${name}:day`, `${name}:night`),
             });
-        // La niebla de cada cresta: escala del ruido, deriva (px/s) e intensidad.
-        const mistOf = (scale: number, speed: number, strength: number) =>
-            pass(fullscreen, mist, { uFlow: [scale, speed, strength] });
+        // La niebla de cada cresta: tamaño del ruido (px), deriva (px/s) e intensidad.
+        const mistOf = ({
+            scale,
+            drift,
+            strength,
+        }: {
+            scale: number;
+            drift: number;
+            strength: number;
+        }) => pass(fullscreen, mist, { uFlow: [scale, drift, strength] });
         const lightsOf = (name: 'cityLights' | 'towersLights') =>
             pass(fullscreen, lights, { tLights: this.texture(`${name}:night`) });
         const cabin = () => pass(quad, sprite, tex('cabin:day', 'cabin:night'));
@@ -292,13 +302,13 @@ export class EscenaGL {
             macaws: pass(fullscreen, layer, { ...still, ...tex('macaws:day', 'macaws:day') }),
             clouds: pass(fullscreen, clouds),
             far: both('far', 0.8),
-            farMist: mistOf(1300, 5, 0.4),
+            farMist: mistOf({ scale: 1300, drift: 5, strength: 0.4 }),
             avilaBack: both('avilaBack', 1),
             cabin0: cabin(),
             cabin1: cabin(),
             avilaFront: both('avilaFront', 1),
             visitor: cabin(),
-            avilaMist: mistOf(1100, -4, 0.55),
+            avilaMist: mistOf({ scale: 1100, drift: -4, strength: 0.55 }),
             city: both('city'),
             cityLights: lightsOf('cityLights'),
             towers: both('towers'),
@@ -397,6 +407,10 @@ export class EscenaGL {
             return;
         }
         texture.image = image as unknown as HTMLImageElement;
+        if (MIPMAPPED.some((name) => texture === this.textures.get(`${name}:${theme}`))) {
+            texture.generateMipmaps = true;
+            texture.minFilter = this.gl.LINEAR_MIPMAP_LINEAR;
+        }
         texture.needsUpdate = true;
         texture.update();
         // WebGL copió los píxeles: el ImageBitmap ya no hace falta.
@@ -458,6 +472,7 @@ export class EscenaGL {
         // El tema que se pidió no se puede mostrar: vuelve a la SVG.
         if (!ok) return this.fail('init-failed');
         this.themeFrom = this.night;
+        this.setting = goal > this.night;
         this.target = goal;
         this.themeStart = performance.now();
     }
@@ -467,17 +482,12 @@ export class EscenaGL {
         this.dirty = true;
     }
 
-    setUnits(units: { vw: number; vh: number }) {
-        this.units = units;
-        this.dirty = true;
-    }
-
     setClocks(anchor: ClockAnchor) {
         this.clocks = anchor;
     }
 
-    /** Dónde quiere ir el puntero (-1 a 1); el parallax lo sigue con suavidad. */
-    setPointer(target: Pointer) {
+    /** Dónde quiere ir el puntero en x (-1 a 1); el parallax lo sigue con suavidad. */
+    setPointer(target: number) {
         this.pointerTarget = target;
     }
 
@@ -531,12 +541,14 @@ export class EscenaGL {
             viewport,
             frame,
             clocks: this.onDemand ? STILL : advanceClocks(this.clocks, epoch()),
-            units: this.units,
             pointer: this.pointer,
         });
         const dusk = duskAt(this.night);
         const time = this.onDemand ? 0 : now / 1000;
-        const px = f.parallax;
+        const parallax = f.parallax;
+        const sun = sunAt(this.night, this.setting);
+        // De qué lado está el sol para los bordes iluminados: -1 a la izquierda, 1 a la derecha.
+        const side = Math.sign(sun.x - 0.5);
         const rect = (r: { x: number; y: number; width: number; height: number }) => [
             r.x,
             r.y,
@@ -544,32 +556,40 @@ export class EscenaGL {
             r.height,
         ];
         const values: Record<Pass, Record<string, unknown>> = {
-            sky: { uSkyHigh: f.skyHigh, uDusk: dusk, uTime: time },
-            stars: { uOpacity: this.night, uTwinkle: f.twinkle, uOffset: [px.sky, 0] },
-            moon: { uMoon: moon ? [moon.x + px.sky, moon.y, MOON_RADIUS] : [0, 0, 0] },
+            sky: { uSkyHigh: f.skyHigh, uDusk: dusk, uTime: time, uSun: [sun.x, sun.y] },
+            stars: { uOpacity: this.night, uTwinkle: f.twinkle, uOffset: [parallax.sky, 0] },
+            moon: { uMoon: moon ? [moon.x + parallax.sky, moon.y, MOON_RADIUS] : [0, 0, 0] },
             macaws: { uOffset: [f.macaws.x, f.macaws.y], uOpacity: 1 - this.night },
             clouds: {
                 uClouds: [f.cloudsShift, f.cloudsOpacity],
-                uParallax: px.sky,
+                uParallax: parallax.sky,
                 uDusk: dusk,
                 uTime: time,
             },
-            far: { uOffset: [px.farRidge, f.shifts.farRidge], uDusk: dusk },
+            far: { uOffset: [parallax.farRidge, f.shifts.farRidge], uDusk: dusk, uSunSide: side },
             farMist: { uMist: [f.mist.farRidge, f.mist.halfHeight], uDusk: dusk, uTime: time },
-            avilaBack: { uOffset: [px.avila, f.shifts.avila], uDusk: dusk },
+            avilaBack: { uOffset: [parallax.avila, f.shifts.avila], uDusk: dusk, uSunSide: side },
             cabin0: { uRect: rect(f.cabins[0]) },
             cabin1: { uRect: rect(f.cabins[1]) },
-            avilaFront: { uOffset: [px.avila, f.shifts.avila], uDusk: dusk },
+            avilaFront: { uOffset: [parallax.avila, f.shifts.avila], uDusk: dusk, uSunSide: side },
             visitor: { uRect: rect(f.cabins[2]) },
             avilaMist: { uMist: [f.mist.avila, f.mist.halfHeight], uDusk: dusk, uTime: time },
-            city: { uOffset: [px.city, f.shifts.city], uDusk: dusk },
-            cityLights: { uOffset: [px.city, f.shifts.city], uTime: time },
-            towers: { uOffset: [px.towers, f.shifts.towers], uDusk: dusk },
-            towersLights: { uOffset: [px.towers, f.shifts.towers], uTime: time },
+            city: { uOffset: [parallax.city, f.shifts.city], uDusk: dusk },
+            cityLights: {
+                uOffset: [parallax.city, f.shifts.city],
+                uTime: time,
+                uCell: frame.scale,
+            },
+            towers: { uOffset: [parallax.towers, f.shifts.towers], uDusk: dusk },
+            towersLights: {
+                uOffset: [parallax.towers, f.shifts.towers],
+                uTime: time,
+                uCell: frame.scale,
+            },
             front: {
                 uFront: f.frontClouds,
                 uHeight: f.height,
-                uParallax: px.city,
+                uParallax: parallax.city,
                 uDusk: dusk,
                 uTime: time,
             },

@@ -21,15 +21,13 @@ export class EscenaClient {
         this.worker.onerror = () => this.onFailed?.('init-failed');
         this.post({ type: 'init', canvas: offscreen, ...options }, [offscreen]);
         window.addEventListener('scroll', this.sendScroll, { passive: true });
-        window.addEventListener('resize', this.sendUnits);
-        // Parallax solo con un puntero fino (mouse o trackpad); en táctil no hay hacia dónde mirar.
-        if (window.matchMedia?.('(pointer: fine)').matches) {
-            window.addEventListener('pointermove', this.sendPointer, { passive: true });
-        }
+        // Parallax solo con mouse (puntero fino): en táctil no hay hacia dónde mirar. Se mira el
+        // tipo de cada evento, así sirve también en equipos con pantalla táctil y mouse.
+        window.addEventListener('pointermove', this.sendPointer, { passive: true });
+        document.documentElement.addEventListener('mouseleave', this.centerPointer);
         // Con ?escena=webgl, Playwright puede pedir que se pierda el contexto.
         if (!options.watch) window.addEventListener('escena:perder-contexto', this.loseContext);
         this.sendScroll();
-        this.sendUnits();
     }
 
     private post(message: ToWorker, transfer: Transferable[] = []) {
@@ -42,14 +40,6 @@ export class EscenaClient {
         this.post({ type: 'scroll', progress });
     };
 
-    private sendUnits = () => {
-        this.post({
-            type: 'units',
-            units: { vw: window.innerWidth / 100, vh: window.innerHeight / 100 },
-        });
-        this.sendScroll();
-    };
-
     // El reloj de las animaciones de CSS de la SVG, en este instante: el Worker lo avanza solo.
     private sendClocks() {
         const at = epoch();
@@ -60,20 +50,25 @@ export class EscenaClient {
 
     // A lo sumo un mensaje por cuadro: el puntero se mueve más seguido que lo que se dibuja.
     private pointerQueued = false;
-    private pointerAt = { x: 0, y: 0 };
-    private sendPointer = (event: PointerEvent) => {
-        if (event.pointerType !== 'mouse') return;
-        this.pointerAt = {
-            x: (event.clientX / window.innerWidth) * 2 - 1,
-            y: (event.clientY / window.innerHeight) * 2 - 1,
-        };
+    private pointerX = 0;
+    private queuePointer(x: number) {
+        this.pointerX = x;
         if (this.pointerQueued) return;
         this.pointerQueued = true;
         requestAnimationFrame(() => {
             this.pointerQueued = false;
-            this.post({ type: 'pointer', pointer: this.pointerAt });
+            this.post({ type: 'pointer', x: this.pointerX });
         });
+    }
+
+    private sendPointer = (event: PointerEvent) => {
+        if (event.pointerType === 'mouse') {
+            this.queuePointer((event.clientX / window.innerWidth) * 2 - 1);
+        }
     };
+
+    // Si el mouse sale de la ventana, la Escena vuelve al centro.
+    private centerPointer = () => this.queuePointer(0);
 
     private async receive(message: FromWorker) {
         if (message.type === 'first-frame') return this.onFirstFrame?.();
@@ -117,8 +112,8 @@ export class EscenaClient {
 
     destroy() {
         window.removeEventListener('scroll', this.sendScroll);
-        window.removeEventListener('resize', this.sendUnits);
         window.removeEventListener('pointermove', this.sendPointer);
+        document.documentElement.removeEventListener('mouseleave', this.centerPointer);
         window.removeEventListener('escena:perder-contexto', this.loseContext);
         this.disposed = true;
         this.worker.terminate();

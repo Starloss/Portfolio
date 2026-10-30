@@ -5,6 +5,9 @@
 function lattice(seed: number, cells: number) {
     const values = new Float32Array(cells * cells);
     let s = seed;
+    // Las primeras salidas de una semilla chica son casi 0: se descartan para no dejar un hueco
+    // oscuro en la misma esquina de cada mosaico.
+    for (let i = 0; i < 16; i++) s = (s * 16807) % 2147483647;
     for (let i = 0; i < values.length; i++) {
         s = (s * 16807) % 2147483647;
         values[i] = s / 2147483647;
