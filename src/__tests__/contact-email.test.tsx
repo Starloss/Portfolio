@@ -81,4 +81,31 @@ describe('Correo de Contacto', () => {
         });
         expect(screen.queryByText(COPIED)).not.toBeInTheDocument();
     });
+
+    it('si el portapapeles tarda, una pérdida de foco posterior todavía cuenta', async () => {
+        let resolve = () => {};
+        withClipboard(() => new Promise<void>((r) => (resolve = r)));
+        renderHome();
+        clickEmail();
+        await act(async () => {
+            await vi.advanceTimersByTimeAsync(1000);
+        });
+        fireEvent.blur(window);
+        await act(async () => resolve());
+        expect(screen.queryByText(COPIED)).not.toBeInTheDocument();
+    });
+
+    it('un segundo clic deja sin efecto el aviso pendiente del primero', async () => {
+        const pending: Array<() => void> = [];
+        withClipboard(() => new Promise<void>((r) => pending.push(r)));
+        renderHome();
+        clickEmail();
+        await act(async () => {
+            await vi.advanceTimersByTimeAsync(1000);
+        });
+        clickEmail();
+        fireEvent.blur(window);
+        await act(async () => pending[0]());
+        expect(screen.queryByText(COPIED)).not.toBeInTheDocument();
+    });
 });

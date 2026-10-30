@@ -31,21 +31,29 @@ function useEmailFallback(email: string) {
                 () => false,
             ) ?? Promise.resolve(false);
         let left = false;
+        let cancelled = false;
         const onLeave = () => {
             left = true;
         };
-        const stop = () => {
-            window.clearTimeout(timer);
+        const unlisten = () => {
             window.removeEventListener('blur', onLeave);
             document.removeEventListener('visibilitychange', onLeave);
         };
         window.addEventListener('blur', onLeave);
         document.addEventListener('visibilitychange', onLeave);
+        // Se sigue escuchando hasta que el portapapeles responda: un foco perdido mientras tanto
+        // también indica que se abrió una app.
         const timer = window.setTimeout(async () => {
-            stop();
-            if (!left && (await copy)) setCopied(true);
+            const ok = await copy;
+            unlisten();
+            if (ok && !left && !cancelled) setCopied(true);
         }, NO_APP_AFTER_MS);
-        stopRef.current = stop;
+        // Un clic nuevo o desmontar anulan este clic, también si su copia sigue pendiente.
+        stopRef.current = () => {
+            cancelled = true;
+            window.clearTimeout(timer);
+            unlisten();
+        };
     };
 
     return { copied, onEmailClick };
