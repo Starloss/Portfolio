@@ -37,17 +37,29 @@ interface Upgrade {
 // caída la WebGL no vuelve hasta la próxima visita.
 let decision: Promise<Upgrade | null> | null = null;
 
+// Qué versión quedó, a la vista en <html data-escena-elegida>: lo leen Playwright y quien depure.
+const announce = (version: 'svg' | 'webgl') =>
+    (document.documentElement.dataset.escenaElegida = version);
+
 function decide(): Promise<Upgrade | null> {
     decision ??= import('./gl/detect')
         .then(async ({ chooseEscena, readSignals, rememberFallback }) => {
             const choice = chooseEscena(await readSignals());
             trackEscena(choice.version, choice.reason);
-            if (choice.version !== 'webgl') return null;
+            if (choice.version !== 'webgl') {
+                announce('svg');
+                return null;
+            }
             const { SceneGL } = await import('./gl/SceneGL');
+            announce('webgl');
             return { SceneGL, watch: choice.reason !== 'forced', rememberFallback };
         })
         // Un chunk que no llega (red caída, deploy nuevo) deja la Escena SVG, que ya está.
-        .catch(() => null);
+        .catch((error: unknown) => {
+            console.error('Escena: no se pudo cargar la detección o la versión WebGL', error);
+            announce('svg');
+            return null;
+        });
     return decision;
 }
 
@@ -71,8 +83,11 @@ export const EscenaUpgrade: React.FC = () => {
     const { SceneGL, watch, rememberFallback } = upgrade;
     const onFallback = (reason: FallbackReason) => {
         trackEscenaFallback(reason);
-        // Forzada con ?escena=webgl es una prueba: esa caída no se recuerda.
+        // Forzada con ?escena=webgl es una prueba: esa caída no se recuerda, pero se avisa en la
+        // consola, así el Lighthouse de escritorio no mide la SVG creyendo que mide la WebGL.
         if (watch) rememberFallback();
+        else console.error(`Escena WebGL forzada: volvió a la SVG (${reason})`);
+        announce('svg');
         decision = Promise.resolve(null);
         setUpgrade(null);
     };

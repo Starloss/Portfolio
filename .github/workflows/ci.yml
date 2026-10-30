@@ -90,7 +90,9 @@ jobs:
       # Escritorio con la Escena WebGL forzada (ADR 0003): también ≥90. Sin GPU, dibuja SwiftShader.
       - name: Lighthouse CI (escritorio, Escena WebGL)
         if: always()
-        run: pnpm dlx @lhci/cli@0.15.1 autorun --config=lighthouserc.desktop.json
+        run: |
+          pnpm dlx @lhci/cli@0.15.1 autorun --config=lighthouserc.desktop.json
+          node scripts/check-lighthouse-webgl.mjs .lighthouseci-desktop
 
       - name: Upload Lighthouse reports
         if: always()

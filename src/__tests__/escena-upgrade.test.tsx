@@ -54,6 +54,8 @@ beforeEach(async () => {
 
 afterEach(() => {
     delete window.umami;
+    delete document.documentElement.dataset.escenaElegida;
+    vi.restoreAllMocks();
     track.mockReset();
     detect.remember.mockReset();
 });
@@ -66,6 +68,7 @@ describe('EscenaUpgrade', () => {
             expect(track).toHaveBeenCalledWith('escena', { version: 'svg', reason: 'mobile' }),
         );
         expect(screen.queryByTestId('escena-gl')).not.toBeInTheDocument();
+        expect(document.documentElement.dataset.escenaElegida).toBe('svg');
     });
 
     it('si elige la WebGL, la monta con el vigilante encendido', async () => {
@@ -73,6 +76,7 @@ describe('EscenaUpgrade', () => {
         render(<EscenaUpgrade />);
         const gl = await screen.findByTestId('escena-gl');
         expect(gl).toHaveAttribute('data-watch', 'true');
+        expect(document.documentElement.dataset.escenaElegida).toBe('webgl');
         expect(track).toHaveBeenCalledWith('escena', { version: 'webgl', reason: 'capable' });
     });
 
@@ -92,12 +96,15 @@ describe('EscenaUpgrade', () => {
         expect(detect.remember).toHaveBeenCalled();
     });
 
-    it('una caída con ?escena=webgl no se recuerda: es una prueba', async () => {
+    it('una caída con ?escena=webgl no se recuerda, pero se avisa en la consola', async () => {
+        const error = vi.spyOn(console, 'error').mockImplementation(() => {});
         detect.choice = { version: 'webgl', reason: 'forced' };
         render(<EscenaUpgrade />);
         const gl = await screen.findByTestId('escena-gl');
         act(() => gl.click());
         expect(detect.remember).not.toHaveBeenCalled();
+        expect(error).toHaveBeenCalledWith('Escena WebGL forzada: volvió a la SVG (slow)');
+        expect(document.documentElement.dataset.escenaElegida).toBe('svg');
     });
 
     it('espera al evento load si la página todavía no terminó de cargar', async () => {
@@ -132,11 +139,14 @@ describe('EscenaUpgrade', () => {
         expect(screen.queryByTestId('escena-gl')).not.toBeInTheDocument();
     });
 
-    it('si el chunk de la detección no llega, se queda la SVG sin errores', async () => {
+    it('si el chunk de la detección no llega, se queda la SVG y lo avisa en la consola', async () => {
+        const error = vi.spyOn(console, 'error').mockImplementation(() => {});
         detect.fail = true;
         render(<EscenaUpgrade />);
         await new Promise((r) => setTimeout(r, 300));
         expect(screen.queryByTestId('escena-gl')).not.toBeInTheDocument();
         expect(track).not.toHaveBeenCalled();
+        expect(error).toHaveBeenCalled();
+        expect(document.documentElement.dataset.escenaElegida).toBe('svg');
     });
 });

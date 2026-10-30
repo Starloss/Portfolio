@@ -1,4 +1,4 @@
-import { afterEach, describe, it, expect, vi } from 'vitest';
+import { afterEach, beforeEach, describe, it, expect, vi } from 'vitest';
 import {
     chooseEscena,
     FALLBACK_DAYS,
@@ -143,6 +143,11 @@ describe('readSignals', () => {
             configurable: true,
         });
     };
+
+    // jsdom toma los núcleos de la máquina: un runner de 2 vCPU daría 'few-cores' en todos los tests.
+    beforeEach(() => {
+        vi.spyOn(navigator, 'hardwareConcurrency', 'get').mockReturnValue(8);
+    });
 
     afterEach(() => {
         vi.restoreAllMocks();

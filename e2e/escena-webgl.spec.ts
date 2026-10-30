@@ -29,16 +29,15 @@ test('sin forzarla, una GPU por software se queda con la SVG y no descarga la We
     const chunks: string[] = [];
     page.on('request', (r) => chunks.push(r.url()));
     await page.goto('/');
-    // La detección corre con el navegador ocioso después de load.
-    await expect.poll(() => chunks.some((url) => /\/detect-[\w-]+\.js$/.test(url))).toBe(true);
-    await page.waitForTimeout(1000);
-    expect(chunks.some((url) => /\/SceneGL-[\w-]+\.js$/.test(url))).toBe(false);
+    // La detección corre con el navegador ocioso después de load, y anuncia lo que eligió.
+    await expect(page.locator('html')).toHaveAttribute('data-escena-elegida', 'svg');
+    expect(chunks.some((url) => /\/(SceneGL|worker)-[\w-]+\.js$/.test(url))).toBe(false);
     await expect(page.locator('.scene-gl')).toHaveCount(0);
 });
 
 test('en un teléfono, ni siquiera con la página cargada se monta la WebGL', async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto('/');
-    await page.waitForTimeout(1500);
+    await expect(page.locator('html')).toHaveAttribute('data-escena-elegida', 'svg');
     await expect(page.locator('.scene-gl')).toHaveCount(0);
 });

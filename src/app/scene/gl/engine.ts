@@ -50,6 +50,7 @@ const THEME_SECONDS = 0.6;
 const MOON_RADIUS = 26;
 const STILL: Clocks = { cabins: 0, macaws: 0, drift: 0, twinkle: 0 };
 const SOFTWARE_DPR = 0.5;
+const RESIZE_SETTLE_MS = 250;
 
 // requestAnimationFrame existe en los Workers de Chrome, Firefox y Safari 17 con OffscreenCanvas.
 const nextFrame = (run: (now: number) => void): number =>
@@ -84,7 +85,9 @@ export class EscenaGL {
     // dibujando con las anteriores (estiradas) en vez de dejar el canvas vacío.
     private generation = 0;
     private ready: Record<Theme, number> = { day: -1, night: -1 };
-    private pending: Partial<Record<Theme, { generation: number; promise: Promise<void> }>> = {};
+    private pending: Partial<Record<Theme, { generation: number; promise: Promise<boolean> }>> = {};
+    private resizeTimer: ReturnType<typeof setTimeout> | undefined;
+    private maxTexture: number;
     // Se sube una textura por cuadro, para que ningún cuadro se alargue.
     private uploads: Array<{
         theme: Theme;
@@ -126,6 +129,7 @@ export class EscenaGL {
         if (!this.renderer.isWebgl2) throw new Error('Sin WebGL2');
         this.renderer.autoClear = false;
         this.gl = this.renderer.gl;
+        this.maxTexture = this.gl.getParameter(this.gl.MAX_TEXTURE_SIZE) as number;
         this.onDemand = isSoftwareGpu(rendererName(this.gl as unknown as WebGL2RenderingContext));
         if (this.onDemand) this.dpr = this.renderer.dpr = SOFTWARE_DPR;
         this.watchdog = options.watch ? createWatchdog(performance.now()) : null;
@@ -238,23 +242,32 @@ export class EscenaGL {
         this.gl.getExtension('WEBGL_lose_context')?.loseContext();
     }
 
-    /** Pide y encola las capas de un tema para el tamaño actual; una sola vez por generación. */
-    private load(theme: Theme): Promise<void> {
+    /**
+     * Pide y encola las capas de un tema para el tamaño actual; una sola vez por generación.
+     * Resuelve `false` si no se pudieron preparar.
+     */
+    private load(theme: Theme): Promise<boolean> {
         const layout = this.layout;
         const generation = this.generation;
-        if (!layout || this.ready[theme] === generation) return Promise.resolve();
+        if (!layout || this.ready[theme] === generation) return Promise.resolve(true);
         const pending = this.pending[theme];
         if (pending?.generation === generation) return pending.promise;
+        // Sin pasar del tamaño máximo de textura de la GPU (pantallas 4K con dpr 2).
+        const longest = Math.max(layout.viewport.width, layout.viewport.height);
+        const dpr = Math.min(this.dpr, this.maxTexture / longest);
         const promise = this.options
             .requestTextures({
                 night: theme === 'night',
                 viewport: layout.viewport,
                 frame: layout.frame,
-                dpr: this.dpr,
+                dpr,
             })
             .then((images) => {
                 // Si la pantalla cambió de tamaño mientras tanto, ya viene otra generación.
-                if (this.disposed || generation !== this.generation) return;
+                if (this.disposed || generation !== this.generation) {
+                    Object.values(images).forEach((image) => image.close());
+                    return true;
+                }
                 for (const [name, image] of Object.entries(images)) {
                     this.uploads.push({
                         theme,
@@ -263,8 +276,15 @@ export class EscenaGL {
                         image,
                     });
                 }
+                return true;
             })
-            .catch(() => this.fail('init-failed'))
+            .catch(() => {
+                // Una generación vieja o el tema que no se ve no detienen la Escena: si hace falta,
+                // se vuelve a pedir. Falla de verdad solo el tema que está a la vista.
+                if (this.disposed || generation !== this.generation) return true;
+                if (theme === this.theme) this.fail('init-failed');
+                return false;
+            })
             .finally(() => {
                 if (this.pending[theme]?.promise === promise) delete this.pending[theme];
             });
@@ -277,10 +297,19 @@ export class EscenaGL {
         const next = this.uploads.shift();
         if (!next) return;
         const { theme, generation, texture, image } = next;
-        if (generation !== this.generation) return;
+        if (generation !== this.generation) {
+            image.close();
+            return;
+        }
         texture.image = image as unknown as HTMLImageElement;
         texture.needsUpdate = true;
         texture.update();
+        // WebGL copió los píxeles: el ImageBitmap ya no hace falta.
+        image.close();
+        if (this.gl.getError() !== this.gl.NO_ERROR) {
+            this.fail('init-failed');
+            return;
+        }
         if (!this.uploads.some((u) => u.theme === theme && u.generation === generation)) {
             this.ready[theme] = generation;
             this.dirty = true;
@@ -296,13 +325,22 @@ export class EscenaGL {
         this.dirty = true;
         const key = `${layout.viewport.width}x${layout.viewport.height}`;
         if (key === this.sizeKey) return;
+        const first = this.sizeKey === '';
         this.sizeKey = key;
         this.generation++;
         this.renderer.setSize(layout.viewport.width, layout.viewport.height);
+        // Mientras se arrastra el borde de la ventana, se dibuja con las texturas anteriores y se
+        // rasteriza una sola vez, cuando el tamaño se queda quieto.
+        clearTimeout(this.resizeTimer);
+        if (first) this.reload();
+        else this.resizeTimer = setTimeout(() => this.reload(), RESIZE_SETTLE_MS);
+    }
+
+    private reload() {
         const current = this.theme;
         const other: Theme = current === 'night' ? 'day' : 'night';
-        void this.load(current).then(() => {
-            if (this.ready[other] >= 0) void this.load(other);
+        void this.load(current).then((ok) => {
+            if (ok && this.ready[other] >= 0) void this.load(other);
         });
     }
 
@@ -312,12 +350,15 @@ export class EscenaGL {
         this.wanted = goal;
         if (!this.drawn) {
             this.night = this.target = goal;
-            return this.load(this.theme);
+            await this.load(this.theme);
+            return;
         }
         if (goal === this.target) return;
-        await this.load(night ? 'night' : 'day');
+        const ok = await this.load(night ? 'night' : 'day');
         // Si mientras se preparaba el tema se pidió el otro, manda el último pedido.
         if (this.wanted !== goal || this.disposed) return;
+        // El tema que se pidió no se puede mostrar: vuelve a la SVG.
+        if (!ok) return this.fail('init-failed');
         this.themeFrom = this.night;
         this.target = goal;
         this.themeStart = performance.now();
@@ -358,6 +399,7 @@ export class EscenaGL {
 
     destroy() {
         this.stop();
+        clearTimeout(this.resizeTimer);
         this.disposed = true;
         this.canvas.removeEventListener('webglcontextlost', this.onContextLost);
         this.gl.getExtension('WEBGL_lose_context')?.loseContext();
