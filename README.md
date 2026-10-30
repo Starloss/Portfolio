@@ -10,7 +10,7 @@ The personal site of Diego Rangel, a Full-Stack Lead Developer. It is written fo
 ## Stack
 
 - **React 19** with **TypeScript 5**, built by **Vite 8**, routed with **React Router 7**
-- **Tailwind CSS 3** and design tokens checked for WCAG contrast
+- **Tailwind CSS 4** and design tokens checked for WCAG contrast
 - **motion** for the scroll-driven camera, loaded lazily; React's `<ViewTransition>` for the card-to-case-study morph
 - **Vitest 5** and Testing Library for unit tests, **Playwright** for end-to-end tests
 - **@react-pdf/renderer** and **@resvg/resvg-js** at build time, for the CV and the Open Graph images; **sharp** for the responsive WebP screenshots, which are generated once and committed

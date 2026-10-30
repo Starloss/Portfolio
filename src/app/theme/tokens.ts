@@ -1,5 +1,5 @@
 // Tokens de color de la UI (identidad Verde Ávila + ámbar), de Día y de Noche. Son datos en JSON
-// para que también los lea tailwind.config.cjs, que los publica como variables CSS.
+// para que también los lea tokens-plugin.cjs, que los publica como variables CSS para Tailwind.
 import tokens from './tokens.json';
 
 export type UiMode = 'day' | 'night';

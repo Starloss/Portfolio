@@ -35,12 +35,16 @@ const ExternalArrow: React.FC = () => (
     <FiArrowUpRight aria-hidden="true" className="ml-1 h-4 w-4" />
 );
 
+// En un bloque propio: el space-y de la ficha pone el margen en este hijo, y un enlace en línea no
+// aplica márgenes verticales.
 const BackLink: React.FC = () => {
     const { t, locale } = useI18n();
     return (
-        <Link to={`${localizedPath(locale, '/')}#projects`} className={backLinkClass}>
-            {t('project_back')}
-        </Link>
+        <p>
+            <Link to={`${localizedPath(locale, '/')}#projects`} className={backLinkClass}>
+                {t('project_back')}
+            </Link>
+        </p>
     );
 };
 

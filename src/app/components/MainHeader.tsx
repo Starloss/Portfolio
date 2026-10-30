@@ -52,8 +52,10 @@ export const MainHeader: React.FC<MainHeaderProps> = ({ activeId, isHome = false
 
     const navItems = NAV_SECTIONS.map((id) => ({ id, label: t(NAV_LABELS[id]) }));
 
-    const linkBase = 'transition-colors rounded px-1';
-    const linkInactive = 'text-ink hover:text-primary';
+    // Forma y relleno van en cada variante, no en la base: dos clases de la misma propiedad en un
+    // elemento las resuelve el orden del CSS, no el del className.
+    const linkBase = 'transition-colors';
+    const linkInactive = 'text-ink hover:text-primary rounded-sm px-1';
     const linkActive =
         'text-primary font-semibold border border-line bg-surface px-2 py-1 rounded-full';
 
@@ -64,7 +66,7 @@ export const MainHeader: React.FC<MainHeaderProps> = ({ activeId, isHome = false
 
     return (
         <header
-            className={`sticky top-0 z-50 [view-transition-name:barra] px-4 md:px-6 py-3 bg-surface border-b border-line transition-colors ${scrolled ? 'shadow-sm' : ''}`}
+            className={`sticky top-0 z-50 [view-transition-name:barra] px-4 md:px-6 py-3 bg-surface border-b border-line transition-colors ${scrolled ? 'shadow-xs' : ''}`}
         >
             <div className="max-w-[860px] mx-auto w-full flex items-center gap-4">
                 <div className="flex-1 flex items-center gap-4">
@@ -178,11 +180,7 @@ export const MainHeader: React.FC<MainHeaderProps> = ({ activeId, isHome = false
                 </div>
             </div>
             {menuOpen && (
-                <nav
-                    aria-label="mobile"
-                    className="md:hidden mt-3 animate-fade-in"
-                    ref={mobileMenuRef}
-                >
+                <nav aria-label="mobile" className="md:hidden mt-3" ref={mobileMenuRef}>
                     <ul className="flex flex-col gap-2 text-sm font-medium items-start w-full">
                         {navItems.map((item) => (
                             <li key={item.id} className="w-full">
