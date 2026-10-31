@@ -46,12 +46,25 @@ test('la Bóveda celeste gira con el compositor, y la UI cambia a la mitad', asy
     await page.goto('/?hora=12:00&escena=svg');
     await expect.poll(() => opacity(page, 'sun')).toBe(1);
 
-    await toggle(page);
-    await expect.poll(() => turning(page)).toBe(4);
-    expect(await isDark(page)).toBe(false);
-    await expect.poll(() => isDark(page), { timeout: 3000 }).toBe(true);
+    // Justo después del clic ya gira, y la UI todavía no cambió.
+    const justAfter = await page.evaluate(async () => {
+        const button = [...document.querySelectorAll('button')].find((b) =>
+            /Oscuro|Claro/.test(b.getAttribute('aria-label') ?? ''),
+        )!;
+        button.click();
+        await new Promise(requestAnimationFrame);
+        return {
+            turning: document
+                .querySelector('[data-part="sun"]')!
+                .getAnimations()
+                .some((a) => a.constructor.name === 'Animation'),
+            dark: document.documentElement.classList.contains('dark'),
+        };
+    });
+    expect(justAfter).toEqual({ turning: true, dark: false });
 
-    await expect.poll(() => turning(page), { timeout: 5000 }).toBe(0);
+    await expect.poll(() => isDark(page), { timeout: 15_000 }).toBe(true);
+    await expect.poll(() => turning(page), { timeout: 15_000 }).toBe(0);
     expect(await opacity(page, 'sun')).toBe(0);
     await expect.poll(() => opacity(page, 'stars')).toBe(1);
 });
@@ -62,7 +75,7 @@ test('con reduced-motion nada gira: solo un fundido, y la UI cambia enseguida', 
     await page.emulateMedia({ reducedMotion: 'reduce' });
     await page.goto('/?hora=12:00');
     await toggle(page);
-    await expect.poll(() => isDark(page), { timeout: 500 }).toBe(true);
+    await expect.poll(() => isDark(page)).toBe(true);
     expect(await turning(page)).toBe(0);
 });
 

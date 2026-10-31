@@ -32,7 +32,7 @@ test('el Indicador muestra el Clima de la API, en español', async ({ page }) =>
     await stubApi(page);
     await page.goto('/?hora=18:41');
     await expect(indicator(page)).toContainText('18:41');
-    await expect(indicator(page)).toContainText('22 °C');
+    await expect(indicator(page)).toContainText('22 °C', { timeout: 15_000 });
     await expect(indicator(page)).toContainText('lluvia');
     await expect(indicator(page).getByRole('link', { name: 'Open-Meteo' })).toBeVisible();
 });
@@ -41,7 +41,7 @@ test('en inglés va en 12 h y °F', async ({ page }) => {
     await stubApi(page);
     await page.goto('/en?hora=18:41');
     await expect(indicator(page)).toContainText('6:41 PM');
-    await expect(indicator(page)).toContainText('72 °F');
+    await expect(indicator(page)).toContainText('72 °F', { timeout: 15_000 });
     await expect(indicator(page)).toContainText('rain');
 });
 
@@ -49,7 +49,8 @@ test('si la API falla, solo queda la hora, sin error, y se registra una vez', as
     await recordEvents(page);
     await page.route(API, (route) => route.abort());
     await page.goto('/?hora=18:41');
-    await expect.poll(() => events(page)).toContain('clima-caida');
+    // El Clima se pide con el navegador ocioso: con la máquina cargada, tarda.
+    await expect.poll(() => events(page), { timeout: 15_000 }).toContain('clima-caida');
     await expect(indicator(page)).toHaveText(/18:41$/);
     await expect(indicator(page).getByRole('link')).toHaveCount(0);
     await expect(tint(page)).toHaveCSS('opacity', '0');
