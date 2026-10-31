@@ -88,8 +88,16 @@ El giro del cielo con que la Escena pasa de Día a Noche o de Noche a Día, en e
 _Avoid_: transición de tema, animación de tema
 
 **Cielo vivo**:
-Lo que la Escena muestra a partir de la hora real de Caracas: el sol o la luna, su posición y la fase lunar. Una Noche puede no tener luna, si la real aún no ha salido. Si el visitante eligió un estado que no coincide con la hora de Caracas, el sol o la luna van a una posición fija.
-_Avoid_: escena dinámica
+Lo que la Escena muestra a partir de la hora y el Clima reales de Caracas: el sol o la luna, su posición y la fase lunar. Una Noche puede no tener luna, si la real aún no ha salido. Si el visitante eligió un estado que no coincide con la hora de Caracas, el sol o la luna van a una posición fija; el Clima sigue siendo el real.
+_Avoid_: modo clima, escena dinámica
+
+**Clima**:
+El estado del tiempo actual en Caracas que muestra la Escena: despejado, parcial, nublado, lluvia o tormenta. Nunca es el del lugar del visitante.
+_Avoid_: tiempo, weather
+
+**Indicador**:
+La píldora del Hero que muestra la hora y el Clima de Caracas.
+_Avoid_: widget, badge
 
 **Viaje de cámara**:
 El recorrido vertical de la Escena que acompaña el scroll, contado como un viaje de bajada en el Teleférico: empieza arriba, entre las nubes y las cumbres del Ávila, y baja en un solo sentido hasta el nivel de la calle, donde entra la Avenida Bolívar; al llegar a Contacto se ven completas la ciudad y la avenida.

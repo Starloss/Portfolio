@@ -12,6 +12,14 @@ interface I18nContextValue {
 // Solo textos de la UI: el contenido bilingüe vive en src/content.
 const translations: Record<Locale, Record<string, string>> = {
     es: {
+        indicator_prefix: 'En Caracas:',
+        clima_despejado: 'despejado',
+        clima_parcial: 'parcial',
+        clima_nublado: 'nublado',
+        clima_lluvia: 'lluvia',
+        clima_tormenta: 'tormenta',
+        clima_credit_data: 'Clima:',
+        clima_credit_adapted: 'adaptado a estados de Clima',
         hero_cta_cv: 'Descargar CV',
         hero_cta_contact: 'Contactar',
         impact_title: 'Impacto',
@@ -54,6 +62,14 @@ const translations: Record<Locale, Record<string, string>> = {
         viewer_count: '{n} de {total}',
     },
     en: {
+        indicator_prefix: 'In Caracas:',
+        clima_despejado: 'clear',
+        clima_parcial: 'partly cloudy',
+        clima_nublado: 'cloudy',
+        clima_lluvia: 'rain',
+        clima_tormenta: 'storm',
+        clima_credit_data: 'Weather:',
+        clima_credit_adapted: 'adapted to weather states',
         hero_cta_cv: 'Download CV',
         hero_cta_contact: 'Contact',
         impact_title: 'Impact',

@@ -9,6 +9,7 @@ import { ExperienceSection } from '../features/experience/ExperienceSection';
 import { ImpactSection } from '../features/impact/ImpactSection';
 import { FeaturedProjects } from '../features/projects/FeaturedProjects';
 import { SkillsSection } from '../features/skills/SkillsSection';
+import { ClimaCredit } from '../components/ClimaCredit';
 import { EscenaUpgrade } from '../scene/EscenaUpgrade';
 import { Scene } from '../scene/Scene';
 
@@ -76,7 +77,9 @@ export const Home: React.FC = () => {
             </main>
             {/* Al final del Viaje queda sobre la Avenida Bolívar: lleva su propia superficie. */}
             <footer className="pb-10 text-center text-xs text-ink">
-                <span className="rounded-full bg-surface px-3 py-1">© {currentYear()}</span>
+                <span className="rounded-full bg-surface px-3 py-1">
+                    © {currentYear()} · <ClimaCredit />
+                </span>
             </footer>
         </>
     );

@@ -37,5 +37,9 @@ export const trackEscena = (version: EscenaVersion, reason: EscenaReason) =>
 
 export const trackEscenaFallback = (reason: FallbackReason) => track('escena-caida', { reason });
 
+// Evento técnico del Clima (ADR 0005): no se pudo obtener. Es la señal para cambiar de fuente.
+export type ClimaFailure = 'red' | 'respuesta';
+export const trackClimaCaida = (motivo: ClimaFailure) => track('clima-caida', { motivo });
+
 // Evento técnico del tema (ADR 0004): el visitante cambió el que correspondía a la hora de Caracas.
 export const trackTemaElegido = (tema: Theme) => track('tema-elegido', { tema });
