@@ -69,7 +69,7 @@ test('una visita nueva vuelve a la hora de Caracas', async ({ browser }) => {
     await first.close();
 });
 
-test('todas las páginas generadas traen el script del tema', async ({ page }) => {
+test('una página generada también trae el script del tema', async ({ page }) => {
     await page.goto('/en/projects/superwallet?hora=22:00');
     expect(await isDark(page)).toBe(true);
 });

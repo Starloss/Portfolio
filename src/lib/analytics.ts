@@ -1,5 +1,6 @@
 import type { EscenaReason, EscenaVersion } from '@app/scene/gl/detect';
 import type { FallbackReason } from '@app/scene/gl/protocol';
+import type { Theme } from '@lib/theme';
 
 import type { Locale } from '@/content';
 
@@ -37,4 +38,4 @@ export const trackEscena = (version: EscenaVersion, reason: EscenaReason) =>
 export const trackEscenaFallback = (reason: FallbackReason) => track('escena-caida', { reason });
 
 // Evento técnico del tema (ADR 0004): el visitante cambió el que correspondía a la hora de Caracas.
-export const trackTemaElegido = (tema: 'light' | 'dark') => track('tema-elegido', { tema });
+export const trackTemaElegido = (tema: Theme) => track('tema-elegido', { tema });

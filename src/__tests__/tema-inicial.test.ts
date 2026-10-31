@@ -3,7 +3,9 @@ import path from 'node:path';
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-// El script inline de index.html: el tema tiene que estar puesto antes del primer pintado.
+// El script inline de index.html: el tema tiene que estar puesto antes del primer pintado. Sus
+// constantes: .1819 y .9833 son el seno y el coseno de la latitud de Caracas (10,4806°), −66,9036 su
+// longitud, .3978 y .9175 el seno y el coseno de la oblicuidad, y −.01454 el seno de −0,833°.
 const html = fs.readFileSync(path.resolve(process.cwd(), 'index.html'), 'utf8');
 const inline = html.match(/<script>([\s\S]*?)<\/script>/)?.[1] ?? '';
 const root = document.documentElement;
@@ -24,6 +26,7 @@ describe('tema inicial', () => {
         window.localStorage.clear();
         root.classList.remove('dark');
         delete root.dataset.temaHora;
+        delete root.dataset.horaForzada;
     });
 
     afterEach(() => {
@@ -106,9 +109,18 @@ describe('tema inicial', () => {
             expect(root.dataset.temaHora).toBe('dark');
         });
 
-        it.each(['25:00', '12:60', 'mediodia', '12', ''])('ignora el valor inválido %j', (hora) => {
-            load('2026-11-01T04:00:00Z', `?hora=${hora}`);
-            expect(isDark()).toBe(true);
+        it('deja anotado que la hora está forzada', () => {
+            load('2026-10-31T16:00:00Z', '?hora=22:00');
+            expect(root.dataset.horaForzada).toBeDefined();
         });
+
+        it.each(['25:00', '12:60', '9:00', 'mediodia', '12', ''])(
+            'ignora el valor inválido %j, como si no estuviera',
+            (hora) => {
+                load('2026-10-31T16:00:00Z', `?hora=${hora}`);
+                expect(isDark()).toBe(false);
+                expect(root.dataset.horaForzada).toBeUndefined();
+            },
+        );
     });
 });

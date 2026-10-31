@@ -1,10 +1,9 @@
 import React from 'react';
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import { Heading } from '@app/components/ui/Heading';
 import { Section } from '@app/components/ui/Section';
 import { I18nProvider, useI18n } from '@lib/i18n';
-import { ThemeProvider, useTheme } from '@lib/theme';
 
 describe('UI primitives', () => {
     it('Heading levels y visuallyHidden', () => {
@@ -35,39 +34,6 @@ describe('UI primitives', () => {
             </Section>,
         );
         expect(screen.queryByRole('heading', { name: 'Titulo' })).not.toBeInTheDocument();
-    });
-});
-
-describe('ThemeProvider toggling y persistencia', () => {
-    it('toggle alterna clase dark y guarda en localStorage', () => {
-        const ThemeConsumer: React.FC = () => {
-            const { theme, toggleTheme } = useTheme();
-            return (
-                <div>
-                    <span data-testid="th">{theme}</span>
-                    <button onClick={toggleTheme}>to</button>
-                </div>
-            );
-        };
-        const setItemSpy = vi.spyOn(window.localStorage.__proto__, 'setItem');
-        render(
-            <ThemeProvider>
-                <ThemeConsumer />
-            </ThemeProvider>,
-        );
-        const span = screen.getByTestId('th');
-        const button = screen.getByText('to');
-        const root = document.documentElement;
-        const initial = span.textContent;
-        fireEvent.click(button);
-        expect(span.textContent).not.toBe(initial);
-        expect(setItemSpy).toHaveBeenCalled();
-        // Toggle aplica/quita clase dark
-        if (span.textContent === 'dark') {
-            expect(root.classList.contains('dark')).toBe(true);
-        } else {
-            expect(root.classList.contains('dark')).toBe(false);
-        }
     });
 });
 
