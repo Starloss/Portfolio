@@ -34,9 +34,9 @@ export const CLIMA_VARIANTS: Record<ClimaVariant, string> = {
 
 const TARGETS: Record<Estado, { cover: number; dark: number; rain: number; storm: boolean }> = {
     despejado: { cover: 0, dark: 0, rain: 0, storm: false },
-    parcial: { cover: 0.35, dark: 0.04, rain: 0, storm: false },
-    nublado: { cover: 0.7, dark: 0.2, rain: 0, storm: false },
-    lluvia: { cover: 0.85, dark: 0.4, rain: 0.7, storm: false },
+    parcial: { cover: 0.42, dark: 0.04, rain: 0, storm: false },
+    nublado: { cover: 0.82, dark: 0.2, rain: 0, storm: false },
+    lluvia: { cover: 0.93, dark: 0.4, rain: 0.7, storm: false },
     tormenta: { cover: 1, dark: 0.65, rain: 1, storm: true },
 };
 

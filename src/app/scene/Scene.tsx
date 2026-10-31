@@ -262,7 +262,7 @@ export const Scene: React.FC<{ height?: number }> = ({ height }) => {
                     />
                 )}
             </div>
-            {!mobile && (
+            {!mobile && clima?.estado !== 'despejado' && (
                 <m.div className="scene-layer" data-layer="clouds" style={styles.clouds}>
                     {CLOUDS.map((cloud, i) => (
                         <div

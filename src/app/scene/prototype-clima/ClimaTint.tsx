@@ -16,7 +16,7 @@ export const ClimaTint: React.FC<{ night: boolean; params: ClimaParams }> = ({ n
             className="scene-layer"
             style={{
                 background: `rgb(${r}, ${g}, ${b})`,
-                opacity: Math.min(1, cover * 0.75 + dark * 0.25),
+                opacity: Math.min(1, cover * cover * 0.85 + dark * 0.25),
                 transition: 'opacity 1.5s ease, background-color 1.5s ease',
                 maskImage: mask,
                 WebkitMaskImage: mask,

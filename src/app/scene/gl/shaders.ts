@@ -88,13 +88,12 @@ void main() {
     // PROTOTIPO: el Clima. x cobertura, y oscuridad, z modo (2 solo abajo), w rayo.
     float lowOnly = uWeather.z > 1.5 ? smoothstep(0.25, 0.75, t) : 1.0;
     vec3 overcast = mix(vec3(0.63, 0.69, 0.74), vec3(0.055, 0.075, 0.12), nightHere);
-    sky = mix(sky, overcast, uWeather.x * 0.75 * lowOnly);
+    sky = mix(sky, overcast, uWeather.x * uWeather.x * 0.85 * lowOnly);
     sky *= 1.0 - uWeather.y * 0.6 * lowOnly;
     if (uWeather.w > 0.001) {
-        float sheet = uWeather.z < 0.5 ? 0.14 : uWeather.z < 1.5 ? 0.05 : 0.0;
-        vec2 glowAt = vec2(uBoltSky.x * uRes.x, 0.62 * uRes.y);
-        float glow = uWeather.z > 1.5 ? 0.3 * exp(-length(p - glowAt) / (0.28 * uRes.y)) : 0.0;
-        sky += vec3(0.85, 0.88, 1.0) * uWeather.w * (sheet + glow);
+        vec2 glowAt = vec2(uBoltSky.x * uRes.x, 0.45 * uRes.y);
+        float glow = 0.3 * exp(-length(p - glowAt) / (0.28 * uRes.y));
+        sky += vec3(0.85, 0.88, 1.0) * uWeather.w * (0.14 + glow);
     }
     // PROTOTIPO: estrellas que giran alrededor de un punto bajo el horizonte.
     if (uStars.x > 0.001) {
@@ -250,13 +249,15 @@ void main() {
     vec2 p = screen();
     // PROTOTIPO: con más cobertura hay más nubes; en C se apilan bajas, contra el Ávila.
     float cover = uCloudW.x;
-    float top = uClouds.x + (uCloudW.z > 1.5 ? 0.08 + 0.3 * cover : 0.08 - 0.08 * cover) * uRes.y;
-    float span = (uCloudW.z > 1.5 ? 0.47 : 0.47 + 0.3 * cover) * uRes.y;
+    float top = uClouds.x + (uCloudW.z > 1.5 ? 0.08 + 0.3 * cover : 0.08 - 0.3 * cover) * uRes.y;
+    float span = (uCloudW.z > 1.5 ? 0.47 : 0.47 + 0.75 * cover) * uRes.y;
     float band = smoothstep(top, top + span * 0.35, p.y) * (1.0 - smoothstep(top + span * 0.6, top + span, p.y));
     if (band <= 0.0 || uClouds.y <= 0.0) discard;
-    float n = noise2(vec2(p.x - uParallax + uTime * 7.0, p.y * 2.2) / 1500.0);
-    float d = smoothstep(0.56 - 0.3 * cover, 0.7 - 0.22 * cover, n) * band * uClouds.y * 0.85 * mix(0.9, 0.5 + 0.35 * cover, uNight);
-    vec3 cloud = cloudColor(smoothstep(0.56, 0.8, n) * (1.0 - 0.5 * (p.y - top) / span)) * (1.0 - uCloudW.y * 0.6);
+    if (cover <= 0.001) discard;
+    float n = noise2(vec2(p.x - uParallax + uTime * 7.0, p.y * 1.9) / 1100.0);
+    float lo = mix(0.68, 0.3, cover);
+    float d = smoothstep(lo, lo + 0.13, n) * band * uClouds.y * smoothstep(0.0, 0.1, cover) * mix(0.92, 0.55 + 0.35 * cover, uNight);
+    vec3 cloud = cloudColor(smoothstep(lo, lo + 0.34, n)) * (1.0 - uCloudW.y * 0.6);
     outColor = vec4(cloud * d, d);
 }
 `;

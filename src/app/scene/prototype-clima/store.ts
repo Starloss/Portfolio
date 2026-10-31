@@ -8,7 +8,7 @@ function read(): ClimaParams | null {
     const estado = q.get('clima') as Estado | null;
     if (!estado) return null;
     return {
-        variant: (q.get('climav') as ClimaVariant) ?? 'a',
+        variant: (q.get('climav') as ClimaVariant) ?? 'b',
         estado,
         topeOscuro: Number(q.get('topeo') ?? 0.65),
         topeDensidad: Number(q.get('toped') ?? 1),
