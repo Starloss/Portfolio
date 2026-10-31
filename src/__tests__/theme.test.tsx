@@ -61,10 +61,42 @@ describe('ThemeProvider', () => {
         const button = setup({ hourTheme: 'light' });
         fireEvent.click(button);
         expect(button.textContent).toBe('dark');
-        expect(root.classList.contains('dark')).toBe(true);
         expect(window.sessionStorage.getItem(KEY)).toBe('dark');
         expect(window.localStorage.getItem('theme')).toBeNull();
         expect(track).toHaveBeenCalledWith('tema-elegido', { tema: 'dark' });
+    });
+
+    it('la UI cambia a la mitad de la Bóveda celeste', () => {
+        vi.useFakeTimers();
+        const button = setup({ hourTheme: 'light' });
+        fireEvent.click(button);
+        vi.advanceTimersByTime(1799);
+        expect(root.classList.contains('dark')).toBe(false);
+        vi.advanceTimersByTime(1);
+        expect(root.classList.contains('dark')).toBe(true);
+        vi.useRealTimers();
+    });
+
+    it('si vuelve a cambiar antes de la mitad, la UI se queda como estaba', () => {
+        vi.useFakeTimers();
+        const button = setup({ hourTheme: 'light' });
+        fireEvent.click(button);
+        vi.advanceTimersByTime(900);
+        fireEvent.click(button);
+        vi.advanceTimersByTime(3600);
+        expect(root.classList.contains('dark')).toBe(false);
+        vi.useRealTimers();
+    });
+
+    it('con reduced-motion la UI cambia enseguida', () => {
+        const original = window.matchMedia;
+        vi.spyOn(window, 'matchMedia').mockImplementation((query: string) => ({
+            ...original(query),
+            matches: query.includes('prefers-reduced-motion'),
+        }));
+        const button = setup({ hourTheme: 'light' });
+        fireEvent.click(button);
+        expect(root.classList.contains('dark')).toBe(true);
     });
 
     it('volver al tema de la hora borra la elección, sin contarla', () => {

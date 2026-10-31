@@ -15,7 +15,6 @@ import {
     HaloGradient,
     LampGradient,
     Macaws,
-    Stars,
     Towers,
 } from '../parts';
 import { STREET_ABOVE, streetHeight } from '../street';
@@ -52,7 +51,6 @@ export type LayerName =
     | 'avilaFront'
     | 'city'
     | 'towers'
-    | 'stars'
     | 'macaws'
     | 'cabin'
     | 'cityLights'
@@ -109,7 +107,7 @@ export async function themeLayers(
         // De Noche, las siluetas sin ventanas: las ventanas van en las texturas de luces.
         full(<City c={c} night={false} animate={false} />),
         full(<Towers c={c} night={false} animate={false} />),
-        full(night ? <Stars count={60} groups={3} animate={false} /> : <Macaws animate={false} />),
+        night ? null : full(<Macaws animate={false} />),
         markup(
             <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -143,6 +141,7 @@ export async function themeLayers(
         towers,
         cabin,
         street,
-        ...(night ? { stars: extra, cityLights, towersLights } : { macaws: extra }),
+        ...(night ? { cityLights, towersLights } : {}),
+        ...(extra ? { macaws: extra } : {}),
     };
 }

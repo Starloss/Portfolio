@@ -1,6 +1,8 @@
 // La Escena WebGL vista desde la página: transfiere el canvas a un Worker y le pasa lo que solo se
 // sabe aquí (scroll, medidas, tema, reloj de las animaciones de CSS). Cuando el Worker pide
 // texturas, las rasteriza de las piezas SVG y se las manda como ImageBitmap.
+import type { Sky } from '../sky';
+
 import { readClocks } from './clocks';
 import type { FallbackReason, FromWorker, Layout, ToWorker } from './protocol';
 import { themeLayers } from './textures';
@@ -94,9 +96,13 @@ export class EscenaClient {
         this.post({ type: 'layout', layout });
     }
 
+    setSky(sky: Sky) {
+        this.post({ type: 'sky', sky });
+    }
+
     setNight(night: boolean) {
         this.post({ type: 'night', night });
-        // Las estrellas o las guacamayas recién montadas arrancan su animación de cero.
+        // Las guacamayas recién montadas arrancan su animación de cero.
         this.sendClocks();
     }
 

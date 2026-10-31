@@ -2,6 +2,7 @@
 import { useEffect, useLayoutEffect, useState, useSyncExternalStore, type RefObject } from 'react';
 
 import type { Viewport } from './camera';
+import { sky, type Sky } from './sky';
 
 /** Tamaño de un elemento; hasta poder medirlo (o si mide 0, como en jsdom), el de la ventana. */
 export function useElementViewport(ref: RefObject<HTMLElement | null>): Viewport {
@@ -62,3 +63,17 @@ const onCoverChange = (onChange: () => void) => {
 };
 
 export const useSceneCovered = () => useSyncExternalStore(onCoverChange, () => covers > 0);
+
+// El instante de Caracas: el que forzó ?hora= (lo deja el script de index.html) o el reloj.
+const skyNow = (): Sky => sky(Number(document.documentElement.dataset.horaForzada) || Date.now());
+const SKY_REFRESH_MS = 60_000;
+
+/** El sol y la luna sobre Caracas ahora: avanzan solos, de a un minuto. */
+export function useCaracasSky(): Sky {
+    const [current, setCurrent] = useState(skyNow);
+    useEffect(() => {
+        const timer = window.setInterval(() => setCurrent(skyNow()), SKY_REFRESH_MS);
+        return () => window.clearInterval(timer);
+    }, []);
+    return current;
+}

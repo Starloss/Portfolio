@@ -4,19 +4,12 @@
 // watchdog.ts, con tests; esto se prueba con Playwright.
 import { Geometry, Mesh, Program, Renderer, Texture, Triangle } from 'ogl';
 
+import { sky as skyAt, type Sky } from '../sky';
 import { STREET_ABOVE, streetAgents } from '../street';
+import { arcPoint, BOVEDA_SECONDS, BovedaClock, moonRotation, restOf } from '../vault';
 
 import { isSoftwareGpu, rendererName } from './detect';
-import {
-    advanceClocks,
-    cssEase,
-    duskAt,
-    escenaFrame,
-    followPointer,
-    type ClockAnchor,
-    type Clocks,
-    sunAt,
-} from './frame';
+import { advanceClocks, escenaFrame, followPointer, type ClockAnchor, type Clocks } from './frame';
 import { noiseData } from './noise';
 import type { FallbackReason, Layout, TextureRequest } from './protocol';
 import { createInstances, writeInstances } from './agents';
@@ -48,7 +41,6 @@ interface PassSpec {
 // Las capas, de atrás hacia adelante, en el mismo orden que las de la Escena SVG.
 const ORDER = [
     'sky',
-    'stars',
     'moon',
     'macaws',
     'clouds',
@@ -70,13 +62,9 @@ const ORDER = [
 ] as const;
 type Pass = (typeof ORDER)[number];
 
-// El cambio de tema dura algo más que en la SVG (0,6 s), para que se vea el atardecer o el amanecer
-// a la mitad, pero no tanto como para que el texto, que cambia enseguida, quede sobre el otro cielo.
-const THEME_SECONDS = 1.2;
 // Las luces llevan mipmaps: un nivel chico es su resplandor.
 const MIPMAPPED: readonly LayerName[] = ['cityLights', 'towersLights'];
-const MOON_RADIUS = 26;
-const STILL: Clocks = { cabins: 0, macaws: 0, twinkle: 0 };
+const STILL: Clocks = { cabins: 0, macaws: 0 };
 const SOFTWARE_DPR = 0.5;
 const RESIZE_SETTLE_MS = 250;
 
@@ -129,13 +117,11 @@ export class EscenaGL {
     private wanted = 0;
     private night = 0;
     private target = 0;
-    private themeFrom = 0;
-    private themeStart = -1;
+    private boveda = new BovedaClock(BOVEDA_SECONDS);
+    private sky: Sky = skyAt(Date.now());
     private progress = 0;
     private pointer = 0;
     private pointerTarget = 0;
-    // Al ir hacia la Noche el sol se pone (al oeste); al volver al Día, sale (al este).
-    private setting = true;
     private lastFrame = 0;
     private clocks: ClockAnchor = { at: epoch(), clocks: STILL };
     private raf = 0;
@@ -235,10 +221,16 @@ export class EscenaGL {
         const sky = this.program(FULLSCREEN_VERTEX, SKY_FRAGMENT, {
             ...atmosphere,
             uSkyHigh: { value: 0 },
-            uSun: { value: [0.12, 0.6] },
+            uSun: { value: [0, 0, 26] },
+            uSunAlpha: { value: 0 },
+            uStars: { value: [0, 0] },
+            uSweep: { value: -1 },
         });
         const moon = this.program(FULLSCREEN_VERTEX, MOON_FRAGMENT, {
             uMoon: { value: [0, 0, 0] },
+            uFraction: { value: 1 },
+            uRotation: { value: 0 },
+            uAlpha: { value: 0 },
         });
         const clouds = this.program(FULLSCREEN_VERTEX, CLOUDS_FRAGMENT, {
             ...atmosphere,
@@ -268,7 +260,6 @@ export class EscenaGL {
             uDusk: { value: 0 },
             uOffset: { value: [0, 0] },
             uOpacity: { value: 1 },
-            uTwinkle: { value: -1 },
             uRim: { value: 0 },
             uSunSide: { value: -1 },
             uSize: { value: [1, 1] },
@@ -292,7 +283,7 @@ export class EscenaGL {
             fixed,
         });
         // Una capa rasterizada; las de un solo tema usan la misma textura de los dos lados.
-        const still = { uOffset: [0, 0], uOpacity: 1, uTwinkle: -1, uRim: 0 };
+        const still = { uOffset: [0, 0], uOpacity: 1, uRim: 0 };
         const tex = (day: string, night: string) => ({
             tDay: this.texture(day),
             tNight: this.texture(night),
@@ -319,7 +310,6 @@ export class EscenaGL {
         const cabin = () => pass(quad, sprite, tex('cabin:day', 'cabin:night'));
         return {
             sky: pass(fullscreen, sky),
-            stars: pass(fullscreen, layer, { ...still, ...tex('stars:night', 'stars:night') }),
             moon: pass(fullscreen, moon),
             macaws: pass(fullscreen, layer, { ...still, ...tex('macaws:day', 'macaws:day') }),
             clouds: pass(fullscreen, clouds),
@@ -486,6 +476,7 @@ export class EscenaGL {
         this.wanted = goal;
         if (!this.drawn) {
             this.night = this.target = goal;
+            this.boveda.set(night);
             await this.load(this.theme);
             return;
         }
@@ -495,10 +486,14 @@ export class EscenaGL {
         if (this.wanted !== goal || this.disposed) return;
         // El tema que se pidió no se puede mostrar: vuelve a la SVG.
         if (!ok) return this.fail('init-failed');
-        this.themeFrom = this.night;
-        this.setting = goal > this.night;
         this.target = goal;
-        this.themeStart = performance.now();
+        this.boveda.change(night, performance.now());
+    }
+
+    /** Dónde están el sol y la luna: lo actualiza la página, de a un minuto. */
+    setSky(sky: Sky) {
+        this.sky = sky;
+        this.dirty = true;
     }
 
     setScroll(progress: number) {
@@ -545,20 +540,18 @@ export class EscenaGL {
     private draw(now: number) {
         const layout = this.layout;
         if (!layout || this.ready[this.theme] < 0) return;
-        if (this.onDemand && !this.dirty && this.themeStart < 0) return;
+        if (this.onDemand && !this.dirty && !this.boveda.turning) return;
         this.dirty = false;
-        const { viewport, frame, sink, moon } = layout;
+        const { viewport, frame, sink, sky: arc } = layout;
         const dt = Math.min(0.1, (now - (this.lastFrame || now)) / 1000);
         this.lastFrame = now;
         // Con una GPU por software no hay parallax: dibujar solo cuando algo cambia lo dejaría a
         // saltos.
         if (!this.onDemand) this.pointer = followPointer(this.pointer, this.pointerTarget, dt);
 
-        if (this.themeStart >= 0) {
-            const t = Math.min(1, (now - this.themeStart) / 1000 / THEME_SECONDS);
-            this.night = this.themeFrom + (this.target - this.themeFrom) * cssEase(t);
-            if (t >= 1) this.themeStart = -1;
-        }
+        const toNight = this.target > 0.5;
+        const b = this.boveda.tick(now, restOf(this.sky, toNight), restOf(this.sky, !toNight));
+        this.night = b.night;
         const f = escenaFrame({
             progress: this.progress,
             sink,
@@ -567,12 +560,14 @@ export class EscenaGL {
             clocks: this.onDemand ? STILL : advanceClocks(this.clocks, epoch()),
             pointer: this.pointer,
         });
-        const dusk = duskAt(this.night);
+        const dusk = b.dusk;
         const time = this.onDemand ? 0 : now / 1000;
         const parallax = f.parallax;
-        const sun = sunAt(this.night, this.setting);
-        // De qué lado está el sol para los bordes iluminados: -1 a la izquierda, 1 a la derecha.
-        const side = Math.sign(sun.x - 0.5);
+        const sun = arcPoint(b.sun.f, arc);
+        const moon = arcPoint(b.moon.f, arc);
+        // De qué lado está el sol para los bordes iluminados: al ir a la Noche se pone a la izquierda
+        // (al oeste); al volver al Día, sale a la derecha (al este).
+        const side = toNight ? -1 : 1;
         const rect = (r: { x: number; y: number; width: number; height: number }) => [
             r.x,
             r.y,
@@ -580,9 +575,24 @@ export class EscenaGL {
             r.height,
         ];
         const values: Record<Pass, Record<string, unknown>> = {
-            sky: { uSkyHigh: f.skyHigh, uDusk: dusk, uTime: time, uSun: [sun.x, sun.y] },
-            stars: { uOpacity: this.night, uTwinkle: f.twinkle, uOffset: [parallax.sky, 0] },
-            moon: { uMoon: moon ? [moon.x + parallax.sky, moon.y, MOON_RADIUS] : [0, 0, 0] },
+            sky: {
+                uSkyHigh: f.skyHigh,
+                uTime: time,
+                uSun: [sun.x + parallax.sky / viewport.width, sun.y, arc.size / 2],
+                uSunAlpha: b.sun.alpha,
+                uStars: [b.stars.alpha, b.stars.angle],
+                uSweep: b.sweep,
+            },
+            moon: {
+                uMoon: [
+                    moon.x * viewport.width + parallax.sky,
+                    moon.y * viewport.height,
+                    arc.size / 2,
+                ],
+                uFraction: b.moon.fraction,
+                uRotation: (moonRotation(b.moon.tilt) * Math.PI) / 180,
+                uAlpha: b.moon.alpha,
+            },
             macaws: { uOffset: [f.macaws.x, f.macaws.y], uOpacity: 1 - this.night },
             clouds: {
                 uClouds: [f.cloudsShift, f.cloudsOpacity],

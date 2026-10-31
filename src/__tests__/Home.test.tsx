@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React from 'react';
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { screen, fireEvent } from '@testing-library/react';
 import { Home } from '@app/pages/Home';
 
@@ -50,7 +50,10 @@ describe('Home interactions', () => {
         const themeBtn = screen.getByRole('button', { name: /Oscuro|Dark|Claro|Light/i });
         const root = document.documentElement;
         const hadDark = root.classList.contains('dark');
+        vi.useFakeTimers();
         fireEvent.click(themeBtn);
+        vi.advanceTimersByTime(3600);
+        vi.useRealTimers();
         expect(root.classList.contains('dark')).toBe(!hadDark);
     });
 });

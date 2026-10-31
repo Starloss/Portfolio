@@ -80,8 +80,16 @@ Un elemento reconocible de Caracas dentro de la Escena: El Ávila, el Hotel Humb
 _Avoid_: edificio, landmark
 
 **Día** / **Noche**:
-Los dos estados de la Escena. Siguen siempre el tema claro u oscuro del sitio: lo que elija el visitante durante esa visita o, si no eligió, lo que corresponda a la hora de Caracas al cargar la página. El paso de uno a otro es un atardecer o un amanecer.
+Los dos estados de la Escena. Siguen siempre el tema claro u oscuro del sitio: lo que elija el visitante durante esa visita o, si no eligió, lo que corresponda a la hora de Caracas al cargar la página. El paso de uno a otro es la Bóveda celeste.
 _Avoid_: light mode, dark mode (al hablar de la Escena)
+
+**Bóveda celeste**:
+El giro del cielo con que la Escena pasa de Día a Noche o de Noche a Día, en el que el sol y la luna se relevan.
+_Avoid_: transición de tema, animación de tema
+
+**Cielo vivo**:
+Lo que la Escena muestra a partir de la hora real de Caracas: el sol o la luna, su posición y la fase lunar. Una Noche puede no tener luna, si la real aún no ha salido. Si el visitante eligió un estado que no coincide con la hora de Caracas, el sol o la luna van a una posición fija.
+_Avoid_: escena dinámica
 
 **Viaje de cámara**:
 El recorrido vertical de la Escena que acompaña el scroll, contado como un viaje de bajada en el Teleférico: empieza arriba, entre las nubes y las cumbres del Ávila, y baja en un solo sentido hasta el nivel de la calle, donde entra la Avenida Bolívar; al llegar a Contacto se ven completas la ciudad y la avenida.

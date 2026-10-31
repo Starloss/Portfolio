@@ -2,6 +2,8 @@
 // nada de WebGL: le pasa al Worker el canvas, el scroll, las medidas, el tema y el reloj de las
 // animaciones de CSS, y le rasteriza las texturas cuando las pide.
 import type { SceneFrame, Viewport } from '../camera';
+import type { Sky } from '../sky';
+import type { SkyLayout } from '../vault';
 
 import type { ClockAnchor } from './frame';
 
@@ -11,7 +13,7 @@ export interface Layout {
     viewport: Viewport;
     frame: SceneFrame;
     sink: number;
-    moon: { x: number; y: number } | null;
+    sky: SkyLayout;
 }
 
 export interface TextureRequest {
@@ -25,6 +27,7 @@ export type ToWorker =
     | { type: 'init'; canvas: OffscreenCanvas; dpr: number; watch: boolean }
     | { type: 'layout'; layout: Layout }
     | { type: 'night'; night: boolean }
+    | { type: 'sky'; sky: Sky }
     | { type: 'scroll'; progress: number }
     | { type: 'clocks'; anchor: ClockAnchor }
     | { type: 'pointer'; x: number }

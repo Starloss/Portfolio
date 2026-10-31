@@ -34,35 +34,6 @@ const delay = (seconds: number): React.CSSProperties => ({ animationDelay: `${se
 
 // ---------- Cielo ----------
 
-export const Stars: React.FC<{ count: number; groups: number; animate: boolean }> = ({
-    count,
-    groups,
-    animate,
-}) => (
-    <g data-part="stars" className="scene-fade-in">
-        {Array.from({ length: groups }, (_, g) => (
-            <g
-                key={g}
-                data-anim={animate ? 'twinkle' : undefined}
-                style={animate ? delay(g * 1.7) : undefined}
-            >
-                {Array.from({ length: count }, (_, i) => i)
-                    .filter((i) => i % groups === g)
-                    .map((i) => (
-                        <circle
-                            key={i}
-                            cx={(i * 263) % VIEW.width}
-                            cy={(i * 97) % 380}
-                            r={i % 7 ? 0.9 : 1.6}
-                            style={{ fill: NIGHT_LIGHTS.star }}
-                            opacity={0.8}
-                        />
-                    ))}
-            </g>
-        ))}
-    </g>
-);
-
 // Guacamaya roja de perfil, volando hacia la derecha: ala cercana levantada, banda amarilla,
 // primarias azules, cola larga roja con punta azul, cara clara y pico curvo.
 const Macaw: React.FC<{ x: number; y: number; s: number }> = ({ x, y, s }) => (

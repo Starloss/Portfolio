@@ -1,4 +1,5 @@
-import React, { createContext, use, useEffect, useState, useCallback } from 'react';
+import React, { createContext, use, useEffect, useRef, useState, useCallback } from 'react';
+import { BOVEDA_SECONDS } from '@app/scene/vault';
 import { trackTemaElegido } from '@lib/analytics';
 
 export type Theme = 'light' | 'dark';
@@ -34,8 +35,18 @@ function rememberChoice(theme: Theme) {
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const [theme, setTheme] = useState<Theme>(getInitialTheme);
 
+    // La Escena gira enseguida; la UI cambia a la mitad de la Bóveda celeste. Sin giro, enseguida.
+    const appliedRef = useRef(theme);
     useEffect(() => {
-        document.documentElement.classList.toggle('dark', theme === 'dark');
+        if (appliedRef.current === theme) return;
+        appliedRef.current = theme;
+        const apply = () => document.documentElement.classList.toggle('dark', theme === 'dark');
+        if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+            apply();
+            return;
+        }
+        const timer = window.setTimeout(apply, (BOVEDA_SECONDS * 1000) / 2);
+        return () => window.clearTimeout(timer);
     }, [theme]);
 
     const toggleTheme = useCallback(() => {
