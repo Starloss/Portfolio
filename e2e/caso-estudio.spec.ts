@@ -1,4 +1,4 @@
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test, type Page } from './test';
 
 // Cuenta las View Transitions que inicia la página, sin cambiar su comportamiento.
 async function countViewTransitions(page: Page) {

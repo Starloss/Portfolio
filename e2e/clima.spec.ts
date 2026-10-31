@@ -1,8 +1,6 @@
-import { expect, test, type Page } from '@playwright/test';
+import { expect, OPEN_METEO as API, test, type Page } from './test';
 
 import { contrastRatio } from '../src/lib/contrast';
-
-const API = 'https://api.open-meteo.com/**';
 
 // Open-Meteo con estado y temperatura fijos, para no depender de la red.
 const stubApi = (page: Page, code = 61, temperature = 22.4) =>
@@ -48,12 +46,25 @@ test('en inglés va en 12 h y °F', async ({ page }) => {
 test('si la API falla, solo queda la hora, sin error, y se registra una vez', async ({ page }) => {
     await recordEvents(page);
     await page.route(API, (route) => route.abort());
-    await page.goto('/?hora=18:41');
+    await page.goto('/');
     // El Clima se pide con el navegador ocioso: con la máquina cargada, tarda.
     await expect.poll(() => events(page), { timeout: 15_000 }).toContain('clima-caida');
-    await expect(indicator(page)).toHaveText(/18:41$/);
+    await expect(indicator(page)).toHaveText(/\d\d:\d\d$/);
     await expect(indicator(page).getByRole('link')).toHaveCount(0);
     await expect(tint(page)).toHaveCSS('opacity', '0');
+});
+
+test('con la hora forzada, un fallo de la API no se registra', async ({ page }) => {
+    await recordEvents(page);
+    let failed = false;
+    await page.route(API, (route) => {
+        failed = true;
+        return route.abort();
+    });
+    await page.goto('/?hora=12:00');
+    await expect.poll(() => failed, { timeout: 15_000 }).toBe(true);
+    await page.waitForTimeout(200);
+    expect(await events(page)).not.toContain('clima-caida');
 });
 
 test('?clima= sustituye al dato: sin API ni eventos, y sigue vigente al navegar', async ({
@@ -82,11 +93,11 @@ test('?clima= sustituye al dato: sin API ni eventos, y sigue vigente al navegar'
 test('un cielo despejado no tiene nubes ni tinte, y uno con nubes sí', async ({ page }) => {
     await page.goto('/?hora=12:00&clima=despejado&escena=svg');
     await expect(indicator(page)).toContainText('despejado');
-    await expect(page.locator('[data-layer="clouds"]')).toHaveCount(0);
+    await expect(page.locator('.scene-clouds-fade')).toHaveCSS('opacity', '0');
     await expect(tint(page)).toHaveCSS('opacity', '0');
 
     await page.goto('/?hora=12:00&clima=lluvia&escena=svg');
-    await expect(page.locator('[data-layer="clouds"]')).toHaveCount(1);
+    await expect(page.locator('.scene-clouds-fade')).toHaveCSS('opacity', '1');
     await expect(tint(page)).toHaveCSS('opacity', '0.5');
 });
 

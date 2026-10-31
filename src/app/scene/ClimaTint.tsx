@@ -18,16 +18,8 @@ export const ClimaTint: React.FC<{ night: boolean }> = ({ night }) => {
     const tint = clima ? TINT[clima.estado] : 0;
     return (
         <>
-            <div
-                className="scene-tint scene-tint-day"
-                data-part="tinte"
-                style={{ opacity: night ? 0 : tint }}
-            />
-            <div
-                className="scene-tint scene-tint-night"
-                data-part="tinte"
-                style={{ opacity: night ? tint : 0 }}
-            />
+            <div className="scene-tint scene-tint-day" style={{ opacity: night ? 0 : tint }} />
+            <div className="scene-tint scene-tint-night" style={{ opacity: night ? tint : 0 }} />
         </>
     );
 };

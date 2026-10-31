@@ -1,4 +1,5 @@
 import React from 'react';
+import { CLIMA_SOURCE } from '@lib/clima';
 import { useI18n } from '@lib/i18n';
 
 const LINK = 'underline underline-offset-2';
@@ -9,17 +10,12 @@ export const ClimaCredit: React.FC = () => {
     return (
         <span>
             {t('clima_credit_data')}{' '}
-            <a href="https://open-meteo.com/" target="_blank" rel="noreferrer" className={LINK}>
-                Open-Meteo
+            <a href={CLIMA_SOURCE.url} target="_blank" rel="noreferrer" className={LINK}>
+                {CLIMA_SOURCE.name}
             </a>{' '}
             (
-            <a
-                href="https://creativecommons.org/licenses/by/4.0/"
-                target="_blank"
-                rel="noreferrer"
-                className={LINK}
-            >
-                CC BY 4.0
+            <a href={CLIMA_SOURCE.licenseUrl} target="_blank" rel="noreferrer" className={LINK}>
+                {CLIMA_SOURCE.license}
             </a>
             ), {t('clima_credit_adapted')}
         </span>

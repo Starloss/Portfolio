@@ -1,5 +1,12 @@
 import React from 'react';
-import { formatHour, formatTemperature, useCaracasClock, useClima, type Estado } from '@lib/clima';
+import {
+    CLIMA_SOURCE,
+    formatHour,
+    formatTemperature,
+    useCaracasClock,
+    useClima,
+    type Estado,
+} from '@lib/clima';
 import { useI18n } from '@lib/i18n';
 
 const ICONS: Record<Estado, string> = {
@@ -44,7 +51,7 @@ export const CaracasIndicator: React.FC = () => {
                         <path d={ICONS[clima.estado]} />
                     </svg>
                 )}
-                <time>{formatHour(clock, locale)}</time>
+                <time dateTime={formatHour(clock, 'es')}>{formatHour(clock, locale)}</time>
                 {clima && (
                     <>
                         <Separator />
@@ -53,12 +60,12 @@ export const CaracasIndicator: React.FC = () => {
                         <span>{t(`clima_${clima.estado}`)}</span>
                         <Separator />
                         <a
-                            href="https://open-meteo.com/"
+                            href={CLIMA_SOURCE.url}
                             target="_blank"
                             rel="noreferrer"
                             className="font-normal underline underline-offset-2"
                         >
-                            Open-Meteo
+                            {CLIMA_SOURCE.name}
                         </a>
                     </>
                 )}

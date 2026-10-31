@@ -1,4 +1,4 @@
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test, type Page } from './test';
 import { DAY, NIGHT } from '../src/app/scene/palette';
 import { streetBand } from '../src/app/scene/street';
 import { contrastRatio } from '../src/lib/contrast';

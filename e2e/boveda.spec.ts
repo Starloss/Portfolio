@@ -1,4 +1,4 @@
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test, type Page } from './test';
 
 const toggle = (page: Page) =>
     page
@@ -74,8 +74,14 @@ test('con reduced-motion nada gira: solo un fundido, y la UI cambia enseguida', 
 }) => {
     await page.emulateMedia({ reducedMotion: 'reduce' });
     await page.goto('/?hora=12:00');
-    await toggle(page);
-    await expect.poll(() => isDark(page)).toBe(true);
+    const justAfter = await page.evaluate(async () => {
+        [...document.querySelectorAll('button')]
+            .find((b) => /Oscuro|Claro/.test(b.getAttribute('aria-label') ?? ''))!
+            .click();
+        await new Promise(requestAnimationFrame);
+        return document.documentElement.classList.contains('dark');
+    });
+    expect(justAfter).toBe(true);
     expect(await turning(page)).toBe(0);
 });
 

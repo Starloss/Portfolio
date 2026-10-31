@@ -6,7 +6,7 @@ import { whenIdleAfterLoad } from '@lib/idle';
 
 import type { Locale } from '@/content';
 
-export const ESTADOS = ['despejado', 'parcial', 'nublado', 'lluvia', 'tormenta'] as const;
+const ESTADOS = ['despejado', 'parcial', 'nublado', 'lluvia', 'tormenta'] as const;
 export type Estado = (typeof ESTADOS)[number];
 
 export interface Clima {
@@ -15,10 +15,21 @@ export interface Clima {
     temperatura: number;
 }
 
+/** La fuente de los datos y su licencia: lo que muestran el Indicador y el crédito del pie. */
+export const CLIMA_SOURCE = {
+    name: 'Open-Meteo',
+    url: 'https://open-meteo.com/',
+    license: 'CC BY 4.0',
+    licenseUrl: 'https://creativecommons.org/licenses/by/4.0/',
+};
+
 const URL_OPEN_METEO =
     'https://api.open-meteo.com/v1/forecast?latitude=10.48&longitude=-66.90&current=temperature_2m,weather_code';
 const CACHE_KEY = 'clima-caracas';
 const REFRESH_MS = 30 * 60_000;
+const CHECK_MS = 60_000;
+// Si los refrescos fallan, el último Clima se mantiene hasta aquí; después, el cielo base.
+const KEEP_MS = 60 * 60_000;
 // ?clima= no trae temperatura: una típica de Caracas, para que el Indicador se vea completo.
 const FORCED_TEMPERATURE = 27;
 
@@ -26,6 +37,7 @@ const inRange = (code: number, from: number, to: number) => code >= from && code
 
 /** El estado de un código WMO de Open-Meteo, o `null` si no se conoce. */
 export function estadoFromCode(code: number): Estado | null {
+    if (!Number.isInteger(code)) return null;
     if (code === 0 || code === 1) return 'despejado';
     if (code === 2) return 'parcial';
     // La llovizna leve (51) y la niebla cuentan como nublado: si no, llovería casi un tercio del tiempo.
@@ -38,19 +50,19 @@ export function estadoFromCode(code: number): Estado | null {
         code === 85 ||
         code === 86
     ) {
-        return Number.isInteger(code) ? 'lluvia' : null;
+        return 'lluvia';
     }
     if (inRange(code, 95, 99)) return 'tormenta';
     return null;
 }
 
-function readCache(): Clima | null {
+function readCache(): (Clima & { at: number }) | null {
     try {
         const raw = window.localStorage.getItem(CACHE_KEY);
         if (!raw) return null;
         const { at, estado, temperatura } = JSON.parse(raw) as Clima & { at: number };
         return Date.now() - at < REFRESH_MS && ESTADOS.includes(estado)
-            ? { estado, temperatura }
+            ? { estado, temperatura, at }
             : null;
     } catch {
         return null;
@@ -104,13 +116,16 @@ export function createClimaStore({
     let current: Clima | null = forced && { estado: forced, temperatura: FORCED_TEMPERATURE };
     let started = false;
     let fetchedAt = 0;
+    let shownAt = 0;
     let reported = false;
     let interval = 0;
     const listeners = new Set<() => void>();
 
-    const show = (clima: Clima) => {
+    const notify = () => listeners.forEach((listener) => listener());
+    const show = (clima: Clima, at: number) => {
         current = clima;
-        listeners.forEach((listener) => listener());
+        shownAt = at;
+        notify();
     };
 
     const load = async () => {
@@ -118,14 +133,20 @@ export function createClimaStore({
         const result = await fetchClima();
         if ('clima' in result) {
             writeCache(result.clima);
-            show(result.clima);
-        } else if (!reported) {
+            show(result.clima, Date.now());
+            return;
+        }
+        if (!reported) {
             reported = true;
             onFailure(result.failure);
         }
+        if (current && Date.now() - shownAt >= KEEP_MS) {
+            current = null;
+            notify();
+        }
     };
 
-    // Solo con la pestaña a la vista: al volver a ella, se pone al día si hace falta.
+    // Se revisa seguido, y solo pide si el dato ya cumplió su edad y la pestaña está a la vista.
     const refresh = () => {
         if (!document.hidden && Date.now() - fetchedAt >= REFRESH_MS) void load();
     };
@@ -142,12 +163,12 @@ export function createClimaStore({
             started = true;
             const cached = readCache();
             if (cached) {
-                fetchedAt = Date.now();
-                show(cached);
+                fetchedAt = cached.at;
+                show({ estado: cached.estado, temperatura: cached.temperatura }, cached.at);
             } else {
                 void load();
             }
-            interval = window.setInterval(refresh, REFRESH_MS);
+            interval = window.setInterval(refresh, CHECK_MS);
             document.addEventListener('visibilitychange', refresh);
         },
         stop() {
@@ -160,7 +181,10 @@ export function createClimaStore({
 
 export const climaStore = createClimaStore({
     search: window.location.search,
-    onFailure: trackClimaCaida,
+    // Con la hora forzada es una prueba o una demostración: no se cuenta.
+    onFailure: (failure) => {
+        if (document.documentElement.dataset.horaForzada === undefined) trackClimaCaida(failure);
+    },
 });
 
 /** El Clima de Caracas; hasta que llega o si falla, `null`. */

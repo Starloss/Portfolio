@@ -68,10 +68,14 @@
     background: #fff8e0;
 }
 
-/* El tinte del Clima: entra y cambia con un fundido (ClimaTint). */
+/* El tinte del Clima y las nubes que quita un cielo despejado: entran y cambian con un fundido. */
 .scene-tint {
     position: absolute;
     inset: 0;
+}
+
+.scene-tint,
+.scene-clouds-fade {
     transition: opacity 1.5s ease;
 }
 
@@ -244,7 +248,8 @@
     }
     .scene-astro,
     .scene-stars,
-    .scene-tint {
+    .scene-tint,
+    .scene-clouds-fade {
         transition: opacity 0.6s ease;
     }
 }

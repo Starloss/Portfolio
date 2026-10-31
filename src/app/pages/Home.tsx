@@ -77,7 +77,7 @@ export const Home: React.FC = () => {
             </main>
             {/* Al final del Viaje queda sobre la Avenida Bolívar: lleva su propia superficie. */}
             <footer className="pb-10 text-center text-xs text-ink">
-                <span className="rounded-full bg-surface px-3 py-1">
+                <span className="inline-block rounded-2xl bg-surface px-3 py-1">
                     © {currentYear()} · <ClimaCredit />
                 </span>
             </footer>

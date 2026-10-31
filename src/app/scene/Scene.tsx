@@ -232,27 +232,29 @@ export const Scene: React.FC<{ height?: number }> = ({ height }) => {
                 <ClimaTint night={night} />
                 {!night && !mobile && svg(<Macaws animate={animateDesktop} />)}
             </div>
-            {!mobile && !clear && (
-                <m.div className="scene-layer" data-layer="clouds" style={styles.clouds}>
-                    {CLOUDS.map((cloud, i) => (
-                        <div
-                            // CLOUDS es constante y nunca cambia de orden: el índice es una key estable.
-                            // eslint-disable-next-line @eslint-react/no-array-index-key
-                            key={i}
-                            className="scene-cloud"
-                            data-anim={animateDesktop ? 'drift' : undefined}
-                            style={
-                                {
-                                    left: `${cloud.left}vw`,
-                                    top: `${cloud.top}vh`,
-                                    width: `${cloud.width}vw`,
-                                    height: `${cloud.width / CLOUD_ASPECT}vw`,
-                                    '--drift': `${cloud.drift}vw`,
-                                } as React.CSSProperties
-                            }
-                        />
-                    ))}
-                </m.div>
+            {!mobile && (
+                <div className="scene-layer scene-clouds-fade" style={{ opacity: clear ? 0 : 1 }}>
+                    <m.div className="scene-layer" data-layer="clouds" style={styles.clouds}>
+                        {CLOUDS.map((cloud, i) => (
+                            <div
+                                // CLOUDS es constante y nunca cambia de orden: el índice es una key estable.
+                                // eslint-disable-next-line @eslint-react/no-array-index-key
+                                key={i}
+                                className="scene-cloud"
+                                data-anim={animateDesktop ? 'drift' : undefined}
+                                style={
+                                    {
+                                        left: `${cloud.left}vw`,
+                                        top: `${cloud.top}vh`,
+                                        width: `${cloud.width}vw`,
+                                        height: `${cloud.width / CLOUD_ASPECT}vw`,
+                                        '--drift': `${cloud.drift}vw`,
+                                    } as React.CSSProperties
+                                }
+                            />
+                        ))}
+                    </m.div>
+                </div>
             )}
             {!mobile && (
                 <m.div className="scene-layer" data-layer="far-ridge" style={styles.farRidge}>

@@ -15,8 +15,8 @@ La Escena y el Indicador muestran el Clima real de Caracas con la API gratuita d
 ## Consequences
 
 - La fuente vive en un solo módulo (`src/lib/clima.ts`) que entrega `{ estado, temperatura }`, para que cambiarla sea barato.
-- Si la API falla, queda el cielo base y el Indicador muestra solo la hora, sin error visible. Umami registra el evento técnico `clima-caida`, que es la señal para pasar al plan B.
+- Si la API falla, queda el cielo base y el Indicador muestra solo la hora, sin error visible. Si solo falla un refresco, el último Clima se mantiene hasta una hora. Umami registra el evento técnico `clima-caida`, que es la señal para pasar al plan B.
 - La atribución que pide la licencia CC BY 4.0 va en el Indicador y en el pie de página. Que eso baste es una lectura propia, no una confirmación de Open-Meteo.
-- `?clima=` sustituye al dato para pruebas y demostraciones, también en producción. No llama a la API ni envía eventos del Cielo vivo, y así CI no depende de un tercero.
+- `?clima=` sustituye al dato para pruebas y demostraciones, también en producción. No llama a la API ni envía eventos del Cielo vivo, y así CI no depende de un tercero. Con `?hora=` tampoco se registran los fallos.
 - El presupuesto de script de Lighthouse CI pasa de 155 a 157 kB, porque el Clima y el Indicador van en la carga inicial: separarlos no ahorra bytes, porque Lighthouse también cuenta los chunks diferidos.
 - El acceso desde una red venezolana no se ha comprobado.

@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test } from './test';
 
 test('una URL en inglés muestra el sitio en inglés', async ({ page }) => {
     await page.goto('/en/projects/superwallet');
@@ -9,7 +9,10 @@ test('una URL en inglés muestra el sitio en inglés', async ({ page }) => {
 
 test('el selector ES / EN lleva a la misma página en español', async ({ page }) => {
     await page.goto('/en/projects/superwallet');
-    await page.getByRole('navigation', { name: 'Language' }).getByRole('link', { name: 'ES' }).click();
+    await page
+        .getByRole('navigation', { name: 'Language' })
+        .getByRole('link', { name: 'ES' })
+        .click();
     await expect(page).toHaveURL(/\/projects\/superwallet$/);
     await expect(page.getByRole('heading', { name: 'Decisiones clave' })).toBeVisible();
 });
@@ -27,7 +30,10 @@ for (const [url, file] of [
     test(`"Descargar CV" en ${url} baja ${file}`, async ({ page }) => {
         await page.goto(url);
         const download = page.waitForEvent('download');
-        await page.getByRole('banner').getByRole('link', { name: /Descargar CV|Download CV/ }).click();
+        await page
+            .getByRole('banner')
+            .getByRole('link', { name: /Descargar CV|Download CV/ })
+            .click();
         expect((await download).suggestedFilename()).toBe(file);
     });
 }

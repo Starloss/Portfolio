@@ -34,7 +34,7 @@ describe('estadoFromCode', () => {
         expect(estadoFromCode(code)).toBe(estado);
     });
 
-    it.each([4, 50, 58, 70, 90, 100, -1, 2.5])(
+    it.each([4, 50, 58, 70, 90, 100, -1, 2.5, 54.5, 95.5])(
         'un código desconocido (%d) no da estado',
         (code) => {
             expect(estadoFromCode(code)).toBeNull();
@@ -239,13 +239,44 @@ describe('createClimaStore', () => {
         expect(track).toHaveBeenCalledWith('respuesta');
     });
 
-    it('si falla un refresco, se queda con el último Clima', async () => {
+    it('si falla un refresco, se queda con el último Clima un rato, y luego el cielo base', async () => {
         const s = store();
         s.start();
         await flush();
         fetchMock.mockImplementation(() => Promise.reject(new Error('sin red')));
-        await vi.advanceTimersByTimeAsync(30 * 60_000);
+        await vi.advanceTimersByTimeAsync(31 * 60_000);
         expect(s.getSnapshot()?.estado).toBe('lluvia');
+        await vi.advanceTimersByTimeAsync(31 * 60_000);
+        expect(s.getSnapshot()).toBeNull();
+    });
+
+    it('un dato guardado se refresca cuando cumple 30 min, no 30 min después de cargarlo', async () => {
+        window.localStorage.setItem(
+            CACHE_KEY,
+            JSON.stringify({ at: Date.now() - 29 * 60_000, estado: 'tormenta', temperatura: 1 }),
+        );
+        const s = store();
+        s.start();
+        await flush();
+        expect(s.getSnapshot()?.estado).toBe('tormenta');
+        expect(fetchMock).not.toHaveBeenCalled();
+        await vi.advanceTimersByTimeAsync(2 * 60_000);
+        expect(s.getSnapshot()?.estado).toBe('lluvia');
+    });
+
+    it('al volver a la pestaña, el siguiente refresco cuenta desde esa vuelta', async () => {
+        const hidden = vi.spyOn(document, 'hidden', 'get').mockReturnValue(true);
+        const s = store();
+        s.start();
+        await flush();
+        await vi.advanceTimersByTimeAsync(35 * 60_000);
+        hidden.mockReturnValue(false);
+        document.dispatchEvent(new Event('visibilitychange'));
+        await flush();
+        expect(fetchMock).toHaveBeenCalledTimes(2);
+        await vi.advanceTimersByTimeAsync(31 * 60_000);
+        expect(fetchMock).toHaveBeenCalledTimes(3);
+        hidden.mockRestore();
     });
 
     describe('?clima=', () => {
