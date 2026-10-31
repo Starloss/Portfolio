@@ -10,6 +10,7 @@ import { ImpactSection } from '../features/impact/ImpactSection';
 import { FeaturedProjects } from '../features/projects/FeaturedProjects';
 import { SkillsSection } from '../features/skills/SkillsSection';
 import { EscenaUpgrade } from '../scene/EscenaUpgrade';
+import { PrototypeBar } from '../scene/prototype-boveda/PrototypeBar';
 import { Scene } from '../scene/Scene';
 
 /**
@@ -65,6 +66,7 @@ export const Home: React.FC = () => {
         <>
             <Scene />
             <EscenaUpgrade />
+            <PrototypeBar />
             <MainHeader activeId={activeId} isHome />
             <main className="mx-auto max-w-[892px] space-y-[20vh] px-4 pb-[20vh] md:space-y-[35vh]">
                 <Hero />

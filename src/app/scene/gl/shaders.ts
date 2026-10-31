@@ -55,6 +55,9 @@ ${SCREEN}
 ${ATMOSPHERE}
 uniform float uSkyHigh;
 uniform vec2 uSun;
+uniform float uSunAlpha;
+uniform vec2 uStars;
+uniform float uSweep;
 
 const vec3 DAY_TOP = ${vec(DAY.skyTop, 3)};
 const vec3 DAY_BOTTOM = ${vec(DAY.skyBottom, 3)};
@@ -68,14 +71,38 @@ const vec3 DUSK_BOTTOM = vec3(1.0, 0.58, 0.36);
 void main() {
     vec2 p = screen();
     float t = p.y / uRes.y;
-    vec3 sky = mix(mix(DAY_TOP, DAY_BOTTOM, t), mix(NIGHT_TOP, NIGHT_BOTTOM, t), uNight);
+    // PROTOTIPO C: el día y la noche son dos mitades del cielo que giran, con el ocaso entre ellas.
+    float nightHere = uNight;
+    float band = 0.0;
+    if (uSweep >= 0.0) {
+        vec2 toSun = vec2(-sin(uSweep), -cos(uSweep));
+        float s = dot((p - vec2(0.5, 1.15) * uRes) / uRes.y, toSun);
+        nightHere = 1.0 - smoothstep(-0.12, 0.12, s);
+        band = exp(-(s / 0.14) * (s / 0.14));
+    }
+    vec3 sky = mix(mix(DAY_TOP, DAY_BOTTOM, t), mix(NIGHT_TOP, NIGHT_BOTTOM, t), nightHere);
     sky = mix(sky, mix(DUSK_TOP, DUSK_BOTTOM, smoothstep(0.0, 0.85, t)), uDusk * 0.85);
+    sky = mix(sky, vec3(1.0, 0.56, 0.32), band * 0.9);
+    // PROTOTIPO: estrellas que giran alrededor de un punto bajo el horizonte.
+    if (uStars.x > 0.001) {
+        float c = cos(uStars.y), sn = sin(uStars.y);
+        vec2 rel = p - vec2(0.5, 1.15) * uRes;
+        vec2 q = vec2(c * rel.x + sn * rel.y, -sn * rel.x + c * rel.y) / 64.0;
+        vec2 id = floor(q);
+        float h = hash(id);
+        vec2 at = vec2(hash(id + 1.3), hash(id + 2.7));
+        float d0 = length(fract(q) - at) * 64.0;
+        float star = step(0.76, h) * (1.0 - smoothstep(0.5, 1.5, d0));
+        float twinkle = 0.6 + 0.4 * sin(uTime * (0.8 + h * 2.0) + h * 40.0);
+        sky += star * twinkle * uStars.x * nightHere * (1.0 - smoothstep(0.55, 0.9, t));
+    }
     sky = mix(sky, mix(DAY_HIGH, NIGHT_HIGH, uNight), uSkyHigh * max(0.0, 1.0 - t / 0.75));
-    if (uDusk > 0.01) {
-        // El sol bajo (sunAt: al oeste si se pone, al este si sale), con resplandor y rayos.
+    if (uSunAlpha > 0.001) {
+        // PROTOTIPO: el sol siempre visible; blanco de día, naranja en el ocaso.
         vec2 sun = uSun * uRes;
         float d = length(p - sun) / uRes.y;
-        sky += vec3(1.0, 0.55, 0.25) * uDusk * (exp(-d * 5.0) * 0.55 + 1.0 - smoothstep(0.035, 0.04, d));
+        vec3 warm = mix(vec3(1.0, 0.93, 0.72), vec3(1.0, 0.55, 0.25), max(uDusk, band));
+        sky += warm * uSunAlpha * (exp(-d * 6.0) * 0.45 + 1.0 - smoothstep(0.033, 0.038, d));
         // Los rayos salen de la dirección desde el sol: con el ángulo (atan) habría una costura en ±π.
         vec2 dir = normalize(p - sun + 1e-4);
         float rays = noise1(dir * 0.35 + vec2(uTime * 0.004, 0.0));
@@ -92,6 +119,8 @@ out vec4 outColor;
 ${SCREEN}
 uniform float uNight;
 uniform vec3 uMoon;
+uniform float uPhase;
+uniform float uMoonAlpha;
 
 const vec3 MOON = ${vec(NIGHT_LIGHTS.moon, 3)};
 const vec3 MOON_GLOW = vec3(1.0, 0.945, 0.769);
@@ -105,7 +134,16 @@ void main() {
     z = min(z, 4.0);
     float glow = 0.45 * 0.5 * (1.0 - tanh(1.12838 * z + 0.10213 * z * z * z));
     float disc = 1.0 - smoothstep(uMoon.z - 0.75, uMoon.z + 0.75, d);
-    float a = (disc + (1.0 - disc) * glow) * uNight * step(0.0, uMoon.z - 0.5);
+    // PROTOTIPO: la fase, con el disco oscuro apenas visible.
+    float ca = cos(-0.61), sa = sin(-0.61);
+    vec2 r = (screen() - uMoon.xy) / max(uMoon.z, 1.0);
+    r = vec2(ca * r.x + sa * r.y, -sa * r.x + ca * r.y);
+    float limb = sqrt(max(0.0, 1.0 - r.y * r.y));
+    float edge = cos(6.28318 * uPhase) * limb;
+    float signedLit = uPhase <= 0.5 ? r.x - edge : -r.x - edge;
+    float lit = smoothstep(-0.03, 0.03, signedLit);
+    float litShare = sin(3.14159 * uPhase);
+    float a = (disc * (0.07 + 0.93 * lit) + (1.0 - disc) * glow * litShare) * uMoonAlpha * step(0.0, uMoon.z - 0.5);
     vec3 c = mix(MOON_GLOW, MOON, disc);
     outColor = vec4(c * a, a);
 }

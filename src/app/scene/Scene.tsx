@@ -39,6 +39,8 @@ import {
     Towers,
 } from './parts';
 import { STREET_ABOVE, streetBand, streetHeight } from './street';
+import { BovedaSvg } from './prototype-boveda/BovedaSvg';
+import { useBoveda } from './prototype-boveda/store';
 import './scene.css';
 
 const MOBILE_QUERY = '(max-width: 767px)';
@@ -199,6 +201,7 @@ export const Scene: React.FC<{ height?: number }> = ({ height }) => {
     const page = usePageLayout(journeyMode, viewport);
 
     const { sink, moon } = pageFit(viewport, page, night);
+    const boveda = useBoveda();
     const travels = journeyMode && !reduced;
     const H = streetHeight(viewport.height);
 
@@ -220,9 +223,18 @@ export const Scene: React.FC<{ height?: number }> = ({ height }) => {
                     style={{ background: skyGradient(NIGHT), opacity: night ? 1 : 0 }}
                 />
                 <m.div className="scene-layer scene-sky-high" style={styles.skyHigh} />
+                {boveda && (
+                    <BovedaSvg
+                        night={night}
+                        params={{
+                            ...boveda,
+                            minX: page?.column ? page.column.right / viewport.width : 0.5,
+                        }}
+                    />
+                )}
                 {svg(
                     <>
-                        {night && (
+                        {!boveda && night && (
                             <Stars
                                 count={mobile ? 30 : 60}
                                 groups={mobile ? 2 : 3}
@@ -232,7 +244,7 @@ export const Scene: React.FC<{ height?: number }> = ({ height }) => {
                         {!night && !mobile && <Macaws animate={animateDesktop} />}
                     </>,
                 )}
-                {night && moon && (
+                {!boveda && night && moon && (
                     <div
                         className="scene-moon scene-fade-in"
                         data-part="moon"

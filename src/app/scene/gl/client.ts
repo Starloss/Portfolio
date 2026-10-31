@@ -2,6 +2,8 @@
 // sabe aquí (scroll, medidas, tema, reloj de las animaciones de CSS). Cuando el Worker pide
 // texturas, las rasteriza de las piezas SVG y se las manda como ImageBitmap.
 import { readClocks } from './clocks';
+import type { BovedaParams } from '../prototype-boveda/sim';
+
 import type { FallbackReason, FromWorker, Layout, ToWorker } from './protocol';
 import { themeLayers } from './textures';
 
@@ -92,6 +94,10 @@ export class EscenaClient {
 
     setLayout(layout: Layout) {
         this.post({ type: 'layout', layout });
+    }
+
+    setBoveda(params: BovedaParams | null) {
+        this.post({ type: 'boveda', params });
     }
 
     setNight(night: boolean) {

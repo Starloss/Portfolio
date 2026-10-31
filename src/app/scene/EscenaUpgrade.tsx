@@ -46,6 +46,11 @@ const announce = (version: 'svg' | 'webgl', reason: string) => {
 };
 
 function decide(): Promise<Upgrade | null> {
+    // PROTOTIPO: ?escena=svg obliga a ver la versión SVG.
+    if (new URLSearchParams(window.location.search).get('escena') === 'svg') {
+        announce('svg', 'forced');
+        return Promise.resolve(null);
+    }
     decision ??= import('./gl/detect')
         .then(async ({ chooseEscena, readSignals, rememberFallback }) => {
             const choice = chooseEscena(await readSignals());

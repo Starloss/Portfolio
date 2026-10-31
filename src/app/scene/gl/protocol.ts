@@ -3,6 +3,8 @@
 // animaciones de CSS, y le rasteriza las texturas cuando las pide.
 import type { SceneFrame, Viewport } from '../camera';
 
+import type { BovedaParams } from '../prototype-boveda/sim';
+
 import type { ClockAnchor } from './frame';
 
 export type FallbackReason = 'slow' | 'context-lost' | 'init-failed';
@@ -25,6 +27,7 @@ export type ToWorker =
     | { type: 'init'; canvas: OffscreenCanvas; dpr: number; watch: boolean }
     | { type: 'layout'; layout: Layout }
     | { type: 'night'; night: boolean }
+    | { type: 'boveda'; params: BovedaParams | null }
     | { type: 'scroll'; progress: number }
     | { type: 'clocks'; anchor: ClockAnchor }
     | { type: 'pointer'; x: number }

@@ -7,6 +7,8 @@ import { sceneFrame } from '../camera';
 import { useDocumentHidden, useElementViewport, useSceneCovered } from '../environment';
 import { pageFit, usePageLayout } from '../Scene';
 
+import { useBoveda } from '../prototype-boveda/store';
+
 import { EscenaClient } from './client';
 import type { FallbackReason } from './protocol';
 
@@ -55,6 +57,16 @@ export const SceneGL: React.FC<{
             engineRef.current = null;
         };
     }, [watch]);
+
+    const boveda = useBoveda();
+    useEffect(() => {
+        engineRef.current?.setBoveda(
+            boveda && {
+                ...boveda,
+                minX: page?.column ? page.column.right / viewport.width : 0.5,
+            },
+        );
+    }, [boveda, page, viewport, watch]);
 
     // Las mismas medidas que la Escena SVG. El tema va antes que el tamaño: así se rasteriza
     // primero el tema que se ve.
