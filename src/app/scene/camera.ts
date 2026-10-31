@@ -170,36 +170,6 @@ export function mountainSink(
     return Math.max(0, needed - layerOffset('farRidge', HERO_HEIGHT, viewport.height));
 }
 
-export const MOON_SIZE = 52;
-const MOON_MARGIN = 24;
-
-/**
- * Centro de la luna (px), fuera de la columna de texto del Hero: a su derecha si hay lugar, o
- * entre la cabecera y el texto. `null` si no cabe sin tapar el texto.
- */
-export function moonPosition(
-    viewport: Viewport,
-    column: TextColumn,
-    headerBottom: number,
-): { x: number; y: number } | null {
-    const room = MOON_SIZE + 2 * MOON_MARGIN;
-    const rightSpace = viewport.width - column.right;
-    if (rightSpace >= room) {
-        return {
-            x: column.right + rightSpace / 2,
-            y: Math.max(headerBottom + MOON_MARGIN + MOON_SIZE / 2, column.top + MOON_SIZE / 2),
-        };
-    }
-    const topSpace = column.top - headerBottom;
-    if (topSpace >= room) {
-        return {
-            x: viewport.width - MOON_MARGIN - MOON_SIZE / 2,
-            y: headerBottom + topSpace / 2,
-        };
-    }
-    return null;
-}
-
 /** Punto del cable (SVG) donde va la cabina del visitante: sube con la cámara. */
 export function cabinPoint(height: number): { x: number; y: number } {
     return cablePoint(clamp(height, 0, 1));

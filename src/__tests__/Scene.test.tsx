@@ -84,9 +84,9 @@ describe('Presupuesto de la Escena', () => {
 });
 
 describe('Día y Noche', () => {
-    it('de Noche monta la luna, las estrellas, las ventanas encendidas, el halo y la baliza', () => {
+    it('de Noche monta las ventanas encendidas, el halo y la baliza', () => {
         const { has } = renderScene({ night: true });
-        for (const part of ['moon', 'stars', 'windows', 'halo', 'beacon']) {
+        for (const part of ['windows', 'halo', 'beacon']) {
             expect(has(part)).toBe(true);
         }
         expect(has('macaws')).toBe(false);
@@ -95,7 +95,7 @@ describe('Día y Noche', () => {
     it('de Día monta las guacamayas y nada de lo exclusivo de Noche', () => {
         const { has } = renderScene();
         expect(has('macaws')).toBe(true);
-        for (const part of ['moon', 'stars', 'windows', 'halo', 'beacon']) {
+        for (const part of ['windows', 'halo', 'beacon']) {
             expect(has(part)).toBe(false);
         }
     });

@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { sky } from '@app/scene/sky';
 
 // El script inline de index.html: el tema tiene que estar puesto antes del primer pintado. Sus
 // constantes: .1819 y .9833 son el seno y el coseno de la latitud de Caracas (10,4806°), −66,9036 su
@@ -50,6 +51,17 @@ describe('tema inicial', () => {
     ])('sigue al sol de Caracas: %s', (_, utc, dark) => {
         load(utc);
         expect(isDark()).toBe(dark);
+    });
+
+    it('coincide con el sol del Cielo vivo a lo largo del año', () => {
+        // Horas repartidas por todo un año, lejos del borde exacto: la misma regla en los dos lados.
+        for (let i = 0; i < 400; i++) {
+            const at = Date.UTC(2026, 10, 1) + i * 22 * 3600e3;
+            const alt = sky(at).sun.alt;
+            if (Math.abs(alt + 0.833) < 0.1) continue;
+            load(new Date(at).toISOString());
+            expect(root.dataset.temaHora).toBe(alt > -0.833 ? 'light' : 'dark');
+        }
     });
 
     it('la preferencia del sistema no cuenta', () => {
@@ -111,7 +123,7 @@ describe('tema inicial', () => {
 
         it('deja anotado que la hora está forzada', () => {
             load('2026-10-31T16:00:00Z', '?hora=22:00');
-            expect(root.dataset.horaForzada).toBeDefined();
+            expect(Number(root.dataset.horaForzada)).toBe(Date.parse('2026-11-01T02:00:00Z'));
         });
 
         it.each(['25:00', '12:60', '9:00', 'mediodia', '12', ''])(

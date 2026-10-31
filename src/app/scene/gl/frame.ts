@@ -37,7 +37,6 @@ export function cubicBezier(x1: number, y1: number, x2: number, y2: number) {
 }
 
 export const cssEaseInOut = cubicBezier(0.42, 0, 0.58, 1);
-export const cssEase = cubicBezier(0.25, 0.1, 0.25, 1);
 
 /** Fracción (0 a 1) de una animación infinita de `duration` s; `alternate` va y vuelve. */
 export function loopAt(time: number, duration: number, alternate: boolean): number {
@@ -66,7 +65,6 @@ const MACAW_SWING = { x: -40, y: -12 };
 export interface Clocks {
     cabins: number;
     macaws: number;
-    twinkle: number;
 }
 
 /** Los relojes de CSS en un instante (ms desde el epoch): el Worker los avanza con el suyo. */
@@ -80,25 +78,7 @@ export function advanceClocks({ at, clocks }: ClockAnchor, now: number): Clocks 
     return {
         cabins: clocks.cabins + elapsed,
         macaws: clocks.macaws + elapsed,
-        twinkle: clocks.twinkle + elapsed,
     };
-}
-
-/**
- * Cuánto se ve el atardecer o el amanecer según el avance del cambio de tema (0 Día, 1 Noche): nada
- * en los extremos, todo a la mitad. El ×1,15 lo satura un poco antes, así el momento dorado dura.
- */
-export function duskAt(night: number): number {
-    return Math.min(1, 4 * night * (1 - night) * 1.15);
-}
-
-/**
- * Dónde está el sol en el cambio de tema, como fracción de la pantalla. Mirando al Ávila (al norte),
- * se pone a la izquierda, al oeste, al pasar a Noche, y sale a la derecha, al este, al volver al
- * Día. En los dos casos está más bajo cuanto más cerca de la Noche.
- */
-export function sunAt(night: number, setting: boolean): { x: number; y: number } {
-    return { x: setting ? 0.12 : 0.88, y: 0.48 + 0.24 * night };
 }
 
 /** El puntero en x, de -1 (izquierda) a 1, seguido con suavidad: nunca salta ni se pasa. */
@@ -204,7 +184,6 @@ export function escenaFrame({ progress, sink, viewport, frame, clocks, pointer }
         /** Las dos cabinas que van y vienen y, al final, la del visitante. */
         cabins: [...moving, visitor],
         macaws: { x: macaws.x * frame.scale + parallax.sky, y: macaws.y * frame.scale },
-        twinkle: clocks.twinkle,
         parallax,
         /** La franja de la Avenida Bolívar (street.ts): su borde de arriba y su alto, en px. */
         street: {

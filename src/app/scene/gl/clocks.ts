@@ -13,6 +13,5 @@ export function readClocks(fallback: number): Clocks {
     return {
         cabins: cssClock('cabin') ?? fallback,
         macaws: cssClock('macaws') ?? fallback,
-        twinkle: cssClock('twinkle') ?? fallback,
     };
 }

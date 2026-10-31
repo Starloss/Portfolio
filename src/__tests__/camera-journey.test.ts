@@ -8,7 +8,6 @@ import {
     heroSink,
     layerOffset,
     layerShift,
-    moonPosition,
     mountainSink,
     sceneFrame,
     toScreen,
@@ -159,26 +158,6 @@ describe('Hundimiento del paisaje según el alto del Hero', () => {
         const viewport = { width: 1366, height: 700 };
         const column = { left: 400, right: 966, top: 100, bottom: 330 };
         expect(heroSink(viewport, column, skyline)).toBeCloseTo(158.25, 3);
-    });
-});
-
-describe('Luna fuera de la columna de texto del Hero', () => {
-    it('va a la derecha de la columna cuando hay lugar', () => {
-        const viewport = { width: 1440, height: 900 };
-        const column = { left: 432, right: 1008, top: 120, bottom: 330 };
-        expect(moonPosition(viewport, column, 64)).toEqual({ x: 1224, y: 146 });
-    });
-
-    it('va entre la cabecera y el texto si no hay lugar a los lados', () => {
-        const viewport = { width: 600, height: 900 };
-        const column = { left: 40, right: 560, top: 260, bottom: 520 };
-        expect(moonPosition(viewport, column, 64)).toEqual({ x: 550, y: 162 });
-    });
-
-    it('no se dibuja si no cabe sin tapar el texto', () => {
-        const viewport = { width: 390, height: 844 };
-        const column = { left: 20, right: 370, top: 104, bottom: 420 };
-        expect(moonPosition(viewport, column, 64)).toBeNull();
     });
 });
 

@@ -13,8 +13,6 @@ import {
     cloudsAt,
     HERO_HEIGHT,
     layerShift,
-    MOON_SIZE,
-    moonPosition,
     mountainSink,
     sceneFrame,
     SKY_DARKENING,
@@ -25,7 +23,8 @@ import {
 } from './camera';
 import { useDocumentHidden, useElementViewport, useSceneCovered } from './environment';
 import { skyline } from './geometry';
-import { DAY, NIGHT, NIGHT_LIGHTS, paletteVars, VARS } from './palette';
+import { DAY, NIGHT, paletteVars, VARS } from './palette';
+import { BovedaCeleste } from './BovedaCeleste';
 import {
     Avenue,
     Avila,
@@ -35,10 +34,10 @@ import {
     HaloGradient,
     LampGradient,
     Macaws,
-    Stars,
     Towers,
 } from './parts';
 import { STREET_ABOVE, streetBand, streetHeight } from './street';
+import { skyLayout } from './vault';
 import './scene.css';
 
 const MOBILE_QUERY = '(max-width: 767px)';
@@ -127,8 +126,9 @@ interface PageLayout {
     headerBottom: number;
 }
 
-// Mide en coordenadas del documento la columna de texto del Hero hasta la línea de ubicación y el
-// borde inferior de la cabecera: de ellos dependen el hundimiento de la montaña y la luna.
+// Mide en coordenadas del documento la columna de texto del Hero hasta la línea de ubicación, y el
+// borde inferior de la cabecera, que va pegada arriba: de ellos dependen el hundimiento de la
+// montaña y el arco del sol y la luna.
 function measurePage(): PageLayout {
     const y = window.scrollY;
     const text = document.querySelector('[data-hero-text]')?.getBoundingClientRect();
@@ -138,7 +138,7 @@ function measurePage(): PageLayout {
             text && text.width > 0
                 ? { left: text.left, right: text.right, top: text.top + y, bottom: text.bottom + y }
                 : null,
-        headerBottom: header ? header.bottom + y : 0,
+        headerBottom: header ? header.bottom : 0,
     };
 }
 
@@ -165,15 +165,13 @@ export function usePageLayout(enabled: boolean, viewport: Viewport): PageLayout 
 }
 
 /**
- * Lo que la Escena ajusta a la página: cuánto hundir la montaña en el Hero y dónde va la luna. Lo
- * comparten la Escena SVG y la WebGL.
+ * Lo que la Escena ajusta a la página: cuánto hundir la montaña en el Hero y por dónde pasa el arco
+ * del sol y la luna. Lo comparten la Escena SVG y la WebGL.
  */
 export function pageFit(viewport: Viewport, page: PageLayout | null, night: boolean) {
     return {
         sink: page?.column ? mountainSink(viewport, page.column, skyline(night)) : 0,
-        moon: page?.column
-            ? moonPosition(viewport, page.column, page.headerBottom)
-            : { x: viewport.width - 90, y: 140 },
+        sky: skyLayout(viewport, page),
     };
 }
 
@@ -198,7 +196,7 @@ export const Scene: React.FC<{ height?: number }> = ({ height }) => {
     const journeyMode = height === undefined;
     const page = usePageLayout(journeyMode, viewport);
 
-    const { sink, moon } = pageFit(viewport, page, night);
+    const { sink, sky } = pageFit(viewport, page, night);
     const travels = journeyMode && !reduced;
     const H = streetHeight(viewport.height);
 
@@ -220,31 +218,14 @@ export const Scene: React.FC<{ height?: number }> = ({ height }) => {
                     style={{ background: skyGradient(NIGHT), opacity: night ? 1 : 0 }}
                 />
                 <m.div className="scene-layer scene-sky-high" style={styles.skyHigh} />
-                {svg(
-                    <>
-                        {night && (
-                            <Stars
-                                count={mobile ? 30 : 60}
-                                groups={mobile ? 2 : 3}
-                                animate={animate}
-                            />
-                        )}
-                        {!night && !mobile && <Macaws animate={animateDesktop} />}
-                    </>,
-                )}
-                {night && moon && (
-                    <div
-                        className="scene-moon scene-fade-in"
-                        data-part="moon"
-                        style={{
-                            left: moon.x - MOON_SIZE / 2,
-                            top: moon.y - MOON_SIZE / 2,
-                            width: MOON_SIZE,
-                            height: MOON_SIZE,
-                            background: NIGHT_LIGHTS.moon,
-                        }}
-                    />
-                )}
+                <BovedaCeleste
+                    night={night}
+                    layout={sky}
+                    viewport={viewport}
+                    animate={animate}
+                    twinkleGroups={mobile ? 2 : 3}
+                />
+                {!night && !mobile && svg(<Macaws animate={animateDesktop} />)}
             </div>
             {!mobile && (
                 <m.div className="scene-layer" data-layer="clouds" style={styles.clouds}>
