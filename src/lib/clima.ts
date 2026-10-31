@@ -216,20 +216,17 @@ export const caracasNow = () => Number(document.documentElement.dataset.horaForz
 export function useCaracasClock(): CaracasClock {
     const [clock, setClock] = useState(() => caracasClock(caracasNow()));
     useEffect(() => {
-        const tick = () => setClock(caracasClock(caracasNow()));
-        let interval = 0;
-        const timeout = window.setTimeout(
-            () => {
-                tick();
-                interval = window.setInterval(tick, 60_000);
-            },
-            60_000 - (Date.now() % 60_000),
-        );
-        // Con la pestaña oculta, el navegador retrasa los temporizadores.
+        let timer = 0;
+        const tick = () => {
+            setClock(caracasClock(caracasNow()));
+            window.clearTimeout(timer);
+            timer = window.setTimeout(tick, 60_000 - (Date.now() % 60_000));
+        };
+        timer = window.setTimeout(tick, 60_000 - (Date.now() % 60_000));
+        // Con la pestaña oculta, el navegador retrasa los temporizadores: al volver, se realinea.
         document.addEventListener('visibilitychange', tick);
         return () => {
-            window.clearTimeout(timeout);
-            window.clearInterval(interval);
+            window.clearTimeout(timer);
             document.removeEventListener('visibilitychange', tick);
         };
     }, []);

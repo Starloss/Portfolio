@@ -106,6 +106,18 @@ describe('useCaracasClock', () => {
         });
         expect(result.current).toEqual({ hour: 12, minute: 20 });
     });
+
+    it('al volver a la pestaña se realinea con el siguiente minuto', () => {
+        const { result } = renderHook(() => useCaracasClock());
+        vi.setSystemTime(Date.parse('2026-10-31T16:20:50Z'));
+        act(() => {
+            document.dispatchEvent(new Event('visibilitychange'));
+        });
+        act(() => {
+            vi.advanceTimersByTime(10_000);
+        });
+        expect(result.current).toEqual({ hour: 12, minute: 21 });
+    });
 });
 
 describe('la temperatura', () => {
