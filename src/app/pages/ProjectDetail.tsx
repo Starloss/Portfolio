@@ -97,8 +97,11 @@ const CaseStudyPage: React.FC<{ project: ResolvedProject }> = ({ project }) => {
                     <Story project={project} />
                 </div>
             </main>
+            {/* Va sobre la Escena, y en pantallas angostas el crédito ocupa varias líneas. */}
             <footer className="pb-10 text-center text-xs text-ink">
-                © {currentYear()} · <ClimaCredit />
+                <span className="inline-block rounded-2xl bg-surface px-3 py-1">
+                    © {currentYear()} · <ClimaCredit />
+                </span>
             </footer>
         </>
     );

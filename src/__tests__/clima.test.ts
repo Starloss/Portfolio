@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { act, renderHook } from '@testing-library/react';
 import type { ClimaFailure } from '@lib/analytics';
 import {
     caracasClock,
@@ -6,6 +7,7 @@ import {
     estadoFromCode,
     formatHour,
     formatTemperature,
+    useCaracasClock,
 } from '@lib/clima';
 
 describe('estadoFromCode', () => {
@@ -70,6 +72,39 @@ describe('la hora de Caracas', () => {
         expect(formatHour({ hour: 18, minute: 41 }, 'en')).toBe('6:41 PM');
         expect(formatHour({ hour: 0, minute: 5 }, 'en')).toBe('12:05 AM');
         expect(formatHour({ hour: 12, minute: 0 }, 'en')).toBe('12:00 PM');
+    });
+});
+
+describe('useCaracasClock', () => {
+    beforeEach(() => {
+        vi.useFakeTimers();
+        vi.setSystemTime(Date.parse('2026-10-31T16:00:30Z'));
+    });
+
+    afterEach(() => {
+        vi.useRealTimers();
+    });
+
+    it('cambia justo al cambiar el minuto, y después cada minuto', () => {
+        const { result } = renderHook(() => useCaracasClock());
+        expect(result.current).toEqual({ hour: 12, minute: 0 });
+        act(() => {
+            vi.advanceTimersByTime(30_000);
+        });
+        expect(result.current).toEqual({ hour: 12, minute: 1 });
+        act(() => {
+            vi.advanceTimersByTime(60_000);
+        });
+        expect(result.current).toEqual({ hour: 12, minute: 2 });
+    });
+
+    it('al volver a la pestaña se pone al día, sin esperar al temporizador', () => {
+        const { result } = renderHook(() => useCaracasClock());
+        vi.setSystemTime(Date.parse('2026-10-31T16:20:00Z'));
+        act(() => {
+            document.dispatchEvent(new Event('visibilitychange'));
+        });
+        expect(result.current).toEqual({ hour: 12, minute: 20 });
     });
 });
 

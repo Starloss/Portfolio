@@ -20,3 +20,4 @@ La Escena y el Indicador muestran el Clima real de Caracas con la API gratuita d
 - `?clima=` sustituye al dato para pruebas y demostraciones, también en producción. No llama a la API ni envía eventos del Cielo vivo, y así CI no depende de un tercero. Con `?hora=` tampoco se registran los fallos.
 - El presupuesto de script de Lighthouse CI pasa de 155 a 157 kB, porque el Clima y el Indicador van en la carga inicial: separarlos no ahorra bytes, porque Lighthouse también cuenta los chunks diferidos.
 - El acceso desde una red venezolana no se ha comprobado.
+- Como la llamada sale del navegador, Open-Meteo recibe la dirección IP y los encabezados HTTP de cada visitante. La consulta usa coordenadas fijas de Caracas y no pide la geolocalización del navegador.

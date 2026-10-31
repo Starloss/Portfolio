@@ -212,7 +212,7 @@ export function caracasClock(ms: number): CaracasClock {
 /** El instante de Caracas: el que forzó ?hora= (lo deja el script de index.html) o el reloj. */
 export const caracasNow = () => Number(document.documentElement.dataset.horaForzada) || Date.now();
 
-/** La hora de Caracas ahora: cambia justo al cambiar el minuto. */
+/** La hora de Caracas ahora: cambia justo al cambiar el minuto, y al volver a la pestaña. */
 export function useCaracasClock(): CaracasClock {
     const [clock, setClock] = useState(() => caracasClock(caracasNow()));
     useEffect(() => {
@@ -225,9 +225,12 @@ export function useCaracasClock(): CaracasClock {
             },
             60_000 - (Date.now() % 60_000),
         );
+        // Con la pestaña oculta, el navegador retrasa los temporizadores.
+        document.addEventListener('visibilitychange', tick);
         return () => {
             window.clearTimeout(timeout);
             window.clearInterval(interval);
+            document.removeEventListener('visibilitychange', tick);
         };
     }, []);
     return clock;
