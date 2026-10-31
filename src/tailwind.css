@@ -53,8 +53,12 @@
         descent-override: 27.1%;
         line-gap-override: 0%;
     }
+    /* Sigue al tema del sitio, no al sistema (ADR 0004). */
     :root {
-        color-scheme: light dark;
+        color-scheme: light;
+    }
+    :root.dark {
+        color-scheme: dark;
     }
     /* El fondo de la página es el cielo de la Escena: así los bloques se evalúan contra lo real. */
     html {

@@ -3,6 +3,8 @@
     <head>
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width,initial-scale=1" />
+        <!-- Tema inicial (docs/adr/0004): la elección de la visita o, si no hay, si el sol está sobre Caracas. Inline, para que esté antes del primer pintado. ?hora=HH:MM sustituye al reloj. -->
+        <script>(function(){var d=document.documentElement,o=144e5,D=864e5,t=Date.now(),m=/^([01]?\d|2[0-3]):([0-5]\d)$/.exec(new URLSearchParams(location.search).get("hora")||""),c;if(m)t=Math.floor((t-o)/D)*D+(m[1]*60+ +m[2])*6e4+o;var R=Math.PI/180,n=t/D-10957.5,g=(357.528+.9856003*n)*R,l=(280.46+.9856474*n)*R+.0334*Math.sin(g)+35e-5*Math.sin(2*g),s=Math.asin(.3978*Math.sin(l)),h=.1819*Math.sin(s)+.9833*Math.cos(s)*Math.cos((280.46062+360.98564737*n-66.9036)*R-Math.atan2(.9175*Math.sin(l),Math.cos(l)))>-.01454?"light":"dark";d.dataset.temaHora=h;try{c=sessionStorage.getItem("tema-elegido")}catch(e){}if((c=="dark"||c=="light"?c:h)=="dark")d.classList.add("dark")})()</script>
         <title>Diego Rangel · Full-Stack Lead Developer</title>
         <meta name="description" content="Lidero equipos que construyen productos web y móviles rápidos, escalables y medibles. Caracas, Venezuela · Remoto." />
         <link rel="icon" type="image/svg+xml" href="/favicon.svg" />

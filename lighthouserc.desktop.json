@@ -4,7 +4,7 @@
       "staticDistDir": "./dist",
       "isSinglePageApplication": true,
       "numberOfRuns": 3,
-      "url": ["http://localhost/?escena=webgl"],
+      "url": ["http://localhost/?escena=webgl&hora=12:00"],
       "settings": {
         "preset": "desktop",
         "chromeFlags": "--use-angle=swiftshader --enable-unsafe-swiftshader"

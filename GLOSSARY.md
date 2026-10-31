@@ -80,7 +80,7 @@ Un elemento reconocible de Caracas dentro de la Escena: El Ávila, el Hotel Humb
 _Avoid_: edificio, landmark
 
 **Día** / **Noche**:
-Los dos estados de la Escena. Siguen siempre el tema claro u oscuro que elige el visitante; el paso de uno a otro es un atardecer o un amanecer.
+Los dos estados de la Escena. Siguen siempre el tema claro u oscuro del sitio: lo que elija el visitante durante esa visita o, si no eligió, lo que corresponda a la hora de Caracas al cargar la página. El paso de uno a otro es un atardecer o un amanecer.
 _Avoid_: light mode, dark mode (al hablar de la Escena)
 
 **Viaje de cámara**:

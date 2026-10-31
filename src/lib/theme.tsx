@@ -1,44 +1,52 @@
 import React, { createContext, use, useEffect, useState, useCallback } from 'react';
+import { trackTemaElegido } from '@lib/analytics';
+
+type Theme = 'light' | 'dark';
 
 interface ThemeContextValue {
-    theme: 'light' | 'dark';
+    theme: Theme;
     toggleTheme: () => void;
 }
 
 const ThemeContext = createContext<ThemeContextValue | null>(null);
 
-function getInitialTheme(): 'light' | 'dark' {
-    if (typeof window === 'undefined') return 'dark';
+// El script inline de index.html pone el tema antes del primer pintado y anota en <html> cuál
+// corresponde a la hora de Caracas; aquí solo se lee (docs/adr/0004).
+const CHOICE_KEY = 'tema-elegido';
+
+const getInitialTheme = (): Theme =>
+    document.documentElement.classList.contains('dark') ? 'dark' : 'light';
+
+// Una URL con hora o Clima forzados es una prueba o una demostración: no se cuenta.
+const isForced = () => {
+    const query = new URLSearchParams(window.location.search);
+    return query.has('hora') || query.has('clima');
+};
+
+/** Guarda la elección de esta visita; volver al tema de la hora la borra, y no se cuenta. */
+function rememberChoice(theme: Theme) {
+    const matchesHour = theme === document.documentElement.dataset.temaHora;
     try {
-        const stored = window.localStorage.getItem('theme');
-        if (stored === 'light' || stored === 'dark') return stored;
+        if (matchesHour) window.sessionStorage.removeItem(CHOICE_KEY);
+        else window.sessionStorage.setItem(CHOICE_KEY, theme);
     } catch {
         /* ignore */
     }
-    if (typeof window.matchMedia !== 'function') return 'dark';
-    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    if (!matchesHour && !isForced()) trackTemaElegido(theme);
 }
 
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-    const [theme, setTheme] = useState<'light' | 'dark'>(getInitialTheme);
+    const [theme, setTheme] = useState<Theme>(getInitialTheme);
 
     useEffect(() => {
-        const root = document.documentElement;
-        if (theme === 'dark') {
-            root.classList.add('dark');
-        } else {
-            root.classList.remove('dark');
-        }
-        try {
-            window.localStorage.setItem('theme', theme);
-        } catch {
-            /* ignore */
-        }
+        document.documentElement.classList.toggle('dark', theme === 'dark');
     }, [theme]);
 
     const toggleTheme = useCallback(() => {
-        setTheme((t) => (t === 'dark' ? 'light' : 'dark'));
-    }, []);
+        const next = theme === 'dark' ? 'light' : 'dark';
+        setTheme(next);
+        rememberChoice(next);
+    }, [theme]);
 
     return <ThemeContext value={{ theme, toggleTheme }}>{children}</ThemeContext>;
 };

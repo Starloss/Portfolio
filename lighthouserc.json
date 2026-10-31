@@ -5,11 +5,11 @@
       "isSinglePageApplication": true,
       "numberOfRuns": 5,
       "url": [
-        "http://localhost/",
-        "http://localhost/en/",
-        "http://localhost/projects/superwallet",
-        "http://localhost/projects/be-booking-engine",
-        "http://localhost/projects/wedding-invitation"
+        "http://localhost/?hora=12:00",
+        "http://localhost/en/?hora=12:00",
+        "http://localhost/projects/superwallet?hora=12:00",
+        "http://localhost/projects/be-booking-engine?hora=12:00",
+        "http://localhost/projects/wedding-invitation?hora=12:00"
       ]
     },
     "assert": {

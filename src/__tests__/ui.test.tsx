@@ -69,35 +69,6 @@ describe('ThemeProvider toggling y persistencia', () => {
             expect(root.classList.contains('dark')).toBe(false);
         }
     });
-    it('ignora valor inválido en localStorage y cae a media query', () => {
-        window.localStorage.setItem('theme', 'weird');
-        // @ts-expect-error mock
-        window.matchMedia = () => ({ matches: true });
-        const Consumer: React.FC = () => {
-            const { theme } = useTheme();
-            return <span data-testid="th2">{theme}</span>;
-        };
-        render(
-            <ThemeProvider>
-                <Consumer />
-            </ThemeProvider>,
-        );
-        expect(screen.getByTestId('th2').textContent).toBe('dark');
-    });
-    it('cubre rama sin matchMedia', () => {
-        // @ts-expect-error delete
-        delete window.matchMedia;
-        const Consumer: React.FC = () => {
-            const { theme } = useTheme();
-            return <span data-testid="th3">{theme}</span>;
-        };
-        render(
-            <ThemeProvider>
-                <Consumer />
-            </ThemeProvider>,
-        );
-        expect(screen.getByTestId('th3').textContent).toBe('dark');
-    });
 });
 
 describe('i18n fallback', () => {
