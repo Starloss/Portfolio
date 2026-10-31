@@ -48,26 +48,33 @@ export const BovedaCeleste: React.FC<{
     useLayoutEffect(() => {
         if (wasNightRef.current === night) return;
         wasNightRef.current = night;
+        // Si cambia en pleno giro, vuelve por el mismo camino: así nada salta.
+        const turning = runningRef.current.filter((a) => a.playState === 'running');
+        if (turning.length > 0) {
+            turning.forEach((animation) => animation.reverse());
+            return;
+        }
         const { sky: now, layout: l, viewport: v, animate: on } = liveRef.current;
-        // Si cambia en pleno giro, sigue desde el punto equivalente.
-        const previous = runningRef.current[0];
-        const elapsed =
-            previous?.playState === 'running' ? Number(previous.currentTime) || 0 : DURATION;
-        runningRef.current.forEach((animation) => animation.cancel());
-        runningRef.current = [];
         if (!on) return;
         const keys = bovedaKeyframes(night, restOf(now, night), restOf(now, !night), l, v);
-        const play = (el: Element | null, frames: Keyframe[]) => {
-            if (!el || typeof el.animate !== 'function') return;
-            const animation = el.animate(frames, { duration: DURATION, easing: 'linear' });
-            animation.currentTime = DURATION - elapsed;
-            runningRef.current.push(animation);
-        };
-        play(sunRef.current, keys.sun);
-        play(moonRef.current, keys.moon);
-        play(starsRef.current, keys.stars);
-        play(sweepRef.current, keys.sweep);
+        const play = (el: Element | null, frames: Keyframe[]) =>
+            typeof el?.animate === 'function'
+                ? [el.animate(frames, { duration: DURATION, easing: 'linear' })]
+                : [];
+        runningRef.current = [
+            ...play(sunRef.current, keys.sun),
+            ...play(moonRef.current, keys.moon),
+            ...play(starsRef.current, keys.stars),
+            ...play(sweepRef.current, keys.sweep),
+        ];
     }, [night]);
+
+    // Si pide menos movimiento en pleno giro, se corta.
+    useLayoutEffect(() => {
+        if (animate) return;
+        runningRef.current.forEach((animation) => animation.cancel());
+        runningRef.current = [];
+    }, [animate]);
 
     const { size } = layout;
     const pivot = { left: viewport.width * PIVOT.x, top: viewport.height * PIVOT.y };

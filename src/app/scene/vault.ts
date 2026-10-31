@@ -1,9 +1,7 @@
-// El Cielo vivo como funciones puras: dónde están el sol y la luna y cómo gira la Bóveda celeste. Lo
-// comparten la Escena SVG, que lo vuelve keyframes, y la Escena WebGL, que lo calcula en cada cuadro.
+// El Cielo vivo, sin nada del navegador: dónde están el sol y la luna y cómo gira la Bóveda celeste.
+// Lo comparten la Escena SVG, que lo vuelve keyframes, y la Escena WebGL, que lo calcula en cada cuadro.
 import type { Viewport } from './camera';
 import type { Sky } from './sky';
-
-export type SkyState = Sky;
 
 /** Cuánto dura la Bóveda celeste: la UI cambia a la mitad y los colores del paisaje la acompañan. */
 export const BOVEDA_SECONDS = 3.6;
@@ -61,8 +59,9 @@ const clamp01 = (v: number) => Math.min(1, Math.max(0, v));
 const smoothstep = (t: number) => t * t * (3 - 2 * t);
 const ease = (t: number) => t * t * t * (t * (6 * t - 15) + 10);
 
-/** El avance por el arco según el ángulo horario: 0 al salir, 0,5 en el meridiano, 1 al ponerse. */
-export const arcFraction = (hour: number) => (hour + 90) / 180;
+/** El avance real por el arco: 0 al salir, 0,5 en el meridiano, 1 al ponerse, sea cual sea el día. */
+export const arcFraction = ({ hour, halfArc }: { hour: number; halfArc: number }) =>
+    0.5 + hour / (2 * halfArc);
 
 /** Dónde queda un astro, como fracción de la pantalla. Fuera de 0 a 1 sigue bajo el horizonte. */
 export function arcPoint(f: number, layout: SkyLayout) {
@@ -97,21 +96,21 @@ const SUNSET_ALT = -0.833;
  * Dónde descansan el sol y la luna con un tema. Si coincide con la hora de Caracas, en su posición
  * real; si no, en una fija. La Noche no tiene luna si todavía no salió.
  */
-export function restOf({ sun, moon }: SkyState, night: boolean): Rest {
+export function restOf({ sun, moon }: Sky, night: boolean): Rest {
     const sunUp = sun.alt > SUNSET_ALT;
     const moonUp = moon.alt > 0;
     const phase = { fraction: moon.fraction, tilt: moon.tilt };
     if (night) {
         return {
-            sun: { f: arcFraction(sun.hour), visible: false },
+            sun: { f: arcFraction(sun), visible: false },
             moon: sunUp
                 ? { f: FIXED_F, visible: true, ...phase }
-                : { f: arcFraction(moon.hour), visible: moonUp, ...phase },
+                : { f: arcFraction(moon), visible: moonUp, ...phase },
         };
     }
     return {
-        sun: sunUp ? { f: arcFraction(sun.hour), visible: true } : { f: FIXED_F, visible: true },
-        moon: { f: arcFraction(moon.hour), visible: false, ...phase },
+        sun: sunUp ? { f: arcFraction(sun), visible: true } : { f: FIXED_F, visible: true },
+        moon: { f: arcFraction(moon), visible: false, ...phase },
     };
 }
 
@@ -163,30 +162,44 @@ const FOLLOW_RATE = 1.5;
 /** El reloj de la Bóveda celeste para quien dibuja cuadro a cuadro: la Escena WebGL. */
 export class BovedaClock {
     private toNight = false;
-    private start: number | null = null;
+    // El giro en curso: su sentido, y dónde iba (`t`) en qué momento (`at`). Si se revierte, sigue
+    // por el mismo camino hacia atrás: así nada salta.
+    private turn: { toNight: boolean; t: number; at: number; forward: boolean } | null = null;
     private last: number | null = null;
     private follow: { sun: number; moon: number } | null = null;
 
     constructor(private seconds: number) {}
 
+    private progress(now: number) {
+        if (!this.turn) return 1;
+        const { t, at, forward } = this.turn;
+        const elapsed = (now - at) / (this.seconds * 1000);
+        return clamp01(forward ? t + elapsed : t - elapsed);
+    }
+
     /** El tema de entrada, sin giro. */
     set(night: boolean) {
         this.toNight = night;
-        this.start = null;
+        this.turn = null;
     }
 
-    /** Cambia de tema: si llega en pleno giro, sigue desde el punto equivalente. */
+    /** Cambia de tema: si llega en pleno giro, vuelve por donde venía. */
     change(night: boolean, now: number) {
         if (night === this.toNight) return;
         this.toNight = night;
-        const duration = this.seconds * 1000;
-        const done = this.start === null ? 1 : clamp01((now - this.start) / duration);
-        this.start = now - (1 - done) * duration;
+        this.turn = this.turn
+            ? {
+                  toNight: this.turn.toNight,
+                  t: this.progress(now),
+                  at: now,
+                  forward: !this.turn.forward,
+              }
+            : { toNight: night, t: 0, at: now, forward: true };
     }
 
     /** Si está en pleno giro: con una GPU por software solo se dibuja cuando algo cambia. */
     get turning() {
-        return this.start !== null;
+        return this.turn !== null;
     }
 
     /** `target` es el reposo del tema actual; `origin`, el del otro. */
@@ -204,13 +217,18 @@ export class BovedaClock {
             : { sun: day.sun.f, moon: dark.moon.f };
         const smoothDay = { ...day, sun: { ...day.sun, f: this.follow.sun } };
         const smoothDark = { ...dark, moon: { ...dark.moon, f: this.follow.moon } };
-        const t = this.start === null ? 1 : clamp01((now - this.start) / (this.seconds * 1000));
-        if (t >= 1) this.start = null;
-        const frame = this.toNight
-            ? bovedaAt(true, t, smoothDark, smoothDay)
-            : bovedaAt(false, t, smoothDay, smoothDark);
-        if (t < 1) return frame;
+
+        const t = this.progress(now);
+        if (this.turn && (this.turn.forward ? t < 1 : t > 0)) {
+            return this.turn.toNight
+                ? bovedaAt(true, t, smoothDark, smoothDay)
+                : bovedaAt(false, t, smoothDay, smoothDark);
+        }
+        this.turn = null;
         // En reposo: sin franja, y solo se ve el astro del tema, en su lugar.
+        const frame = this.toNight
+            ? bovedaAt(true, 1, smoothDark, smoothDay)
+            : bovedaAt(false, 1, smoothDay, smoothDark);
         return {
             ...frame,
             sweep: -1,
@@ -249,7 +267,8 @@ export function starField({ width, height }: Viewport, groups: number): string[]
     const paths = Array.from({ length: groups }, () => '');
     for (let i = 0; i < STAR_COUNT; i++) {
         const angle = -half + ((i * GOLDEN) % 1) * 2 * half;
-        const r = lerp(near, far, (i + 0.5) / STAR_COUNT);
+        // La raíz las reparte parejas por área: si no, se acumulan cerca del pivote, abajo.
+        const r = lerp(near, far, Math.sqrt((i + 0.5) / STAR_COUNT));
         const x = Math.round(Math.sin(angle) * r);
         const y = Math.round(-Math.cos(angle) * r);
         paths[i % groups] += `M${x} ${y}h0`;
@@ -270,11 +289,7 @@ export function bovedaKeyframes(
     const frames = Array.from({ length: KEYFRAMES + 1 }, (_, i) =>
         bovedaAt(toNight, i / KEYFRAMES, target, origin),
     );
-    const place = (f: number) => {
-        const { x, y } = arcPoint(f, layout);
-        const px = (v: number, size: number) => (v * size - layout.size / 2).toFixed(1);
-        return `translate(${px(x, viewport.width)}px, ${px(y, viewport.height)}px)`;
-    };
+    const place = (f: number) => restTransform(f, layout, viewport);
     return {
         sun: frames.map((f) => ({ transform: place(f.sun.f), opacity: f.sun.alpha })),
         moon: frames.map((f) => ({ transform: place(f.moon.f), opacity: f.moon.alpha })),
@@ -290,7 +305,7 @@ export function bovedaKeyframes(
     };
 }
 
-/** La posición de reposo de un astro, como `transform`. */
+/** Dónde queda un astro en un punto del arco, como `transform`. */
 export function restTransform(f: number, layout: SkyLayout, viewport: Viewport) {
     const { x, y } = arcPoint(f, layout);
     const left = x * viewport.width - layout.size / 2;

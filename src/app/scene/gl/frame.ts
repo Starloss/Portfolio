@@ -37,7 +37,6 @@ export function cubicBezier(x1: number, y1: number, x2: number, y2: number) {
 }
 
 export const cssEaseInOut = cubicBezier(0.42, 0, 0.58, 1);
-export const cssEase = cubicBezier(0.25, 0.1, 0.25, 1);
 
 /** Fracción (0 a 1) de una animación infinita de `duration` s; `alternate` va y vuelve. */
 export function loopAt(time: number, duration: number, alternate: boolean): number {

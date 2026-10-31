@@ -12,18 +12,27 @@ const NIGHT_NO_MOON = Date.parse('2026-12-09T00:00:00Z');
 
 function setup(at: number, night: boolean, animate = true) {
     root.dataset.horaForzada = String(at);
-    const ui = (n: boolean) => (
+    const ui = (n: boolean, on = animate) => (
         <BovedaCeleste
             night={n}
             layout={DEFAULT_SKY_LAYOUT}
             viewport={viewport}
-            animate={animate}
+            animate={on}
             twinkleGroups={3}
         />
     );
+    let current = night;
     const { container, rerender } = render(ui(night));
     const part = (name: string) => container.querySelector<HTMLElement>(`[data-part="${name}"]`)!;
-    return { container, part, setNight: (n: boolean) => rerender(ui(n)) };
+    return {
+        container,
+        part,
+        setNight: (n: boolean) => {
+            current = n;
+            rerender(ui(n));
+        },
+        setAnimate: (on: boolean) => rerender(ui(current, on)),
+    };
 }
 
 afterEach(() => {
@@ -108,24 +117,32 @@ describe('BovedaCeleste al cambiar de tema', () => {
         expect(animate).not.toHaveBeenCalled();
     });
 
-    it('si cambia en pleno giro, cancela el anterior y sigue desde el punto equivalente', () => {
-        const running = { cancel: vi.fn(), currentTime: 900, playState: 'running' };
-        const next = { cancel: vi.fn(), currentTime: 0, playState: 'running' };
-        const animate = vi.fn().mockReturnValueOnce(running).mockReturnValue(next);
+    it('si cambia en pleno giro, vuelve por el mismo camino, sin un giro nuevo', () => {
+        const running = { cancel: vi.fn(), reverse: vi.fn(), playState: 'running' };
+        const animate = vi.fn(() => running);
         (Element.prototype as unknown as { animate: unknown }).animate = animate;
         const { setNight } = setup(NIGHT_MOON, false);
         setNight(true);
-        running.currentTime = 900;
         setNight(false);
-        expect(running.cancel).toHaveBeenCalled();
-        expect(next.currentTime).toBe(BOVEDA_SECONDS * 1000 - 900);
+        expect(animate).toHaveBeenCalledTimes(4);
+        expect(running.reverse).toHaveBeenCalledTimes(4);
+        expect(running.cancel).not.toHaveBeenCalled();
+    });
+
+    it('si pide menos movimiento en pleno giro, se corta', () => {
+        const running = { cancel: vi.fn(), reverse: vi.fn(), playState: 'running' };
+        (Element.prototype as unknown as { animate: unknown }).animate = vi.fn(() => running);
+        const { setNight, setAnimate } = setup(NIGHT_MOON, false);
+        setNight(true);
+        setAnimate(false);
+        expect(running.cancel).toHaveBeenCalledTimes(4);
     });
 });
 
 describe('bovedaKeyframes', () => {
     const sky = {
-        sun: { alt: 40, hour: 30 },
-        moon: { alt: -20, hour: -100, fraction: 0.5, tilt: 0 },
+        sun: { alt: 40, hour: 30, halfArc: 90 },
+        moon: { alt: -20, hour: -100, halfArc: 90, fraction: 0.5, tilt: 0 },
     };
 
     it('la franja solo se ve durante el giro, y da media vuelta', () => {

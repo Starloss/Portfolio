@@ -53,7 +53,8 @@ export const SKY_FRAGMENT = /* glsl */ `#version 300 es
 precision highp float;
 out vec4 outColor;
 ${SCREEN}
-${ATMOSPHERE}
+uniform float uTime;
+uniform float uNight;
 uniform float uSkyHigh;
 uniform vec3 uSun;
 uniform float uSunAlpha;

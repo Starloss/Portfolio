@@ -212,14 +212,14 @@ export class EscenaGL {
             flipY: false,
         });
         const textures = { tDay: { value: null }, tNight: { value: null } };
-        // Ruido, tiempo y atardecer: lo comparten el cielo, las nubes y la niebla.
+        // Ruido, tiempo y atardecer: lo comparten las nubes y la niebla.
         const atmosphere = {
             tNoise: { value: noise },
             uTime: { value: 0 },
             uDusk: { value: 0 },
         };
         const sky = this.program(FULLSCREEN_VERTEX, SKY_FRAGMENT, {
-            ...atmosphere,
+            uTime: { value: 0 },
             uSkyHigh: { value: 0 },
             uSun: { value: [0, 0, 26] },
             uSunAlpha: { value: 0 },

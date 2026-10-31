@@ -9,31 +9,36 @@ import {
     restOf,
     skyLayout,
     starField,
-    type SkyState,
 } from '@app/scene/vault';
+import type { Sky } from '@app/scene/sky';
 
-const NOON: SkyState = {
-    sun: { alt: 80, hour: 0 },
-    moon: { alt: -40, hour: 180, fraction: 0.5, tilt: 10 },
+const NOON: Sky = {
+    sun: { alt: 80, hour: 0, halfArc: 90 },
+    moon: { alt: -40, hour: 180, halfArc: 90, fraction: 0.5, tilt: 10 },
 };
-const AFTERNOON_MOON: SkyState = {
-    sun: { alt: 30, hour: 60 },
-    moon: { alt: 50, hour: -40, fraction: 0.3, tilt: 10 },
+const AFTERNOON_MOON: Sky = {
+    sun: { alt: 30, hour: 60, halfArc: 90 },
+    moon: { alt: 50, hour: -40, halfArc: 90, fraction: 0.3, tilt: 10 },
 };
-const NIGHT_WITH_MOON: SkyState = {
-    sun: { alt: -40, hour: 130 },
-    moon: { alt: 40, hour: 45, fraction: 0.9, tilt: 200 },
+const NIGHT_WITH_MOON: Sky = {
+    sun: { alt: -40, hour: 130, halfArc: 90 },
+    moon: { alt: 40, hour: 45, halfArc: 90, fraction: 0.9, tilt: 200 },
 };
-const NIGHT_NO_MOON: SkyState = {
-    sun: { alt: -40, hour: 130 },
-    moon: { alt: -30, hour: -120, fraction: 0.1, tilt: 0 },
+const NIGHT_NO_MOON: Sky = {
+    sun: { alt: -40, hour: 130, halfArc: 90 },
+    moon: { alt: -30, hour: -120, halfArc: 90, fraction: 0.1, tilt: 0 },
 };
 
 describe('arco del sol y la luna', () => {
-    it('el ángulo horario da el avance: 0 al este, 0,5 en el meridiano, 1 al oeste', () => {
-        expect(arcFraction(-90)).toBe(0);
-        expect(arcFraction(0)).toBe(0.5);
-        expect(arcFraction(90)).toBe(1);
+    it('el avance: 0 al salir, 0,5 en el meridiano, 1 al ponerse', () => {
+        expect(arcFraction({ hour: -90, halfArc: 90 })).toBe(0);
+        expect(arcFraction({ hour: 0, halfArc: 90 })).toBe(0.5);
+        expect(arcFraction({ hour: 90, halfArc: 90 })).toBe(1);
+    });
+
+    it('sale y se pone en el horizonte, aunque el día sea más corto o más largo', () => {
+        expect(arcFraction({ hour: -85, halfArc: 85 })).toBe(0);
+        expect(arcFraction({ hour: 95, halfArc: 95 })).toBe(1);
     });
 
     it('sale por la derecha y se pone por la izquierda', () => {
@@ -93,7 +98,7 @@ describe('skyLayout', () => {
 describe('dónde descansan el sol y la luna', () => {
     it('de Día con sol, el sol va en su posición real', () => {
         const rest = restOf(AFTERNOON_MOON, false);
-        expect(rest.sun).toEqual({ f: arcFraction(60), visible: true });
+        expect(rest.sun).toEqual({ f: arcFraction({ hour: 60, halfArc: 90 }), visible: true });
         expect(rest.moon.visible).toBe(false);
     });
 
@@ -103,7 +108,10 @@ describe('dónde descansan el sol y la luna', () => {
 
     it('de Noche con la luna arriba, la luna va en su posición real', () => {
         const rest = restOf(NIGHT_WITH_MOON, true);
-        expect(rest.moon).toMatchObject({ f: arcFraction(45), visible: true });
+        expect(rest.moon).toMatchObject({
+            f: arcFraction({ hour: 45, halfArc: 90 }),
+            visible: true,
+        });
         expect(rest.sun.visible).toBe(false);
     });
 
@@ -197,6 +205,24 @@ describe('BovedaClock', () => {
         expect(back.night).toBeCloseTo(going.night);
     });
 
+    it('si cambia en pleno giro, vuelve por el mismo camino: nada salta', () => {
+        const clock = new BovedaClock(seconds);
+        clock.set(false);
+        clock.tick(0, day, night);
+        clock.change(true, 0);
+        const going = clock.tick(2500, night, day);
+        clock.change(false, 2500);
+        const back = clock.tick(2500, day, night);
+        expect(back.sun.f).toBeCloseTo(going.sun.f);
+        expect(back.moon.f).toBeCloseTo(going.moon.f);
+        expect(back.sweep).toBeCloseTo(going.sweep);
+        expect(back.stars.angle).toBeCloseTo(going.stars.angle);
+        const earlier = clock.tick(3000, day, night);
+        expect(earlier.sweep).toBeLessThan(going.sweep);
+        const rest = clock.tick(2500 + 2500, day, night);
+        expect(rest).toMatchObject({ night: 0, sweep: -1 });
+    });
+
     it('en reposo, el astro se desliza hacia su nuevo lugar, sin saltar', () => {
         const clock = new BovedaClock(seconds);
         clock.set(false);
@@ -239,5 +265,8 @@ describe('dibujo', () => {
                 x + px >= 0 && x + px <= viewport.width && y + py >= 0 && y + py <= viewport.height,
         );
         expect(visible.length).toBeGreaterThanOrEqual(20);
+        // Repartidas por todo el cielo, no acumuladas abajo: también hay detrás del título.
+        const upper = visible.filter(([, y]) => y + py < viewport.height / 2);
+        expect(upper.length).toBeGreaterThanOrEqual(visible.length / 3);
     });
 });

@@ -90,7 +90,7 @@ export async function themeLayers(
         avilaFront,
         city,
         towers,
-        extra,
+        macaws,
         cabin,
         cityLights,
         towersLights,
@@ -142,6 +142,6 @@ export async function themeLayers(
         cabin,
         street,
         ...(night ? { cityLights, towersLights } : {}),
-        ...(extra ? { macaws: extra } : {}),
+        ...(macaws ? { macaws } : {}),
     };
 }

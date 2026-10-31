@@ -65,6 +65,11 @@ describe('sky: sol y luna sobre Caracas', () => {
         }
     });
 
+    it('el medio arco es más corto en diciembre y más largo en junio, como el día', () => {
+        expect(sky(Date.parse('2026-12-21T16:00:00Z')).sun.halfArc).toBeCloseTo(85.5, 0);
+        expect(sky(Date.parse('2027-06-21T16:00:00Z')).sun.halfArc).toBeCloseTo(94.5, 0);
+    });
+
     it('la parte iluminada de la luna mira hacia el sol', () => {
         // Creciente al anochecer del 15 de noviembre: el sol ya bajó, así que la luz viene de abajo.
         const { moon } = sky(Date.parse('2026-11-15T23:30:00Z'));

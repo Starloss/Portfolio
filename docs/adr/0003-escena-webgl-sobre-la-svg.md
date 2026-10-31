@@ -16,13 +16,13 @@ El prototipo (#40) dio luz verde y esta ADR reemplaza a la 0001. La Escena SVG p
 ## Consequences
 
 - El presupuesto de Lighthouse (≥90 y 155 kB, por la ADR 0002) aplica a la carga inicial. La detección y la versión WebGL se cargan en chunks diferidos.
-- La versión WebGL dibuja desde un Worker con OffscreenCanvas, y la prueba de la detección también corre en un Worker. Crear un contexto WebGL es una llamada síncrona: sin GPU (SwiftShader, en CI) bloqueaba la página ~900 ms. Ahora la página solo pasa el scroll, las medidas, el tema y el reloj de las animaciones de CSS, y rasteriza las texturas cuando el Worker las pide. Sin WebGL2 en OffscreenCanvas (Safari anterior a 17) se queda la SVG.
+- La versión WebGL dibuja desde un Worker con OffscreenCanvas, y la prueba de la detección también corre en un Worker. Crear un contexto WebGL es una llamada síncrona: sin GPU (SwiftShader, en CI) bloqueaba la página ~900 ms. Ahora la página solo pasa el scroll, las medidas, el tema, la posición del sol y la luna y el reloj de las animaciones de CSS, y rasteriza las texturas cuando el Worker las pide. Sin WebGL2 en OffscreenCanvas (Safari anterior a 17) se queda la SVG.
 - Con una GPU por software, que solo llega con `?escena=webgl`, la Escena WebGL dibuja solo cuando algo cambia, a media resolución y con las animaciones quietas.
 - Una corrida de Lighthouse de escritorio con `?escena=webgl` también exige rendimiento ≥90.
 - La detección previa es un chunk diminuto que se carga cuando el navegador está ocioso, y decide antes de descargar la versión WebGL. Deja la SVG si hay reduced-motion, Save-Data, falta WebGL2, el hardware es bajo, la GPU es de gama baja o por software, o el dispositivo es móvil.
 - En ejecución, un vigilante vuelve a la SVG si la Escena se sostiene por debajo de unos 45 fps, y recuerda la decisión para ese visitante. Los valores exactos del vigilante los fija la spec.
 - Si `ogl` no logra iniciar o se pierde el contexto WebGL (`webglcontextlost`), la Escena vuelve a la SVG de inmediato, como si hubiera actuado el vigilante.
 - El parámetro `?escena=webgl` salta tanto la detección como el vigilante.
-- Las dos versiones leen el mismo modelo del Viaje de cámara, así que el paso de una a otra es un fundido cruzado sin salto. En la SVG, la Avenida Bolívar aparece quieta.
+- Las dos versiones leen el mismo modelo del Viaje de cámara, así que el paso de una a otra es un fundido cruzado sin salto. En la SVG, la Avenida Bolívar aparece quieta. Las estrellas no son siluetas: giran con el cielo y cada versión las dibuja a su manera, así que no coinciden una a una.
 - El renderer `ogl` es un adaptador delgado: queda excluido de la cobertura y se prueba con Playwright. La lógica pura se cubre con tests unitarios.
 - Umami registra qué versión recibió cada visitante y cada caída a SVG.

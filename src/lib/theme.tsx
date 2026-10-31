@@ -12,6 +12,7 @@ interface ThemeContextValue {
 const ThemeContext = createContext<ThemeContextValue | null>(null);
 
 const CHOICE_KEY = 'tema-elegido';
+const TURN_MS = BOVEDA_SECONDS * 1000;
 
 // El script inline de index.html pone el tema antes del primer pintado y anota en <html> cuál
 // corresponde a la hora de Caracas al cargar, y si esa hora está forzada; aquí solo se lee (docs/adr/0004).
@@ -35,8 +36,10 @@ function rememberChoice(theme: Theme) {
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const [theme, setTheme] = useState<Theme>(getInitialTheme);
 
-    // La Escena gira enseguida; la UI cambia a la mitad de la Bóveda celeste. Sin giro, enseguida.
+    // La Escena gira enseguida; la UI cambia cuando el giro cruza la mitad. Si se revierte, el giro
+    // vuelve por el mismo camino, y la UI cambia al cruzarla de vuelta. Sin giro, enseguida.
     const appliedRef = useRef(theme);
+    const turnRef = useRef<{ position: number; at: number; forward: boolean } | null>(null);
     useEffect(() => {
         if (appliedRef.current === theme) return;
         appliedRef.current = theme;
@@ -45,7 +48,25 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             apply();
             return;
         }
-        const timer = window.setTimeout(apply, (BOVEDA_SECONDS * 1000) / 2);
+        const now = performance.now();
+        const previous = turnRef.current;
+        const moved = previous ? now - previous.at : 0;
+        const position = previous
+            ? Math.max(
+                  0,
+                  Math.min(TURN_MS, previous.position + (previous.forward ? moved : -moved)),
+              )
+            : TURN_MS;
+        const turn =
+            previous && position > 0 && position < TURN_MS
+                ? { position, at: now, forward: !previous.forward }
+                : { position: 0, at: now, forward: true };
+        turnRef.current = turn;
+        const middle = TURN_MS / 2;
+        const untilMiddle = turn.forward ? middle - turn.position : turn.position - middle;
+        // Si la mitad ya quedó atrás en este sentido, la UI ya está en el tema que toca.
+        if (untilMiddle <= 0) return;
+        const timer = window.setTimeout(apply, untilMiddle);
         return () => window.clearTimeout(timer);
     }, [theme]);
 

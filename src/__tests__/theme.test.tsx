@@ -88,6 +88,20 @@ describe('ThemeProvider', () => {
         vi.useRealTimers();
     });
 
+    it('si vuelve a cambiar pasada la mitad, la UI vuelve cuando el giro cruza la mitad', () => {
+        vi.useFakeTimers();
+        const button = setup({ hourTheme: 'light' });
+        fireEvent.click(button);
+        vi.advanceTimersByTime(2500);
+        expect(root.classList.contains('dark')).toBe(true);
+        fireEvent.click(button);
+        vi.advanceTimersByTime(699);
+        expect(root.classList.contains('dark')).toBe(true);
+        vi.advanceTimersByTime(1);
+        expect(root.classList.contains('dark')).toBe(false);
+        vi.useRealTimers();
+    });
+
     it('con reduced-motion la UI cambia enseguida', () => {
         const original = window.matchMedia;
         vi.spyOn(window, 'matchMedia').mockImplementation((query: string) => ({
@@ -118,7 +132,7 @@ describe('ThemeProvider', () => {
     });
 
     it('con la hora forzada no cuenta la elección, aunque se haya navegado sin ?hora=', () => {
-        root.dataset.horaForzada = '';
+        root.dataset.horaForzada = String(Date.parse('2026-11-01T02:00:00Z'));
         const button = setup({ hourTheme: 'light' });
         fireEvent.click(button);
         expect(button.textContent).toBe('dark');

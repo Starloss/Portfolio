@@ -227,7 +227,8 @@
     .scene-sky-night {
         transition: opacity 0.6s ease;
     }
-    .scene-astro {
+    .scene-astro,
+    .scene-stars {
         transition: opacity 0.6s ease;
     }
 }

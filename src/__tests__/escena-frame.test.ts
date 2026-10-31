@@ -13,7 +13,6 @@ import {
 } from '@app/scene/camera';
 import { cablePoint, MOVING_CABINS } from '@app/scene/geometry';
 import {
-    cssEase,
     cssEaseInOut,
     advanceClocks,
     cubicBezier,
@@ -107,8 +106,7 @@ describe('curvas de CSS y loopAt', () => {
         expect(cssEaseInOut(0.25) + cssEaseInOut(0.75)).toBeCloseTo(1);
     });
 
-    it('ease: arranca rápido y llega lenta, como la de CSS', () => {
-        expect(cssEase(0.5)).toBeCloseTo(0.8024, 3);
+    it('una curva recta no cambia nada', () => {
         expect(cubicBezier(0, 0, 1, 1)(0.3)).toBeCloseTo(0.3);
     });
 
