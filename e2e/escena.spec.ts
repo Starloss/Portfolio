@@ -3,13 +3,13 @@ import { DAY, NIGHT } from '../src/app/scene/palette';
 import { streetBand } from '../src/app/scene/street';
 import { contrastRatio } from '../src/lib/contrast';
 
-for (const [colorScheme, palette] of [
-    ['light', DAY],
-    ['dark', NIGHT],
+for (const [hora, palette] of [
+    ['12:00', DAY],
+    ['22:00', NIGHT],
 ] as const) {
-    test(`Hero: el texto sobre el cielo da ≥4,5:1 en ${colorScheme}`, async ({ page }) => {
-        await page.emulateMedia({ colorScheme, reducedMotion: 'reduce' });
-        await page.goto('/');
+    test(`Hero: el texto sobre el cielo da ≥4,5:1 a las ${hora}`, async ({ page }) => {
+        await page.emulateMedia({ reducedMotion: 'reduce' });
+        await page.goto(`/?hora=${hora}`);
 
         // Saludo, nombre y párrafos sin superficie; el rol tiene su propio bloque.
         const text = page.locator('[data-hero-text] :is(h1, h1 span, p:not(:has(span)))');
