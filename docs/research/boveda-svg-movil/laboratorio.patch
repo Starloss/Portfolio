@@ -1,0 +1,498 @@
+diff -ruN --strip-trailing-cr orig/src/app/scene/prototype-boveda/boveda-css.css proto/src/app/scene/prototype-boveda/boveda-css.css
+--- orig/src/app/scene/prototype-boveda/boveda-css.css	1969-12-31 20:00:00.000000000 -0400
++++ proto/src/app/scene/prototype-boveda/boveda-css.css	2026-10-31 02:43:35.515541100 -0400
+@@ -0,0 +1,103 @@
++/* EXPERIMENTO desechable (#75): solo transform y opacity. */
++.scene .scene-sky-night {
++    transition: opacity 3.6s cubic-bezier(0.65, 0, 0.35, 1) !important;
++}
++
++.bc-sweep {
++    position: absolute;
++    left: 50%;
++    top: 115%;
++    width: 250vmax;
++    height: 250vmax;
++    opacity: 0;
++    transform: translate(-50%, -50%);
++    pointer-events: none;
++}
++.bc-sweep.to-night {
++    animation:
++        bc-sweep-night 3.6s cubic-bezier(0.65, 0, 0.35, 1) both,
++        bc-fade 3.6s linear both;
++}
++.bc-sweep.to-day {
++    animation:
++        bc-sweep-day 3.6s cubic-bezier(0.65, 0, 0.35, 1) both,
++        bc-fade 3.6s linear both;
++}
++@keyframes bc-sweep-night {
++    from {
++        transform: translate(-50%, -50%) rotate(0deg);
++    }
++    to {
++        transform: translate(-50%, -50%) rotate(-180deg);
++    }
++}
++@keyframes bc-sweep-day {
++    from {
++        transform: translate(-50%, -50%) rotate(-180deg);
++    }
++    to {
++        transform: translate(-50%, -50%) rotate(-360deg);
++    }
++}
++@keyframes bc-fade {
++    0%,
++    100% {
++        opacity: 0;
++    }
++    25.5%,
++    74.5% {
++        opacity: 1;
++    }
++}
++
++.bc-stars {
++    position: absolute;
++    left: 50%;
++    top: 115%;
++}
++.bc-stars.to-night {
++    animation: bc-stars-night 3.6s cubic-bezier(0.65, 0, 0.35, 1) both;
++}
++.bc-stars.to-day {
++    animation: bc-stars-day 3.6s cubic-bezier(0.65, 0, 0.35, 1) both;
++}
++@keyframes bc-stars-night {
++    from {
++        opacity: 0;
++        transform: rotate(var(--swing));
++    }
++    to {
++        opacity: 1;
++        transform: rotate(0);
++    }
++}
++@keyframes bc-stars-day {
++    from {
++        opacity: 1;
++        transform: rotate(0);
++    }
++    to {
++        opacity: 0;
++        transform: rotate(calc(var(--swing) * -1));
++    }
++}
++
++.bc-astro {
++    position: absolute;
++    top: 0;
++    left: 0;
++}
++
++/* El tinte de Clima con dos capas y solo opacity. */
++.bc-tint {
++    transition: opacity 3.6s ease;
++}
++
++@keyframes bc-land-in {
++    from {
++        opacity: 0;
++    }
++}
++.bc-land-in {
++    animation: bc-land-in 3.6s cubic-bezier(0.65, 0, 0.35, 1) both;
++}
+diff -ruN --strip-trailing-cr orig/src/app/scene/prototype-boveda/BovedaCss.tsx proto/src/app/scene/prototype-boveda/BovedaCss.tsx
+--- orig/src/app/scene/prototype-boveda/BovedaCss.tsx	1969-12-31 20:00:00.000000000 -0400
++++ proto/src/app/scene/prototype-boveda/BovedaCss.tsx	2026-10-31 02:43:26.971693000 -0400
+@@ -0,0 +1,188 @@
++// EXPERIMENTO desechable (#75): la Bóveda celeste variante C solo con transform y opacity.
++// El giro, las estrellas y el cielo de Noche son @keyframes/transition; el sol y la luna usan WAAPI
++// porque su arco depende de la hora: las dos vías corren en el compositor. Sin rAF.
++import React, { useLayoutEffect, useRef, useState } from 'react';
++
++import { DAY, NIGHT } from '../palette';
++
++import { arcPoint, restOf, type BovedaParams } from './sim';
++import './boveda-css.css';
++
++const SECONDS = 3.6;
++const SWING = 0.9;
++const RISE_F = -0.12;
++const SET_F = 1.12;
++const STEPS = 16;
++// Lo más lejos que llega un punto de la pantalla desde el pivote en 390×844 es ~990 px, y el campo
++// solo gira ±0,9 rad: fuera de este sector una estrella nunca se ve.
++const RADIUS = 1050;
++const SECTOR = 1.15;
++
++const ease = (t: number) => t * t * t * (t * (6 * t - 15) + 10);
++const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
++
++function starsOf(count: number) {
++    return Array.from({ length: count }, (_, i) => {
++        const a = -SECTOR + 2 * SECTOR * ((i * 0.618034) % 1) - Math.PI / 2;
++        const r = 40 + Math.sqrt((i + 0.5) / count) * RADIUS;
++        return { x: Math.cos(a) * r, y: Math.sin(a) * r, s: i % 7 ? 0.9 : 1.6 };
++    });
++}
++
++function moonPath(phase: number) {
++    const waxing = phase <= 0.5;
++    const k = waxing ? phase : 1 - phase;
++    const rx = Math.abs(Math.cos(2 * Math.PI * k));
++    const sweep = k < 0.25 ? 0 : 1;
++    return {
++        d: `M0 -1 A1 1 0 0 1 0 1 A${rx.toFixed(3)} 1 0 0 ${sweep} 0 -1Z`,
++        flip: waxing ? 1 : -1,
++    };
++}
++
++function arcFrames(
++    from: number,
++    to: number,
++    alpha: number,
++    size: number,
++    w: number,
++    h: number,
++    p: BovedaParams,
++) {
++    return Array.from({ length: STEPS + 1 }, (_, i) => {
++        const { x, y } = arcPoint(lerp(from, to, ease(i / STEPS)), p);
++        return {
++            transform: `translate(${(x * w - size / 2).toFixed(1)}px, ${(y * h - size / 2).toFixed(1)}px)`,
++            opacity: alpha,
++        };
++    });
++}
++
++export const BovedaCss: React.FC<{
++    night: boolean;
++    params: BovedaParams;
++    count: number;
++    form?: 'circles' | 'path';
++}> = ({ night, params, count, form = 'circles' }) => {
++    const box = useRef<HTMLDivElement>(null);
++    const sun = useRef<HTMLDivElement>(null);
++    const moon = useRef<SVGSVGElement>(null);
++    const [turn, setTurn] = useState<{ night: boolean; n: number } | null>(null);
++    const [lastNight, setLastNight] = useState(night);
++    if (lastNight !== night) {
++        setLastNight(night);
++        setTurn({ night, n: (turn?.n ?? 0) + 1 });
++    }
++    const stars = useRef<ReturnType<typeof starsOf> | null>(null);
++    if (!stars.current) stars.current = starsOf(count);
++
++    const rest = restOf(params);
++    useLayoutEffect(() => {
++        if (!turn) return;
++        const root = box.current!.parentElement!;
++        const { clientWidth: w, clientHeight: h } = root;
++        const options = { duration: SECONDS * 1000, easing: 'linear' };
++        const sunFrames = turn.night
++            ? arcFrames(rest.sun.f, SET_F, rest.sun.alpha, 120, w, h, params)
++            : arcFrames(RISE_F, rest.sun.f, rest.sun.alpha, 120, w, h, params);
++        const moonFrames = turn.night
++            ? arcFrames(RISE_F, rest.moon.f, rest.moon.alpha, 52, w, h, params)
++            : arcFrames(rest.moon.f, SET_F, rest.moon.alpha, 52, w, h, params);
++        const animations = [
++            sun.current!.animate(sunFrames, options),
++            moon.current!.animate(moonFrames, options),
++        ];
++        return () => animations.forEach((a) => a.cancel());
++        // Solo arranca al cambiar de tema.
++        // eslint-disable-next-line react-hooks/exhaustive-deps
++    }, [turn]);
++
++    const place = (f: number, size: number, alpha: number, shown: boolean, w: number, h: number) => {
++        const { x, y } = arcPoint(f, params);
++        return {
++            transform: `translate(${x * w - size / 2}px, ${y * h - size / 2}px)`,
++            opacity: shown ? alpha : 0,
++        };
++    };
++    const w = box.current?.parentElement?.clientWidth ?? window.innerWidth;
++    const h = box.current?.parentElement?.clientHeight ?? window.innerHeight;
++    const { d, flip } = moonPath(params.phase);
++    const dir = turn ? (turn.night ? 'to-night' : 'to-day') : '';
++    const list = stars.current;
++
++    return (
++        <div ref={box} data-part="boveda-css" className="scene-layer">
++            <div
++                key={`sweep${turn?.n ?? 0}`}
++                className={`bc-sweep ${dir}`}
++                onAnimationEnd={(e) => {
++                    if (e.animationName.startsWith('bc-sweep')) setTurn(null);
++                }}
++                style={{
++                    background: `linear-gradient(to bottom, ${DAY.skyBottom} 42.8%, #ffcf9a 46.6%, #f28a5a 50%, #4a2f66 52.9%, ${NIGHT.skyTop} 57.2%)`,
++                }}
++            />
++            <div
++                key={`stars${turn?.n ?? 0}`}
++                className={`bc-stars ${dir}`}
++                style={{ opacity: night ? 1 : 0, '--swing': `${SWING}rad` } as React.CSSProperties}
++            >
++                <svg width="4" height="4" style={{ overflow: 'visible', display: 'block' }} aria-hidden="true">
++                    {form === 'path' ? (
++                        <>
++                            <path
++                                d={list.filter((s) => s.s < 1).map((s) => `M${s.x.toFixed(0)} ${s.y.toFixed(0)}h0`).join('')}
++                                stroke="#fff"
++                                strokeWidth="1.8"
++                                strokeLinecap="round"
++                            />
++                            <path
++                                d={list.filter((s) => s.s > 1).map((s) => `M${s.x.toFixed(0)} ${s.y.toFixed(0)}h0`).join('')}
++                                stroke="#fff"
++                                strokeWidth="3.2"
++                                strokeLinecap="round"
++                            />
++                        </>
++                    ) : (
++                        list.map((s) => <circle key={`${s.x}|${s.y}`} cx={s.x} cy={s.y} r={s.s} fill="#fff" />)
++                    )}
++                </svg>
++            </div>
++            <div
++                ref={sun}
++                className="bc-astro"
++                style={{
++                    ...place(rest.sun.f, 120, rest.sun.alpha, !night, w, h),
++                    width: 120,
++                    height: 120,
++                    borderRadius: '50%',
++                    background:
++                        'radial-gradient(closest-side, #fff8e0 0 26%, rgba(255,225,150,.55) 30%, rgba(255,205,120,.16) 60%, transparent)',
++                }}
++            />
++            <svg
++                ref={moon}
++                className="bc-astro"
++                viewBox="-1.1 -1.1 2.2 2.2"
++                aria-hidden="true"
++                style={{
++                    ...place(rest.moon.f, 52, rest.moon.alpha, night, w, h),
++                    right: 'auto',
++                    bottom: 'auto',
++                    width: 52,
++                    height: 52,
++                    overflow: 'visible',
++                }}
++            >
++                <g transform={`rotate(-35) scale(${flip} 1)`}>
++                    <circle r="1" fill="#fff" opacity="0.07" />
++                    <path
++                        d={d}
++                        fill="#f4eccb"
++                        style={{ filter: 'drop-shadow(0 0 .22px rgba(255,241,196,.7))' }}
++                    />
++                </g>
++            </svg>
++        </div>
++    );
++};
+diff -ruN --strip-trailing-cr orig/src/app/scene/prototype-boveda/BovedaSvg.tsx proto/src/app/scene/prototype-boveda/BovedaSvg.tsx
+--- orig/src/app/scene/prototype-boveda/BovedaSvg.tsx	2026-10-31 01:45:54.000000000 -0400
++++ proto/src/app/scene/prototype-boveda/BovedaSvg.tsx	2026-10-31 02:43:50.321966500 -0400
+@@ -4,11 +4,13 @@
+ 
+ import { DAY, NIGHT } from '../palette';
+ 
++import { LAB, landRule } from './lab';
+ import { BovedaSim, durationOf, PIVOT, type BovedaParams } from './sim';
+ 
+-const STARS = Array.from({ length: 420 }, (_, i) => {
++const STAR_COUNT = LAB.n ?? 420;
++const STARS = Array.from({ length: STAR_COUNT }, (_, i) => {
+     const a = (i * 2.399963) % (Math.PI * 2);
+-    const r = 60 + Math.sqrt(i / 420) * 1900;
++    const r = 60 + Math.sqrt(i / STAR_COUNT) * 1900;
+     return { x: Math.cos(a) * r, y: Math.sin(a) * r, s: i % 7 ? 0.9 : 1.6 };
+ });
+ 
+@@ -84,7 +86,7 @@
+     return (
+         <div ref={box} data-part="prototipo-boveda" className="scene-layer">
+             {/* El paisaje cambia de color al ritmo del giro. */}
+-            <style>{`.scene * { transition-duration: ${durationOf(params)}s !important; }`}</style>
++            <style>{landRule(durationOf(params))}</style>
+             <div
+                 ref={dusk}
+                 className="scene-layer"
+diff -ruN --strip-trailing-cr orig/src/app/scene/prototype-boveda/lab.ts proto/src/app/scene/prototype-boveda/lab.ts
+--- orig/src/app/scene/prototype-boveda/lab.ts	1969-12-31 20:00:00.000000000 -0400
++++ proto/src/app/scene/prototype-boveda/lab.ts	2026-10-31 02:43:41.764994500 -0400
+@@ -0,0 +1,24 @@
++// EXPERIMENTO desechable (#75): qué probar, por la URL. Solo para el laboratorio de medición.
++const q = new URLSearchParams(window.location.search);
++
++export const LAB = {
++    /** raf: el prototipo tal cual. css: BovedaCss. */
++    mode: q.get('lab') === 'css' ? 'css' : 'raf',
++    /** Cuántas estrellas; sin esto, 420 (raf) y 120 (css). */
++    n: q.get('n') ? Number(q.get('n')) : null,
++    /** circles: un nodo por estrella. path: dos <path>. */
++    form: q.get('form') === 'path' ? ('path' as const) : ('circles' as const),
++    /** Cómo cambia de color el paisaje: fill 3,6 s, fill06 (0,6 s al centro), cross, none. */
++    land: q.get('land') ?? 'fill',
++    /** proto: background-color y opacity. css: dos capas y solo opacity. */
++    tint: q.get('tintm') === 'css' ? 'css' : 'proto',
++    nobar: q.get('nobar') === '1',
++};
++
++/** Regla que aplica la forma elegida de cambio de color del paisaje. */
++export function landRule(seconds: number) {
++    const land = '.scene [data-layer]:not([data-layer="sky"])';
++    if (LAB.land === 'fill') return `.scene * { transition-duration: ${seconds}s !important; }`;
++    if (LAB.land === 'fill06') return `${land} * { transition-delay: 1.5s !important; }`;
++    return `${land}, ${land} * { transition: none !important; }`;
++}
+diff -ruN --strip-trailing-cr orig/src/app/scene/prototype-clima/ClimaTint.tsx proto/src/app/scene/prototype-clima/ClimaTint.tsx
+--- orig/src/app/scene/prototype-clima/ClimaTint.tsx	2026-10-31 01:45:54.000000000 -0400
++++ proto/src/app/scene/prototype-clima/ClimaTint.tsx	2026-10-31 02:43:57.032824800 -0400
+@@ -2,12 +2,30 @@
+ // Es lo que ven el móvil y quien pide menos movimiento: no llueve ni hay rayos.
+ import React from 'react';
+ 
++import { LAB } from '../prototype-boveda/lab';
++
+ import { climaTarget, type ClimaParams } from './clima';
+ 
+ export const ClimaTint: React.FC<{ night: boolean; params: ClimaParams }> = ({ night, params }) => {
+     const { cover, dark } = climaTarget(params);
+     const shade = 1 - dark * 0.6;
+     const [r, g, b] = (night ? [14, 19, 31] : [161, 176, 189]).map((c) => Math.round(c * shade));
++    if (LAB.tint === 'css') {
++        const dim = (c: number[]) => `rgb(${c.map((v) => Math.round(v * shade)).join(', ')})`;
++        const alpha = Math.min(1, cover * cover * 0.85 + dark * 0.25);
++        return (
++            <div data-part="prototipo-clima" className="scene-layer">
++                <div
++                    className="scene-layer bc-tint"
++                    style={{ background: dim([161, 176, 189]), opacity: alpha }}
++                />
++                <div
++                    className="scene-layer bc-tint"
++                    style={{ background: dim([14, 19, 31]), opacity: night ? alpha : 0 }}
++                />
++            </div>
++        );
++    }
+     const low = params.variant === 'c';
+     const mask = low ? 'linear-gradient(to bottom, transparent 25%, #000 75%)' : undefined;
+     return (
+diff -ruN --strip-trailing-cr orig/src/app/scene/Scene.tsx proto/src/app/scene/Scene.tsx
+--- orig/src/app/scene/Scene.tsx	2026-10-31 01:45:54.000000000 -0400
++++ proto/src/app/scene/Scene.tsx	2026-10-31 02:44:12.618463700 -0400
+@@ -39,6 +39,8 @@
+     Towers,
+ } from './parts';
+ import { STREET_ABOVE, streetBand, streetHeight } from './street';
++import { BovedaCss } from './prototype-boveda/BovedaCss';
++import { LAB, landRule } from './prototype-boveda/lab';
+ import { BovedaSvg } from './prototype-boveda/BovedaSvg';
+ import { ClimaTint } from './prototype-clima/ClimaTint';
+ import { useClima } from './prototype-clima/store';
+@@ -207,6 +209,14 @@
+     const clima = useClima();
+     const travels = journeyMode && !reduced;
+     const H = streetHeight(viewport.height);
++    // EXPERIMENTO (#75): durante el giro, el paisaje del tema anterior queda debajo y el nuevo entra
++    // encima solo con opacity. Se monta al girar y se desmonta al terminar.
++    const [lastNight, setLastNight] = useState(night);
++    const [crossFrom, setCrossFrom] = useState<boolean | null>(null);
++    if (lastNight !== night) {
++        setLastNight(night);
++        if (LAB.land === 'cross' && boveda) setCrossFrom(lastNight);
++    }
+ 
+     // Animan siempre las cabinas y las estrellas; nubes, guacamayas y ventanas solo en escritorio.
+     const animate = !reduced;
+@@ -226,15 +236,29 @@
+                     style={{ background: skyGradient(NIGHT), opacity: night ? 1 : 0 }}
+                 />
+                 <m.div className="scene-layer scene-sky-high" style={styles.skyHigh} />
+-                {boveda && (
+-                    <BovedaSvg
+-                        night={night}
+-                        params={{
+-                            ...boveda,
+-                            minX: page?.column ? page.column.right / viewport.width : 0.5,
+-                        }}
+-                    />
+-                )}
++                {boveda &&
++                    (LAB.mode === 'css' ? (
++                        <>
++                            <style>{landRule(3.6)}</style>
++                            <BovedaCss
++                                night={night}
++                                count={LAB.n ?? 120}
++                                form={LAB.form}
++                                params={{
++                                    ...boveda,
++                                    minX: page?.column ? page.column.right / viewport.width : 0.5,
++                                }}
++                            />
++                        </>
++                    ) : (
++                        <BovedaSvg
++                            night={night}
++                            params={{
++                                ...boveda,
++                                minX: page?.column ? page.column.right / viewport.width : 0.5,
++                            }}
++                        />
++                    ))}
+                 {svg(
+                     <>
+                         {!boveda && night && (
+@@ -262,6 +286,26 @@
+                     />
+                 )}
+             </div>
++            {crossFrom !== null ? (
++                <>
++                    <div className="scene-layer" style={paletteVars(crossFrom ? NIGHT : DAY)}>
++                        {landscape(styles, crossFrom)}
++                    </div>
++                    <div
++                        className="scene-layer bc-land-in"
++                        onAnimationEnd={() => setCrossFrom(null)}
++                    >
++                        {landscape(styles, night)}
++                    </div>
++                </>
++            ) : (
++                landscape(styles, night)
++            )}
++        </>
++    );
++
++    const landscape = (styles: PartStyles, night: boolean) => (
++        <>
+             {!mobile && clima?.estado !== 'despejado' && (
+                 <m.div className="scene-layer" data-layer="clouds" style={styles.clouds}>
+                     {CLOUDS.map((cloud, i) => (
+--- orig/src/app/pages/Home.tsx	2026-10-31 01:45:54.000000000 -0400
++++ proto/src/app/pages/Home.tsx	2026-10-31 02:44:18.554974600 -0400
+@@ -1,3 +1,4 @@
++import { LAB } from '../scene/prototype-boveda/lab';
+ import React, { useEffect, useLayoutEffect, useState } from 'react';
+ import { useLocation } from 'react-router-dom';
+ import { currentYear } from '@lib/date';
+@@ -66,7 +67,7 @@
+         <>
+             <Scene />
+             <EscenaUpgrade />
+-            <ClimaBar />
++            {!LAB.nobar && <ClimaBar />}
+             <MainHeader activeId={activeId} isHome />
+             <main className="mx-auto max-w-[892px] space-y-[20vh] px-4 pb-[20vh] md:space-y-[35vh]">
+                 <Hero />

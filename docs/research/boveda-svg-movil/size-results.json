@@ -1,0 +1,100 @@
+{
+ "main": {
+  "js": {
+   "file": "index-BNi2q91o.js",
+   "raw": 390619,
+   "gzip": 126413
+  },
+  "css": {
+   "file": "index-CGoSAxDz.css",
+   "raw": 28673,
+   "gzip": 6454
+  },
+  "deltaJs": 0,
+  "deltaCss": 0
+ },
+ "svg-raf-420+tinte-proto": {
+  "js": {
+   "file": "index-DQ9f18La.js",
+   "raw": 397373,
+   "gzip": 129224
+  },
+  "css": {
+   "file": "index-CGoSAxDz.css",
+   "raw": 28673,
+   "gzip": 6454
+  },
+  "deltaJs": 2811,
+  "deltaCss": 0
+ },
+ "svg-raf-420": {
+  "js": {
+   "file": "index-CE7v_Swt.js",
+   "raw": 396462,
+   "gzip": 128881
+  },
+  "css": {
+   "file": "index-CGoSAxDz.css",
+   "raw": 28673,
+   "gzip": 6454
+  },
+  "deltaJs": 2468,
+  "deltaCss": 0
+ },
+ "css-circles+tinte-css": {
+  "js": {
+   "file": "index-D1ZDcoVB.js",
+   "raw": 395379,
+   "gzip": 128524
+  },
+  "css": {
+   "file": "index-DadgW2V0.css",
+   "raw": 29997,
+   "gzip": 6703
+  },
+  "deltaJs": 2111,
+  "deltaCss": 249
+ },
+ "css-path+tinte-css": {
+  "js": {
+   "file": "index-DQC2jBTW.js",
+   "raw": 395641,
+   "gzip": 128569
+  },
+  "css": {
+   "file": "index-DadgW2V0.css",
+   "raw": 29997,
+   "gzip": 6703
+  },
+  "deltaJs": 2156,
+  "deltaCss": 249
+ },
+ "css-circles": {
+  "js": {
+   "file": "index-QcaYhX6N.js",
+   "raw": 394484,
+   "gzip": 128173
+  },
+  "css": {
+   "file": "index-DadgW2V0.css",
+   "raw": 29997,
+   "gzip": 6703
+  },
+  "deltaJs": 1760,
+  "deltaCss": 249
+ },
+ "solo-tinte-css": {
+  "js": {
+   "file": "index-1hNr-Vx0.js",
+   "raw": 391306,
+   "gzip": 126732
+  },
+  "css": {
+   "file": "index-CGoSAxDz.css",
+   "raw": 28673,
+   "gzip": 6454
+  },
+  "deltaJs": 319,
+  "deltaCss": 0
+ }
+}
