@@ -3,6 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { useTheme } from '@lib/theme';
 
 import { setControls, useBoveda } from '../prototype-boveda/store';
+import { IndicadorBar } from '../prototype-indicador/Indicador';
 
 import { CLIMA_VARIANTS, climaTarget, ESTADOS, type ClimaVariant } from './clima';
 import { setClima, useClima } from './store';
@@ -150,6 +151,7 @@ export const ClimaBar: React.FC = () => {
                     <option value="svg">SVG (móvil y reduced-motion)</option>
                 </select>
             </label>
+            <IndicadorBar />
             <div style={{ flexBasis: '100%', opacity: 0.8 }}>
                 ↑ ↓ cambian el estado · h esconde esta barra · Cobertura {t.cover.toFixed(2)} · Oscuridad{' '}
                 {t.dark.toFixed(2)} · Lluvia {t.rain.toFixed(2)} · Rayos {t.storm ? 'sí' : 'no'}
