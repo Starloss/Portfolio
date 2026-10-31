@@ -13,16 +13,13 @@ import {
 } from '@app/scene/camera';
 import { cablePoint, MOVING_CABINS } from '@app/scene/geometry';
 import {
-    cssEase,
     cssEaseInOut,
     advanceClocks,
     cubicBezier,
-    duskAt,
     escenaFrame,
     followPointer,
     loopAt,
     PARALLAX_PX,
-    sunAt,
     type Clocks,
 } from '@app/scene/gl/frame';
 import { readClocks } from '@app/scene/gl/clocks';
@@ -32,7 +29,7 @@ import { readClocks } from '@app/scene/gl/clocks';
 
 const viewport = { width: 1440, height: 900 };
 const frame = sceneFrame(viewport);
-const still: Clocks = { cabins: 0, macaws: 0, twinkle: 0 };
+const still: Clocks = { cabins: 0, macaws: 0 };
 const at = (progress: number, clocks: Partial<Clocks> = {}, pointer = 0) =>
     escenaFrame({
         progress,
@@ -109,8 +106,7 @@ describe('curvas de CSS y loopAt', () => {
         expect(cssEaseInOut(0.25) + cssEaseInOut(0.75)).toBeCloseTo(1);
     });
 
-    it('ease: arranca rápido y llega lenta, como la de CSS', () => {
-        expect(cssEase(0.5)).toBeCloseTo(0.8024, 3);
+    it('una curva recta no cambia nada', () => {
         expect(cubicBezier(0, 0, 1, 1)(0.3)).toBeCloseTo(0.3);
     });
 
@@ -124,8 +120,8 @@ describe('curvas de CSS y loopAt', () => {
 
 describe('advanceClocks', () => {
     it('el Worker avanza los relojes de CSS con el tiempo que pasó desde el ancla', () => {
-        const anchor = { at: 10_000, clocks: { cabins: 1, macaws: 2, twinkle: 4 } };
-        expect(advanceClocks(anchor, 12_500)).toEqual({ cabins: 3.5, macaws: 4.5, twinkle: 6.5 });
+        const anchor = { at: 10_000, clocks: { cabins: 1, macaws: 2 } };
+        expect(advanceClocks(anchor, 12_500)).toEqual({ cabins: 3.5, macaws: 4.5 });
     });
 });
 
@@ -136,36 +132,20 @@ describe('readClocks', () => {
         document.body.innerHTML = `<div class="scene"><g data-anim="cabin"></g></div>`;
         const cabin = document.querySelector<HTMLElement>('[data-anim="cabin"]')!;
         cabin.getAnimations = () => [{ currentTime: 12_500 } as Animation];
-        expect(readClocks(3)).toEqual({ cabins: 12.5, macaws: 3, twinkle: 3 });
+        expect(readClocks(3)).toEqual({ cabins: 12.5, macaws: 3 });
     });
 
     it('si una animación no está montada, usa el reloj de respaldo', () => {
-        expect(readClocks(7)).toEqual({ cabins: 7, macaws: 7, twinkle: 7 });
+        expect(readClocks(7)).toEqual({ cabins: 7, macaws: 7 });
     });
 });
 
 describe('efectos', () => {
-    it('el atardecer o amanecer aparece solo a mitad del cambio de tema', () => {
-        expect(duskAt(0)).toBe(0);
-        expect(duskAt(1)).toBe(0);
-        expect(duskAt(0.5)).toBe(1);
-        expect(duskAt(0.2)).toBeGreaterThan(0.5);
-        expect(duskAt(0.2)).toBeCloseTo(duskAt(0.8));
-    });
-
     it('el puntero se sigue con suavidad, sin pasarse del objetivo', () => {
         const half = followPointer(0, 1, 0.1);
         expect(half).toBeGreaterThan(0);
         expect(half).toBeLessThan(1);
         expect(followPointer(0, 1, 5)).toBe(1);
-    });
-
-    it('el sol se pone al oeste (izquierda) y sale al este (derecha), más bajo hacia la Noche', () => {
-        expect(sunAt(0.5, true).x).toBeLessThan(0.5);
-        expect(sunAt(0.5, false).x).toBeGreaterThan(0.5);
-        // Al atardecer baja a medida que avanza hacia la Noche; al amanecer sube al volver al Día.
-        expect(sunAt(0.8, true).y).toBeGreaterThan(sunAt(0.2, true).y);
-        expect(sunAt(0.2, false).y).toBeLessThan(sunAt(0.8, false).y);
     });
 
     it('con el puntero a un lado, lo lejano se mueve menos que lo cercano y en sentido contrario', () => {

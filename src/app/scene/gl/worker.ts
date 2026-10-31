@@ -44,6 +44,8 @@ self.onmessage = (event: MessageEvent<ToWorker>) => {
             return engine.setLayout(message.layout);
         case 'night':
             return void engine.setNight(message.night);
+        case 'sky':
+            return engine.setSky(message.sky);
         case 'scroll':
             return engine.setScroll(message.progress);
         case 'clocks':

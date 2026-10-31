@@ -19,6 +19,7 @@ vi.mock('@app/scene/gl/client', () => ({
         onFailed?: (reason: FallbackReason) => void;
         setNight = vi.fn(() => Promise.resolve());
         setLayout = vi.fn();
+        setSky = vi.fn();
         start = vi.fn();
         stop = vi.fn();
         destroy = vi.fn();

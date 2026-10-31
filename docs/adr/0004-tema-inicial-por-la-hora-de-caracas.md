@@ -20,6 +20,7 @@ Sin una elección en la visita actual, el tema de todo el sitio depende de si el
 - El valor `theme` de `localStorage` se ignora: no distingue una elección real de un tema guardado al montar.
 - `color-scheme` en `src/tailwind.css` debe seguir a `.dark`, no al sistema.
 - El tema nunca cambia solo durante una visita, aunque en Caracas amanezca o anochezca.
+- Al cambiar de tema, la Escena gira enseguida y la UI cambia a la mitad de la Bóveda celeste, así que durante un instante parte del texto queda sobre el otro cielo.
 - Si el reloj del dispositivo está mal, el tema inicial también lo estará.
 - `?hora=HH:MM` sustituye al reloj, también en producción, para las pruebas y Lighthouse.
 - Umami registra el evento técnico `tema-elegido` cuando alguien cambia el tema de la hora, salvo con la hora forzada. Sirve para evaluar esta decisión.

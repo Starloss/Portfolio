@@ -4,7 +4,12 @@ import React, { useEffect, useEffectEvent, useRef, useState } from 'react';
 import { useTheme } from '@lib/theme';
 
 import { sceneFrame } from '../camera';
-import { useDocumentHidden, useElementViewport, useSceneCovered } from '../environment';
+import {
+    useCaracasSky,
+    useDocumentHidden,
+    useElementViewport,
+    useSceneCovered,
+} from '../environment';
 import { pageFit, usePageLayout } from '../Scene';
 
 import { EscenaClient } from './client';
@@ -56,14 +61,20 @@ export const SceneGL: React.FC<{
         };
     }, [watch]);
 
+    const sky = useCaracasSky();
+    useEffect(() => {
+        engineRef.current?.setSky(sky);
+        // `watch` recrea el motor: el nuevo también necesita saber dónde están los astros.
+    }, [sky, watch]);
+
     // Las mismas medidas que la Escena SVG. El tema va antes que el tamaño: así se rasteriza
     // primero el tema que se ve.
     useEffect(() => {
         const engine = engineRef.current;
         if (!engine) return;
-        const { sink, moon } = pageFit(viewport, page, night);
+        const { sink, sky: skyFit } = pageFit(viewport, page, night);
         void engine.setNight(night);
-        engine.setLayout({ viewport, frame: sceneFrame(viewport), sink, moon });
+        engine.setLayout({ viewport, frame: sceneFrame(viewport), sink, sky: skyFit });
         // `watch` recrea el motor: el nuevo también necesita sus medidas.
     }, [viewport, page, night, watch]);
 

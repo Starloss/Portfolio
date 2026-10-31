@@ -3,6 +3,7 @@
 // volumen, la luz del atardecer y el amanecer, la ciudad nocturna viva y el parallax con el mouse.
 // Todo sale en alfa premultiplicado; las luces suman (alfa 0).
 import { DAY, NIGHT, NIGHT_LIGHTS } from '../palette';
+import { PIVOT } from '../vault';
 
 const rgba = (color: string) => {
     if (color.startsWith('#')) {
@@ -47,14 +48,18 @@ in vec2 position;
 void main() { gl_Position = vec4(position, 0.0, 1.0); }
 `;
 
-/** Cielo de Día y de Noche, el oscurecimiento sobre las nubes y, en el cambio, el sol bajo. */
+/** Cielo de Día y de Noche, el oscurecimiento sobre las nubes, las estrellas y el sol. */
 export const SKY_FRAGMENT = /* glsl */ `#version 300 es
 precision highp float;
 out vec4 outColor;
 ${SCREEN}
-${ATMOSPHERE}
+uniform float uTime;
+uniform float uNight;
 uniform float uSkyHigh;
-uniform vec2 uSun;
+uniform vec3 uSun;
+uniform float uSunAlpha;
+uniform vec2 uStars;
+uniform float uSweep;
 
 const vec3 DAY_TOP = ${vec(DAY.skyTop, 3)};
 const vec3 DAY_BOTTOM = ${vec(DAY.skyBottom, 3)};
@@ -62,36 +67,57 @@ const vec3 DAY_HIGH = ${vec(DAY.skyHigh, 3)};
 const vec3 NIGHT_TOP = ${vec(NIGHT.skyTop, 3)};
 const vec3 NIGHT_BOTTOM = ${vec(NIGHT.skyBottom, 3)};
 const vec3 NIGHT_HIGH = ${vec(NIGHT.skyHigh, 3)};
-const vec3 DUSK_TOP = vec3(0.17, 0.2, 0.42);
-const vec3 DUSK_BOTTOM = vec3(1.0, 0.58, 0.36);
+const vec3 DUSK_BAND = vec3(1.0, 0.56, 0.32);
 
 void main() {
     vec2 p = screen();
     float t = p.y / uRes.y;
-    vec3 sky = mix(mix(DAY_TOP, DAY_BOTTOM, t), mix(NIGHT_TOP, NIGHT_BOTTOM, t), uNight);
-    sky = mix(sky, mix(DUSK_TOP, DUSK_BOTTOM, smoothstep(0.0, 0.85, t)), uDusk * 0.85);
+    // La Bóveda celeste: el día y la noche son dos mitades del cielo que giran, con el ocaso entre ellas.
+    vec2 pivot = vec2(${PIVOT.x.toFixed(3)}, ${PIVOT.y.toFixed(3)}) * uRes;
+    float nightHere = uNight;
+    float band = 0.0;
+    if (uSweep >= 0.0) {
+        vec2 toSun = vec2(-sin(uSweep), -cos(uSweep));
+        float s = dot((p - pivot) / uRes.y, toSun);
+        nightHere = 1.0 - smoothstep(-0.12, 0.12, s);
+        band = exp(-(s / 0.14) * (s / 0.14));
+    }
+    vec3 sky = mix(mix(DAY_TOP, DAY_BOTTOM, t), mix(NIGHT_TOP, NIGHT_BOTTOM, t), nightHere);
+    sky = mix(sky, DUSK_BAND, band * 0.9);
     sky = mix(sky, mix(DAY_HIGH, NIGHT_HIGH, uNight), uSkyHigh * max(0.0, 1.0 - t / 0.75));
-    if (uDusk > 0.01) {
-        // El sol bajo (sunAt: al oeste si se pone, al este si sale), con resplandor y rayos.
-        vec2 sun = uSun * uRes;
-        float d = length(p - sun) / uRes.y;
-        sky += vec3(1.0, 0.55, 0.25) * uDusk * (exp(-d * 5.0) * 0.55 + 1.0 - smoothstep(0.035, 0.04, d));
-        // Los rayos salen de la dirección desde el sol: con el ángulo (atan) habría una costura en ±π.
-        vec2 dir = normalize(p - sun + 1e-4);
-        float rays = noise1(dir * 0.35 + vec2(uTime * 0.004, 0.0));
-        sky += vec3(1.0, 0.72, 0.42) * uDusk * smoothstep(0.5, 0.8, rays) * exp(-d * 2.2) * 0.3;
+    // Las estrellas giran alrededor del mismo punto, y titilan cada una a su ritmo.
+    if (uStars.x > 0.001) {
+        float c = cos(uStars.y), sn = sin(uStars.y);
+        vec2 rel = p - pivot;
+        vec2 q = vec2(c * rel.x + sn * rel.y, -sn * rel.x + c * rel.y) / 64.0;
+        vec2 id = floor(q);
+        float h = hash(id);
+        vec2 at = vec2(hash(id + 1.3), hash(id + 2.7));
+        float d0 = length(fract(q) - at) * 64.0;
+        float star = step(0.76, h) * (1.0 - smoothstep(0.5, 1.5, d0));
+        float twinkle = 0.6 + 0.4 * sin(uTime * (0.8 + h * 2.0) + h * 40.0);
+        sky += star * twinkle * uStars.x * nightHere * (1.0 - smoothstep(0.55, 0.9, t));
+    }
+    // El sol: blanco de día, naranja cerca de la franja de ocaso.
+    if (uSunAlpha > 0.001) {
+        float d = length(p - uSun.xy * uRes);
+        vec3 warm = mix(vec3(1.0, 0.93, 0.72), vec3(1.0, 0.55, 0.25), band);
+        float glow = exp(-d / (uSun.z * 3.0)) * 0.45;
+        sky += warm * uSunAlpha * (glow + 1.0 - smoothstep(uSun.z - 0.75, uSun.z + 0.75, d));
     }
     outColor = vec4(sky, 1.0);
 }
 `;
 
-/** La luna con su resplandor, encima de las estrellas como en la SVG. */
+/** La luna con su fase y su resplandor, encima de las estrellas como en la SVG. */
 export const MOON_FRAGMENT = /* glsl */ `#version 300 es
 precision highp float;
 out vec4 outColor;
 ${SCREEN}
-uniform float uNight;
 uniform vec3 uMoon;
+uniform float uFraction;
+uniform float uRotation;
+uniform float uAlpha;
 
 const vec3 MOON = ${vec(NIGHT_LIGHTS.moon, 3)};
 const vec3 MOON_GLOW = vec3(1.0, 0.945, 0.769);
@@ -105,7 +131,13 @@ void main() {
     z = min(z, 4.0);
     float glow = 0.45 * 0.5 * (1.0 - tanh(1.12838 * z + 0.10213 * z * z * z));
     float disc = 1.0 - smoothstep(uMoon.z - 0.75, uMoon.z + 0.75, d);
-    float a = (disc + (1.0 - disc) * glow) * uNight * step(0.0, uMoon.z - 0.5);
+    // La fase: el borde entre la luz y la sombra, con el disco oscuro apenas visible (como moonPath).
+    float ca = cos(uRotation), sa = sin(uRotation);
+    vec2 r = (screen() - uMoon.xy) / max(uMoon.z, 1.0);
+    r = vec2(ca * r.x + sa * r.y, -sa * r.x + ca * r.y);
+    float edge = (1.0 - 2.0 * uFraction) * sqrt(max(0.0, 1.0 - r.y * r.y));
+    float lit = smoothstep(-0.03, 0.03, r.x - edge);
+    float a = (disc * (0.07 + 0.93 * lit) + (1.0 - disc) * glow * uFraction) * uAlpha * step(0.0, uMoon.z - 0.5);
     vec3 c = mix(MOON_GLOW, MOON, disc);
     outColor = vec4(c * a, a);
 }
@@ -113,8 +145,8 @@ void main() {
 
 /**
  * Una capa rasterizada: la de Día y la de Noche, mezcladas en el cambio de tema, corridas
- * `uOffset` px (el Viaje de cámara en y, el parallax del mouse en x). `uTwinkle` hace titilar las estrellas por celdas,
- * como sus grupos en la SVG, y `uRim` ilumina el borde de una cresta en el atardecer.
+ * `uOffset` px (el Viaje de cámara en y, el parallax del mouse en x). `uRim` ilumina el borde de
+ * una cresta en el atardecer.
  */
 export const LAYER_FRAGMENT = /* glsl */ `#version 300 es
 precision highp float;
@@ -126,7 +158,6 @@ uniform float uNight;
 uniform float uDusk;
 uniform vec2 uOffset;
 uniform float uOpacity;
-uniform float uTwinkle;
 uniform float uRim;
 uniform float uSunSide;
 // Lo que mide la capa en px: la pantalla, salvo la calle, que es una franja.
@@ -142,14 +173,6 @@ void main() {
         // Opaca aquí y transparente hacia el sol (arriba, del lado del sol): el borde que da a la luz.
         float edge = c.a * (1.0 - texture(tDay, uv + vec2(2.5 * uSunSide, -3.0) / uRes).a);
         c.rgb += vec3(1.0, 0.62, 0.3) * uDusk * uRim * edge;
-    }
-    if (uTwinkle >= 0.0) {
-        // Tres grupos desfasados 1,7 s, de 0,85 a 0,25 de opacidad cada 5 s.
-        float group = floor(hash(floor(screen() / 24.0)) * 3.0);
-        float phase = fract((uTwinkle - group * 1.7) / 5.0);
-        // Keyframes 0,85 → 0,25 → 0,85, con ease-in-out en cada tramo (smoothstep se le parece).
-        float k = phase < 0.5 ? smoothstep(0.0, 1.0, phase * 2.0) : 1.0 - smoothstep(0.0, 1.0, phase * 2.0 - 1.0);
-        c *= mix(0.85, 0.25, k);
     }
     outColor = c;
 }

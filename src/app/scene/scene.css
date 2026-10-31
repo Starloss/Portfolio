@@ -26,12 +26,12 @@
     height: 100%;
 }
 
-/* Día ↔ Noche: un atardecer o un amanecer, no un salto. */
+/* Día ↔ Noche: el paisaje cambia de color durante toda la Bóveda celeste (3,6 s, BOVEDA_SECONDS). */
 .scene * {
     transition:
-        fill 0.6s ease,
-        stroke 0.6s ease,
-        background-color 0.6s ease;
+        fill 3.6s ease,
+        stroke 3.6s ease,
+        background-color 3.6s ease;
 }
 
 .scene-sky {
@@ -40,17 +40,54 @@
 }
 
 .scene-sky-night {
-    transition: opacity 0.6s ease;
+    transition: opacity 3.6s ease-in-out;
 }
 
 .scene-sky-high {
     background: linear-gradient(to bottom, var(--scene-sky-high), transparent 75%);
 }
 
-.scene-moon {
+/* El sol y la luna: se deslizan si cambia su lugar, y aparecen y se van con un fundido. */
+.scene-astro {
     position: absolute;
+    top: 0;
+    left: 0;
     border-radius: 50%;
-    box-shadow: 0 0 28px rgba(255, 241, 196, 0.45);
+    transition:
+        transform 2s ease,
+        opacity 0.6s ease;
+}
+
+.scene-astro > svg {
+    display: block;
+    overflow: visible;
+    filter: drop-shadow(0 0 8px rgba(255, 241, 196, 0.5));
+}
+
+.scene-sun {
+    background: #fff8e0;
+}
+
+/* Las estrellas y la franja de ocaso giran alrededor de un punto bajo el horizonte. */
+.scene-stars {
+    position: absolute;
+    width: 0;
+    height: 0;
+    transition: opacity 0.6s ease;
+}
+
+.scene-stars > svg {
+    display: block;
+    overflow: visible;
+}
+
+.scene-sweep {
+    position: absolute;
+    width: 250vmax;
+    height: 250vmax;
+    opacity: 0;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
 }
 
 .scene-cloud {
@@ -180,9 +217,19 @@
     .scene .scene-fade-in {
         animation: none;
     }
-    .scene,
+    /* El cambio de tema es solo un fundido corto: nada gira ni se desliza. */
     .scene * {
-        transition: none;
+        transition:
+            fill 0.6s ease,
+            stroke 0.6s ease,
+            background-color 0.6s ease;
+    }
+    .scene-sky-night {
+        transition: opacity 0.6s ease;
+    }
+    .scene-astro,
+    .scene-stars {
+        transition: opacity 0.6s ease;
     }
 }
 
