@@ -8,6 +8,7 @@ import { useDocumentHidden, useElementViewport, useSceneCovered } from '../envir
 import { pageFit, usePageLayout } from '../Scene';
 
 import { useBoveda } from '../prototype-boveda/store';
+import { useClima } from '../prototype-clima/store';
 
 import { EscenaClient } from './client';
 import type { FallbackReason } from './protocol';
@@ -57,6 +58,11 @@ export const SceneGL: React.FC<{
             engineRef.current = null;
         };
     }, [watch]);
+
+    const clima = useClima();
+    useEffect(() => {
+        engineRef.current?.setClima(clima);
+    }, [clima, watch]);
 
     const boveda = useBoveda();
     useEffect(() => {

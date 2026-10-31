@@ -40,6 +40,8 @@ import {
 } from './parts';
 import { STREET_ABOVE, streetBand, streetHeight } from './street';
 import { BovedaSvg } from './prototype-boveda/BovedaSvg';
+import { ClimaTint } from './prototype-clima/ClimaTint';
+import { useClima } from './prototype-clima/store';
 import { useBoveda } from './prototype-boveda/store';
 import './scene.css';
 
@@ -202,6 +204,7 @@ export const Scene: React.FC<{ height?: number }> = ({ height }) => {
 
     const { sink, moon } = pageFit(viewport, page, night);
     const boveda = useBoveda();
+    const clima = useClima();
     const travels = journeyMode && !reduced;
     const H = streetHeight(viewport.height);
 
@@ -244,6 +247,7 @@ export const Scene: React.FC<{ height?: number }> = ({ height }) => {
                         {!night && !mobile && <Macaws animate={animateDesktop} />}
                     </>,
                 )}
+                {clima && <ClimaTint night={night} params={clima} />}
                 {!boveda && night && moon && (
                     <div
                         className="scene-moon scene-fade-in"

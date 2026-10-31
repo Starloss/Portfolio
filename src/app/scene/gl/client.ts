@@ -3,6 +3,7 @@
 // texturas, las rasteriza de las piezas SVG y se las manda como ImageBitmap.
 import { readClocks } from './clocks';
 import type { BovedaParams } from '../prototype-boveda/sim';
+import type { ClimaParams } from '../prototype-clima/clima';
 
 import type { FallbackReason, FromWorker, Layout, ToWorker } from './protocol';
 import { themeLayers } from './textures';
@@ -94,6 +95,10 @@ export class EscenaClient {
 
     setLayout(layout: Layout) {
         this.post({ type: 'layout', layout });
+    }
+
+    setClima(params: ClimaParams | null) {
+        this.post({ type: 'clima', params });
     }
 
     setBoveda(params: BovedaParams | null) {

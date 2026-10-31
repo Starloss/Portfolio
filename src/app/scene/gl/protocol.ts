@@ -4,6 +4,7 @@
 import type { SceneFrame, Viewport } from '../camera';
 
 import type { BovedaParams } from '../prototype-boveda/sim';
+import type { ClimaParams } from '../prototype-clima/clima';
 
 import type { ClockAnchor } from './frame';
 
@@ -28,6 +29,7 @@ export type ToWorker =
     | { type: 'layout'; layout: Layout }
     | { type: 'night'; night: boolean }
     | { type: 'boveda'; params: BovedaParams | null }
+    | { type: 'clima'; params: ClimaParams | null }
     | { type: 'scroll'; progress: number }
     | { type: 'clocks'; anchor: ClockAnchor }
     | { type: 'pointer'; x: number }

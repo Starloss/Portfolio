@@ -58,6 +58,8 @@ uniform vec2 uSun;
 uniform float uSunAlpha;
 uniform vec2 uStars;
 uniform float uSweep;
+uniform vec4 uWeather;
+uniform vec2 uBoltSky;
 
 const vec3 DAY_TOP = ${vec(DAY.skyTop, 3)};
 const vec3 DAY_BOTTOM = ${vec(DAY.skyBottom, 3)};
@@ -83,6 +85,17 @@ void main() {
     vec3 sky = mix(mix(DAY_TOP, DAY_BOTTOM, t), mix(NIGHT_TOP, NIGHT_BOTTOM, t), nightHere);
     sky = mix(sky, mix(DUSK_TOP, DUSK_BOTTOM, smoothstep(0.0, 0.85, t)), uDusk * 0.85);
     sky = mix(sky, vec3(1.0, 0.56, 0.32), band * 0.9);
+    // PROTOTIPO: el Clima. x cobertura, y oscuridad, z modo (2 solo abajo), w rayo.
+    float lowOnly = uWeather.z > 1.5 ? smoothstep(0.25, 0.75, t) : 1.0;
+    vec3 overcast = mix(vec3(0.63, 0.69, 0.74), vec3(0.055, 0.075, 0.12), nightHere);
+    sky = mix(sky, overcast, uWeather.x * 0.75 * lowOnly);
+    sky *= 1.0 - uWeather.y * 0.6 * lowOnly;
+    if (uWeather.w > 0.001) {
+        float sheet = uWeather.z < 0.5 ? 0.14 : uWeather.z < 1.5 ? 0.05 : 0.0;
+        vec2 glowAt = vec2(uBoltSky.x * uRes.x, 0.62 * uRes.y);
+        float glow = uWeather.z > 1.5 ? 0.3 * exp(-length(p - glowAt) / (0.28 * uRes.y)) : 0.0;
+        sky += vec3(0.85, 0.88, 1.0) * uWeather.w * (sheet + glow);
+    }
     // PROTOTIPO: estrellas que giran alrededor de un punto bajo el horizonte.
     if (uStars.x > 0.001) {
         float c = cos(uStars.y), sn = sin(uStars.y);
@@ -164,6 +177,7 @@ uniform float uNight;
 uniform float uDusk;
 uniform vec2 uOffset;
 uniform float uOpacity;
+uniform float uShade;
 uniform float uTwinkle;
 uniform float uRim;
 uniform float uSunSide;
@@ -176,6 +190,7 @@ void main() {
     // En x, el parallax deja ver el borde: se estira la última columna en vez de cortar.
     uv.x = clamp(uv.x, 0.0, 1.0);
     vec4 c = mix(texture(tDay, uv), texture(tNight, uv), uNight) * uOpacity;
+    c.rgb *= 1.0 - uShade;
     if (uRim > 0.0 && uDusk > 0.01) {
         // Opaca aquí y transparente hacia el sol (arriba, del lado del sol): el borde que da a la luz.
         float edge = c.a * (1.0 - texture(tDay, uv + vec2(2.5 * uSunSide, -3.0) / uRes).a);
@@ -229,16 +244,20 @@ ${SCREEN}
 ${ATMOSPHERE}
 uniform vec2 uClouds;
 uniform float uParallax;
+uniform vec3 uCloudW;
 
 void main() {
     vec2 p = screen();
-    float top = uClouds.x + 0.08 * uRes.y;
-    float span = 0.47 * uRes.y;
+    // PROTOTIPO: con más cobertura hay más nubes; en C se apilan bajas, contra el Ávila.
+    float cover = uCloudW.x;
+    float top = uClouds.x + (uCloudW.z > 1.5 ? 0.08 + 0.3 * cover : 0.08 - 0.08 * cover) * uRes.y;
+    float span = (uCloudW.z > 1.5 ? 0.47 : 0.47 + 0.3 * cover) * uRes.y;
     float band = smoothstep(top, top + span * 0.35, p.y) * (1.0 - smoothstep(top + span * 0.6, top + span, p.y));
     if (band <= 0.0 || uClouds.y <= 0.0) discard;
     float n = noise2(vec2(p.x - uParallax + uTime * 7.0, p.y * 2.2) / 1500.0);
-    float d = smoothstep(0.56, 0.7, n) * band * uClouds.y * 0.85 * mix(0.9, 0.5, uNight);
-    outColor = vec4(cloudColor(smoothstep(0.56, 0.8, n) * (1.0 - 0.5 * (p.y - top) / span)) * d, d);
+    float d = smoothstep(0.56 - 0.3 * cover, 0.7 - 0.22 * cover, n) * band * uClouds.y * 0.85 * mix(0.9, 0.5 + 0.35 * cover, uNight);
+    vec3 cloud = cloudColor(smoothstep(0.56, 0.8, n) * (1.0 - 0.5 * (p.y - top) / span)) * (1.0 - uCloudW.y * 0.6);
+    outColor = vec4(cloud * d, d);
 }
 `;
 
@@ -250,6 +269,7 @@ ${SCREEN}
 ${ATMOSPHERE}
 uniform vec2 uMist;
 uniform vec3 uFlow;
+uniform float uMistBoost;
 
 void main() {
     vec2 p = screen();
@@ -258,7 +278,7 @@ void main() {
     if (g < 0.03) discard;
     float m = smoothstep(0.42, 0.72, noise1(vec2(p.x + uTime * uFlow.y, p.y * 3.0) / uFlow.x)) * g;
     vec3 color = mix(mix(vec3(0.94, 0.96, 1.0), vec3(0.3, 0.37, 0.55), uNight), vec3(1.0, 0.74, 0.64), uDusk);
-    float a = m * uFlow.z * (1.0 - 0.4 * uNight);
+    float a = min(1.0, m * uFlow.z * (1.0 - 0.4 * uNight) * (1.0 + uMistBoost));
     outColor = vec4(color * a, a);
 }
 `;
@@ -280,6 +300,54 @@ void main() {
     float n = noise2(q);
     float d = smoothstep(0.62 - 0.16 * uFront, 0.78, n) * uFront * mix(0.85, 0.55, uNight);
     outColor = vec4(cloudColor(smoothstep(0.55, 0.85, n)) * d, d);
+}
+`;
+
+/** PROTOTIPO: la lluvia (entera o en mangas, según uRain.y) y el rayo. */
+export const WEATHER_FRAGMENT = /* glsl */ `#version 300 es
+precision highp float;
+out vec4 outColor;
+${SCREEN}
+${ATMOSPHERE}
+uniform vec3 uRain;
+uniform vec2 uBank;
+uniform vec3 uBolt;
+
+float streaks(vec2 p, float width, float speed, float density) {
+    vec2 q = vec2(p.x + p.y * 0.13, p.y);
+    float col = floor(q.x / width);
+    float h = hash(vec2(col, 7.0));
+    float y = fract((q.y - uTime * speed * (0.8 + 0.4 * h) + h * 900.0) / (120.0 + 160.0 * h));
+    float cell = floor((q.y - uTime * speed * (0.8 + 0.4 * h) + h * 900.0) / (120.0 + 160.0 * h));
+    float on = step(1.0 - density, hash(vec2(col, cell)));
+    float across = 1.0 - abs(fract(q.x / width) - 0.5) * 2.0;
+    return on * smoothstep(0.0, 0.04, y) * (1.0 - smoothstep(0.04, 0.3, y)) * smoothstep(0.3, 0.8, across);
+}
+
+void main() {
+    vec2 p = screen();
+    float a = 0.0;
+    if (uRain.x > 0.001) {
+        a = streaks(p, 7.0, 900.0, 0.5 * uRain.x) * 0.5 + streaks(p + 13.0, 4.0, 620.0, 0.5 * uRain.x) * 0.28;
+        if (uRain.y > 0.5) {
+            float shafts = smoothstep(0.42, 0.68, noise1(vec2(p.x / 1100.0 + uTime * 0.006, 0.3)));
+            float inBank = smoothstep(uBank.x, uBank.x + 70.0, p.y) * (1.0 - smoothstep(uBank.y - 90.0, uBank.y, p.y));
+            a *= shafts * inBank * 1.5;
+        }
+        a *= uRain.z;
+    }
+    vec3 rain = mix(vec3(0.82, 0.88, 0.95), vec3(0.5, 0.6, 0.76), uNight);
+    vec3 color = rain * a;
+    if (uBolt.y > 0.001) {
+        float x = uBolt.x * uRes.x
+            + (noise1(vec2(p.y / 1400.0, uBolt.z)) - 0.5) * 420.0
+            + (noise1(vec2(p.y / 300.0, uBolt.z + 0.37)) - 0.5) * 90.0;
+        float d = abs(p.x - x);
+        float reach = 1.0 - smoothstep(0.55, 0.75, p.y / uRes.y);
+        color += vec3(0.92, 0.94, 1.0) * uBolt.y * reach * (exp(-d / 1.6) + 0.22 * exp(-d / 20.0));
+    }
+    if (a <= 0.0 && uBolt.y <= 0.001) discard;
+    outColor = vec4(color, a);
 }
 `;
 
