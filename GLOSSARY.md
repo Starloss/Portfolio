@@ -80,8 +80,24 @@ Un elemento reconocible de Caracas dentro de la Escena: El Ávila, el Hotel Humb
 _Avoid_: edificio, landmark
 
 **Día** / **Noche**:
-Los dos estados de la Escena. Siguen siempre el tema claro u oscuro que elige el visitante; el paso de uno a otro es un atardecer o un amanecer.
+Los dos estados de la Escena. Siguen siempre el tema claro u oscuro del sitio: lo que elija el visitante durante esa visita o, si no eligió, lo que corresponda a la hora de Caracas al cargar la página. El paso de uno a otro es la Bóveda celeste.
 _Avoid_: light mode, dark mode (al hablar de la Escena)
+
+**Bóveda celeste**:
+El giro del cielo con que la Escena pasa de Día a Noche o de Noche a Día, en el que el sol y la luna se relevan.
+_Avoid_: transición de tema, animación de tema
+
+**Cielo vivo**:
+Lo que la Escena muestra a partir de la hora y el Clima reales de Caracas: el sol o la luna, su posición y la fase lunar. Una Noche puede no tener luna, si la real aún no ha salido. Si el visitante eligió un estado que no coincide con la hora de Caracas, el sol o la luna van a una posición fija; el Clima sigue siendo el real.
+_Avoid_: modo clima, escena dinámica
+
+**Clima**:
+El estado del tiempo actual en Caracas que muestra la Escena: despejado, parcial, nublado, lluvia o tormenta. Nunca es el del lugar del visitante.
+_Avoid_: tiempo, weather
+
+**Indicador**:
+La píldora del Hero que muestra la hora y el Clima de Caracas.
+_Avoid_: widget, badge
 
 **Viaje de cámara**:
 El recorrido vertical de la Escena que acompaña el scroll, contado como un viaje de bajada en el Teleférico: empieza arriba, entre las nubes y las cumbres del Ávila, y baja en un solo sentido hasta el nivel de la calle, donde entra la Avenida Bolívar; al llegar a Contacto se ven completas la ciudad y la avenida.
