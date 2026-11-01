@@ -14,7 +14,6 @@ const capable: DeviceSignals = {
     forced: null,
     reducedMotion: false,
     saveData: false,
-    mobile: false,
     webgl2: true,
     renderer: 'ANGLE (NVIDIA, NVIDIA GeForce RTX 3060 Ti Direct3D11 vs_5_0 ps_5_0, D3D11)',
     memory: 16,
@@ -31,7 +30,6 @@ describe('chooseEscena', () => {
         const weak: DeviceSignals = {
             ...capable,
             reducedMotion: true,
-            mobile: true,
             webgl2: false,
             rememberedFallback: true,
         };
@@ -48,7 +46,6 @@ describe('chooseEscena', () => {
     it.each([
         ['reduced-motion', { reducedMotion: true }],
         ['save-data', { saveData: true }],
-        ['mobile', { mobile: true }],
         ['fallback-remembered', { rememberedFallback: true }],
         ['no-webgl2', { webgl2: false }],
         ['low-memory', { memory: 2 }],
@@ -75,23 +72,26 @@ describe('chooseEscena', () => {
         });
     });
 
-    it.each([
-        'ANGLE (Intel, Intel(R) HD Graphics 4000 Direct3D11 vs_5_0 ps_5_0, D3D11)',
-        'Mali-G52 MC2',
-        'Adreno (TM) 506',
-        'PowerVR Rogue GE8320',
-    ])('una GPU de gama baja deja la SVG: %s', (renderer) => {
-        expect(chooseEscena({ ...capable, renderer })).toEqual({
-            version: 'svg',
-            reason: 'low-end-gpu',
-        });
-    });
+    it.each(['ANGLE (Intel, Intel(R) HD Graphics 4000 Direct3D11 vs_5_0 ps_5_0, D3D11)'])(
+        'una GPU de gama baja deja la SVG: %s',
+        (renderer) => {
+            expect(chooseEscena({ ...capable, renderer })).toEqual({
+                version: 'svg',
+                reason: 'low-end-gpu',
+            });
+        },
+    );
 
     it.each([
         'ANGLE (Intel, Intel(R) Iris(R) Xe Graphics Direct3D11 vs_5_0 ps_5_0, D3D11)',
         'ANGLE (Intel, Intel(R) UHD Graphics 770 Direct3D11 vs_5_0 ps_5_0, D3D11)',
         'Apple M2',
         'ANGLE (AMD, AMD Radeon RX 6700 XT Direct3D11 vs_5_0 ps_5_0, D3D11)',
+        // Las de teléfono también pasan: decide el vigilante, igual que en escritorio.
+        'Apple GPU',
+        'Mali-G52 MC2',
+        'Adreno (TM) 506',
+        'PowerVR Rogue GE8320',
     ])('una GPU integrada reciente o dedicada pasa (la vigila el vigilante): %s', (renderer) => {
         expect(chooseEscena({ ...capable, renderer }).version).toBe('webgl');
     });
@@ -206,10 +206,12 @@ describe('readSignals', () => {
         expect(workers.created).toBe(0);
     });
 
-    it('un teléfono acostado (ventana ancha, pantalla chica) es un teléfono', async () => {
+    it('un teléfono pasa por la misma prueba que un escritorio', async () => {
+        fakeProbe({ webgl2: true, renderer: 'Adreno (TM) 730' });
         vi.spyOn(window.screen, 'width', 'get').mockReturnValue(390);
         vi.spyOn(window.screen, 'height', 'get').mockReturnValue(844);
-        expect(chooseEscena(await readSignals())).toEqual({ version: 'svg', reason: 'mobile' });
+        expect(chooseEscena(await readSignals())).toEqual({ version: 'webgl', reason: 'capable' });
+        expect(workers.created).toBe(1);
     });
 
     it('con una caída recordada tampoco hace la prueba', async () => {

@@ -71,10 +71,21 @@ test('sin forzarla, una GPU por software se queda con la SVG y no descarga la We
     await expect(page.locator('.scene-gl')).toHaveCount(0);
 });
 
-test('en un teléfono, ni siquiera con la página cargada se monta la WebGL', async ({ page }) => {
+test('un teléfono pasa por la misma detección: aquí, sin GPU, se queda con la SVG', async ({
+    page,
+}) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto('/');
     await expect(page.locator('html')).toHaveAttribute('data-escena-elegida', 'svg');
-    await expect(page.locator('html')).toHaveAttribute('data-escena-razon', 'mobile');
+    await expect(page.locator('html')).toHaveAttribute('data-escena-razon', 'software-gpu');
     await expect(page.locator('.scene-gl')).toHaveCount(0);
+});
+
+test('en un teléfono, la Escena WebGL entra y llena la pantalla', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto('/?escena=webgl');
+    await expect(page.locator(canvas)).toHaveCSS('opacity', '1', { timeout: 20_000 });
+    const box = (await page.locator(canvas).boundingBox())!;
+    expect(box.width).toBe(390);
+    expect(box.height).toBe(844);
 });
