@@ -76,7 +76,8 @@ test('?clima= sustituye al dato: sin API ni eventos, y sigue vigente al navegar'
         calls++;
         return route.abort();
     });
-    await page.goto('/?hora=12:00&clima=tormenta');
+    // Sin ?hora=: así comprueba que es el Clima forzado el que evita contar la elección.
+    await page.goto('/?clima=tormenta');
     await expect(indicator(page)).toContainText('tormenta');
 
     await page

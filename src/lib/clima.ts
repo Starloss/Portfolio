@@ -88,13 +88,14 @@ async function fetchClima(): Promise<{ clima: Clima } | { failure: ClimaFailure 
     } catch {
         return { failure: 'red' };
     }
+    if (!response.ok) return { failure: 'respuesta' };
     try {
         const body = (await response.json()) as {
             current?: { temperature_2m?: number; weather_code?: number };
         };
         const { temperature_2m: temperatura, weather_code: code } = body.current ?? {};
         const estado = typeof code === 'number' ? estadoFromCode(code) : null;
-        if (!response.ok || !estado || typeof temperatura !== 'number') {
+        if (!estado || typeof temperatura !== 'number') {
             return { failure: 'respuesta' };
         }
         return { clima: { estado, temperatura } };
