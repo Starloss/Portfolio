@@ -8,7 +8,7 @@ import type { FallbackReason } from '@app/scene/gl/SceneGL';
 // detección previa y solo entonces trae la Escena WebGL (ADR 0003).
 
 const detect = vi.hoisted(() => ({
-    choice: { version: 'svg', reason: 'mobile' } as EscenaChoice,
+    choice: { version: 'svg', reason: 'save-data' } as EscenaChoice,
     fail: false,
     remember: vi.fn(),
 }));
@@ -63,14 +63,14 @@ afterEach(() => {
 
 describe('EscenaUpgrade', () => {
     it('si la detección elige la SVG, no carga la WebGL y lo registra', async () => {
-        detect.choice = { version: 'svg', reason: 'mobile' };
+        detect.choice = { version: 'svg', reason: 'save-data' };
         render(<EscenaUpgrade />);
         await waitFor(() =>
-            expect(track).toHaveBeenCalledWith('escena', { version: 'svg', reason: 'mobile' }),
+            expect(track).toHaveBeenCalledWith('escena', { version: 'svg', reason: 'save-data' }),
         );
         expect(screen.queryByTestId('escena-gl')).not.toBeInTheDocument();
         expect(document.documentElement.dataset.escenaElegida).toBe('svg');
-        expect(document.documentElement.dataset.escenaRazon).toBe('mobile');
+        expect(document.documentElement.dataset.escenaRazon).toBe('save-data');
     });
 
     it('si elige la WebGL, la monta con el vigilante encendido', async () => {
@@ -133,7 +133,7 @@ describe('EscenaUpgrade', () => {
     });
 
     it('espera al evento load si la página todavía no terminó de cargar', async () => {
-        detect.choice = { version: 'svg', reason: 'mobile' };
+        detect.choice = { version: 'svg', reason: 'save-data' };
         const state = vi.spyOn(document, 'readyState', 'get').mockReturnValue('loading');
         render(<EscenaUpgrade />);
         await new Promise((r) => setTimeout(r, 300));

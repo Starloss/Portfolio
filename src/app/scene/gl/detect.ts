@@ -7,7 +7,6 @@ export type EscenaReason =
     | 'forced'
     | 'reduced-motion'
     | 'save-data'
-    | 'mobile'
     | 'fallback-remembered'
     | 'no-webgl2'
     | 'low-memory'
@@ -26,7 +25,6 @@ export interface DeviceSignals {
     forced: string | null;
     reducedMotion: boolean;
     saveData: boolean;
-    mobile: boolean;
     /** WebGL2 en un OffscreenCanvas: la Escena WebGL dibuja desde un Worker. */
     webgl2: boolean;
     /** Nombre de la GPU que da WebGL, si lo da. */
@@ -44,9 +42,9 @@ const SOFTWARE_GPU = /swiftshader|llvmpipe|softpipe|software|basic render/i;
 
 /** GPU emulada en la CPU: solo llega a la Escena WebGL forzada con ?escena=webgl. */
 export const isSoftwareGpu = (renderer: string | null) => !!renderer && SOFTWARE_GPU.test(renderer);
-// Integradas viejas y GPUs de teléfono. Las Intel recientes (UHD, Iris) pasan: si no rinden, el
-// vigilante de FPS las devuelve a la SVG.
-const LOW_END_GPU = /\bHD Graphics\b|\bMali\b|\bAdreno\b|\bPowerVR\b/i;
+// Integradas viejas. Las demás pasan, también las de teléfono: el nombre no dice cuánto rinden, y si
+// no alcanzan, el vigilante de FPS las devuelve a la SVG.
+const LOW_END_GPU = /\bHD Graphics\b/i;
 
 export function chooseEscena(s: DeviceSignals): EscenaChoice {
     const svg = (reason: EscenaReason): EscenaChoice => ({ version: 'svg', reason });
@@ -54,7 +52,6 @@ export function chooseEscena(s: DeviceSignals): EscenaChoice {
     if (s.forced === 'svg') return svg('forced');
     if (s.reducedMotion) return svg('reduced-motion');
     if (s.saveData) return svg('save-data');
-    if (s.mobile) return svg('mobile');
     if (s.rememberedFallback) return svg('fallback-remembered');
     if (!s.webgl2) return svg('no-webgl2');
     if (s.memory !== undefined && s.memory < MIN_MEMORY_GB) return svg('low-memory');
@@ -133,14 +130,6 @@ function probeWebGL(): Promise<{ webgl2: boolean; renderer: string | null }> {
 const matches = (query: string) =>
     typeof window.matchMedia === 'function' && window.matchMedia(query).matches;
 
-// Un teléfono, también acostado: la ventana angosta o la pantalla chica por su lado corto. Las
-// tabletas (desde 744 px de lado corto) y los escritorios pasan.
-const PHONE_SHORT_SIDE = 600;
-const isPhone = () =>
-    matches('(max-width: 767px)') ||
-    Math.min(window.screen?.width || Infinity, window.screen?.height || Infinity) <
-        PHONE_SHORT_SIDE;
-
 /** Lee del navegador lo que necesita `chooseEscena`. */
 export async function readSignals(): Promise<DeviceSignals> {
     const nav = navigator as Navigator & {
@@ -152,7 +141,6 @@ export async function readSignals(): Promise<DeviceSignals> {
         forced,
         reducedMotion: matches('(prefers-reduced-motion: reduce)'),
         saveData: nav.connection?.saveData === true,
-        mobile: isPhone(),
         memory: nav.deviceMemory,
         cores: nav.hardwareConcurrency || undefined,
         rememberedFallback: isFallbackRemembered(storedFallback(), Date.now()),
