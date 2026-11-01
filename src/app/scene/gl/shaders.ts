@@ -60,6 +60,8 @@ uniform vec3 uSun;
 uniform float uSunAlpha;
 uniform vec2 uStars;
 uniform float uSweep;
+uniform vec3 uWeather;
+uniform float uBoltX;
 
 const vec3 DAY_TOP = ${vec(DAY.skyTop, 3)};
 const vec3 DAY_BOTTOM = ${vec(DAY.skyBottom, 3)};
@@ -84,6 +86,14 @@ void main() {
     }
     vec3 sky = mix(mix(DAY_TOP, DAY_BOTTOM, t), mix(NIGHT_TOP, NIGHT_BOTTOM, t), nightHere);
     sky = mix(sky, DUSK_BAND, band * 0.9);
+    // El Clima: x cobertura, y oscuridad, z la luz del rayo, que se ve en el cielo y dentro de las nubes.
+    vec3 overcast = mix(vec3(0.63, 0.69, 0.74), vec3(0.055, 0.075, 0.12), nightHere);
+    sky = mix(sky, overcast, uWeather.x * uWeather.x * 0.85);
+    sky *= 1.0 - uWeather.y * 0.6;
+    if (uWeather.z > 0.001) {
+        float glow = 0.3 * exp(-length(p - vec2(uBoltX * uRes.x, 0.45 * uRes.y)) / (0.28 * uRes.y));
+        sky += vec3(0.85, 0.88, 1.0) * uWeather.z * (0.14 + glow);
+    }
     sky = mix(sky, mix(DAY_HIGH, NIGHT_HIGH, uNight), uSkyHigh * max(0.0, 1.0 - t / 0.75));
     // Las estrellas giran alrededor del mismo punto, y titilan cada una a su ritmo.
     if (uStars.x > 0.001) {
@@ -158,6 +168,7 @@ uniform float uNight;
 uniform float uDusk;
 uniform vec2 uOffset;
 uniform float uOpacity;
+uniform float uShade;
 uniform float uRim;
 uniform float uSunSide;
 // Lo que mide la capa en px: la pantalla, salvo la calle, que es una franja.
@@ -169,6 +180,7 @@ void main() {
     // En x, el parallax deja ver el borde: se estira la última columna en vez de cortar.
     uv.x = clamp(uv.x, 0.0, 1.0);
     vec4 c = mix(texture(tDay, uv), texture(tNight, uv), uNight) * uOpacity;
+    c.rgb *= 1.0 - uShade;
     if (uRim > 0.0 && uDusk > 0.01) {
         // Opaca aquí y transparente hacia el sol (arriba, del lado del sol): el borde que da a la luz.
         float edge = c.a * (1.0 - texture(tDay, uv + vec2(2.5 * uSunSide, -3.0) / uRes).a);
@@ -214,16 +226,21 @@ ${SCREEN}
 ${ATMOSPHERE}
 uniform vec2 uClouds;
 uniform float uParallax;
+uniform vec2 uCloudW;
 
 void main() {
     vec2 p = screen();
-    float top = uClouds.x + 0.08 * uRes.y;
-    float span = 0.47 * uRes.y;
+    // Con más cobertura, hay más nubes y ocupan más cielo; sin ninguna, un cielo despejado.
+    float cover = uCloudW.x;
+    if (cover <= 0.001) discard;
+    float top = uClouds.x + (0.08 - 0.3 * cover) * uRes.y;
+    float span = (0.47 + 0.75 * cover) * uRes.y;
     float band = smoothstep(top, top + span * 0.35, p.y) * (1.0 - smoothstep(top + span * 0.6, top + span, p.y));
     if (band <= 0.0 || uClouds.y <= 0.0) discard;
-    float n = noise2(vec2(p.x - uParallax + uTime * 7.0, p.y * 2.2) / 1500.0);
-    float d = smoothstep(0.56, 0.7, n) * band * uClouds.y * 0.85 * mix(0.9, 0.5, uNight);
-    outColor = vec4(cloudColor(smoothstep(0.56, 0.8, n) * (1.0 - 0.5 * (p.y - top) / span)) * d, d);
+    float n = noise2(vec2(p.x - uParallax + uTime * 7.0, p.y * 1.9) / 1100.0);
+    float lo = mix(0.68, 0.3, cover);
+    float d = smoothstep(lo, lo + 0.13, n) * band * uClouds.y * smoothstep(0.0, 0.1, cover) * mix(0.92, 0.5 + 0.28 * cover, uNight);
+    outColor = vec4(cloudColor(smoothstep(lo, lo + 0.34, n)) * (1.0 - uCloudW.y * 0.6) * d, d);
 }
 `;
 
@@ -235,6 +252,7 @@ ${SCREEN}
 ${ATMOSPHERE}
 uniform vec2 uMist;
 uniform vec3 uFlow;
+uniform float uMistBoost;
 
 void main() {
     vec2 p = screen();
@@ -243,7 +261,7 @@ void main() {
     if (g < 0.03) discard;
     float m = smoothstep(0.42, 0.72, noise1(vec2(p.x + uTime * uFlow.y, p.y * 3.0) / uFlow.x)) * g;
     vec3 color = mix(mix(vec3(0.94, 0.96, 1.0), vec3(0.3, 0.37, 0.55), uNight), vec3(1.0, 0.74, 0.64), uDusk);
-    float a = m * uFlow.z * (1.0 - 0.4 * uNight);
+    float a = min(1.0, m * uFlow.z * (1.0 - 0.4 * uNight) * (1.0 + uMistBoost));
     outColor = vec4(color * a, a);
 }
 `;
@@ -265,6 +283,46 @@ void main() {
     float n = noise2(q);
     float d = smoothstep(0.62 - 0.16 * uFront, 0.78, n) * uFront * mix(0.85, 0.55, uNight);
     outColor = vec4(cloudColor(smoothstep(0.55, 0.85, n)) * d, d);
+}
+`;
+
+/** La lluvia, en dos planos de gotas, y la línea del rayo. Cada pase usa solo una de las dos. */
+export const WEATHER_FRAGMENT = /* glsl */ `#version 300 es
+precision highp float;
+out vec4 outColor;
+${SCREEN}
+${ATMOSPHERE}
+uniform float uRain;
+uniform vec3 uBolt;
+
+float streaks(vec2 p, float width, float speed, float density) {
+    vec2 q = vec2(p.x + p.y * 0.13, p.y);
+    float col = floor(q.x / width);
+    float h = hash(vec2(col, 7.0));
+    float along = (q.y - uTime * speed * (0.8 + 0.4 * h) + h * 900.0) / (120.0 + 160.0 * h);
+    float y = fract(along);
+    float on = step(1.0 - density, hash(vec2(col, floor(along))));
+    float across = 1.0 - abs(fract(q.x / width) - 0.5) * 2.0;
+    return on * smoothstep(0.0, 0.04, y) * (1.0 - smoothstep(0.04, 0.3, y)) * smoothstep(0.3, 0.8, across);
+}
+
+void main() {
+    vec2 p = screen();
+    float a = 0.0;
+    if (uRain > 0.001) {
+        a = (streaks(p, 7.0, 900.0, 0.5 * uRain) * 0.5 + streaks(p + 13.0, 4.0, 620.0, 0.5 * uRain) * 0.28) * 0.6;
+    }
+    vec3 color = mix(vec3(0.82, 0.88, 0.95), vec3(0.5, 0.6, 0.76), uNight) * a;
+    if (uBolt.y > 0.001) {
+        float x = uBolt.x * uRes.x
+            + (noise1(vec2(p.y / 1400.0, uBolt.z)) - 0.5) * 420.0
+            + (noise1(vec2(p.y / 300.0, uBolt.z + 0.37)) - 0.5) * 90.0;
+        float d = abs(p.x - x);
+        float reach = 1.0 - smoothstep(0.55, 0.75, p.y / uRes.y);
+        color += vec3(0.92, 0.94, 1.0) * uBolt.y * reach * (exp(-d / 1.6) + 0.22 * exp(-d / 20.0));
+    }
+    if (a <= 0.0 && uBolt.y <= 0.001) discard;
+    outColor = vec4(color, a);
 }
 `;
 

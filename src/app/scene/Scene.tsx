@@ -26,7 +26,7 @@ import { useDocumentHidden, useElementViewport, useSceneCovered } from './enviro
 import { skyline } from './geometry';
 import { DAY, NIGHT, paletteVars, VARS } from './palette';
 import { BovedaCeleste } from './BovedaCeleste';
-import { ClimaTint } from './ClimaTint';
+import { ClimaTint, cloudsOpacity } from './ClimaTint';
 import {
     Avenue,
     Avila,
@@ -187,8 +187,7 @@ export const Scene: React.FC<{ height?: number }> = ({ height }) => {
     const night = theme === 'dark';
     const mobile = useMediaQuery(MOBILE_QUERY);
     const reduced = usePrefersReducedMotion();
-    // Un cielo despejado no tiene nubes.
-    const clear = useClima()?.estado === 'despejado';
+    const estado = useClima()?.estado ?? null;
     // El tamaño sale de la propia Escena (100vh): no cambia cuando el teléfono muestra u oculta la
     // barra del navegador, así el encuadre no salta mientras se hace scroll.
     const rootRef = useRef<HTMLDivElement>(null);
@@ -233,7 +232,10 @@ export const Scene: React.FC<{ height?: number }> = ({ height }) => {
                 {!night && !mobile && svg(<Macaws animate={animateDesktop} />)}
             </div>
             {!mobile && (
-                <div className="scene-layer scene-clouds-fade" style={{ opacity: clear ? 0 : 1 }}>
+                <div
+                    className="scene-layer scene-clouds-fade"
+                    style={{ opacity: cloudsOpacity(estado) }}
+                >
                     <m.div className="scene-layer" data-layer="clouds" style={styles.clouds}>
                         {CLOUDS.map((cloud, i) => (
                             <div

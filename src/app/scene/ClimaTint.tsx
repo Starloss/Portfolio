@@ -13,6 +13,18 @@ const TINT: Record<Estado, number> = {
     tormenta: 0.6,
 };
 
+// Las nubes de la capa SVG son claras: un cielo despejado no las tiene, y con mal tiempo se apagan.
+const CLOUDS: Record<Estado, number> = {
+    despejado: 0,
+    parcial: 1,
+    nublado: 1,
+    lluvia: 0.6,
+    tormenta: 0.4,
+};
+
+/** Cuánto se ven las nubes de la capa SVG; sin Clima, como siempre. */
+export const cloudsOpacity = (estado: Estado | null) => (estado ? CLOUDS[estado] : 1);
+
 export const ClimaTint: React.FC<{ night: boolean }> = ({ night }) => {
     const clima = useClima();
     const tint = clima ? TINT[clima.estado] : 0;

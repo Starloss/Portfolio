@@ -1,6 +1,8 @@
 // Mensajes entre la página y el Worker que dibuja la Escena WebGL (ADR 0003). La página no hace
 // nada de WebGL: le pasa al Worker el canvas, el scroll, las medidas, el tema y el reloj de las
 // animaciones de CSS, y le rasteriza las texturas cuando las pide.
+import type { Estado } from '@lib/clima';
+
 import type { SceneFrame, Viewport } from '../camera';
 import type { Sky } from '../sky';
 import type { SkyLayout } from '../vault';
@@ -28,6 +30,7 @@ export type ToWorker =
     | { type: 'layout'; layout: Layout }
     | { type: 'night'; night: boolean }
     | { type: 'sky'; sky: Sky }
+    | { type: 'clima'; estado: Estado | null }
     | { type: 'scroll'; progress: number }
     | { type: 'clocks'; anchor: ClockAnchor }
     | { type: 'pointer'; x: number }

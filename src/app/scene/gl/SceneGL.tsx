@@ -1,6 +1,7 @@
 // La Escena WebGL encima de la SVG (ADR 0003). Entra con un fundido cruzado; si el vigilante de FPS
 // la ve lenta, se funde de vuelta a la SVG, y si falla (contexto perdido, texturas), vuelve enseguida.
 import React, { useEffect, useEffectEvent, useRef, useState } from 'react';
+import { useClima } from '@lib/clima';
 import { useTheme } from '@lib/theme';
 
 import { sceneFrame } from '../camera';
@@ -60,6 +61,12 @@ export const SceneGL: React.FC<{
             engineRef.current = null;
         };
     }, [watch]);
+
+    const estado = useClima()?.estado ?? null;
+    useEffect(() => {
+        engineRef.current?.setClima(estado);
+        // `watch` recrea el motor: el nuevo también necesita saber el Clima.
+    }, [estado, watch]);
 
     const sky = useCaracasSky();
     useEffect(() => {

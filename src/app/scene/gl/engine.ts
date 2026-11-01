@@ -3,10 +3,12 @@
 // uniforms que calcula frame.ts y dibuja las capas en orden. La lógica vive en frame.ts y
 // watchdog.ts, con tests; esto se prueba con Playwright.
 import { Geometry, Mesh, Program, Renderer, Texture, Triangle } from 'ogl';
+import type { Estado } from '@lib/clima';
 
 import { sky as skyAt, type Sky } from '../sky';
 import { STREET_ABOVE, streetAgents } from '../street';
 import { arcPoint, BOVEDA_SECONDS, BovedaClock, moonRotation, restOf } from '../vault';
+import { WeatherClock } from '../weather';
 
 import { isSoftwareGpu, rendererName } from './detect';
 import { advanceClocks, escenaFrame, followPointer, type ClockAnchor, type Clocks } from './frame';
@@ -26,6 +28,7 @@ import {
     SKY_FRAGMENT,
     SPRITE_FRAGMENT,
     SPRITE_VERTEX,
+    WEATHER_FRAGMENT,
 } from './shaders';
 import type { LayerName } from './textures';
 import { createWatchdog } from './watchdog';
@@ -44,6 +47,7 @@ const ORDER = [
     'moon',
     'macaws',
     'clouds',
+    'bolt',
     'far',
     'farMist',
     'avilaBack',
@@ -59,6 +63,7 @@ const ORDER = [
     'street',
     'agents',
     'front',
+    'rain',
 ] as const;
 type Pass = (typeof ORDER)[number];
 
@@ -119,6 +124,8 @@ export class EscenaGL {
     private target = 0;
     private boveda = new BovedaClock(BOVEDA_SECONDS);
     private sky: Sky = skyAt(Date.now());
+    private estado: Estado | null = null;
+    private weather = new WeatherClock();
     private progress = 0;
     private pointer = 0;
     private pointerTarget = 0;
@@ -225,6 +232,8 @@ export class EscenaGL {
             uSunAlpha: { value: 0 },
             uStars: { value: [0, 0] },
             uSweep: { value: -1 },
+            uWeather: { value: [0, 0, 0] },
+            uBoltX: { value: 0.5 },
         });
         const moon = this.program(FULLSCREEN_VERTEX, MOON_FRAGMENT, {
             uMoon: { value: [0, 0, 0] },
@@ -235,12 +244,14 @@ export class EscenaGL {
         const clouds = this.program(FULLSCREEN_VERTEX, CLOUDS_FRAGMENT, {
             ...atmosphere,
             uClouds: { value: [0, 0] },
+            uCloudW: { value: [0, 0] },
             uParallax: { value: 0 },
         });
         const mist = this.program(FULLSCREEN_VERTEX, MIST_FRAGMENT, {
             ...atmosphere,
             uMist: { value: [0, 1] },
             uFlow: { value: [1, 0, 0] },
+            uMistBoost: { value: 0 },
         });
         const front = this.program(FULLSCREEN_VERTEX, FRONT_FRAGMENT, {
             ...atmosphere,
@@ -260,9 +271,15 @@ export class EscenaGL {
             uDusk: { value: 0 },
             uOffset: { value: [0, 0] },
             uOpacity: { value: 1 },
+            uShade: { value: 0 },
             uRim: { value: 0 },
             uSunSide: { value: -1 },
             uSize: { value: [1, 1] },
+        });
+        const weather = this.program(FULLSCREEN_VERTEX, WEATHER_FRAGMENT, {
+            ...atmosphere,
+            uRain: { value: 0 },
+            uBolt: { value: [0, 0, 0] },
         });
         // La gente y los vehículos de la calle: un quad por instancia (agents.ts).
         const agents = this.program(AGENT_VERTEX, AGENT_FRAGMENT, { uTime: { value: 0 } });
@@ -283,7 +300,7 @@ export class EscenaGL {
             fixed,
         });
         // Una capa rasterizada; las de un solo tema usan la misma textura de los dos lados.
-        const still = { uOffset: [0, 0], uOpacity: 1, uRim: 0 };
+        const still = { uOffset: [0, 0], uOpacity: 1, uRim: 0, uShade: 0 };
         const tex = (day: string, night: string) => ({
             tDay: this.texture(day),
             tNight: this.texture(night),
@@ -313,6 +330,8 @@ export class EscenaGL {
             moon: pass(fullscreen, moon),
             macaws: pass(fullscreen, layer, { ...still, ...tex('macaws:day', 'macaws:day') }),
             clouds: pass(fullscreen, clouds),
+            bolt: pass(fullscreen, weather),
+            rain: pass(fullscreen, weather),
             far: both('far', 0.8),
             farMist: mistOf({ scale: 1300, drift: 5, strength: 0.4 }),
             avilaBack: both('avilaBack', 1),
@@ -490,6 +509,12 @@ export class EscenaGL {
         this.boveda.change(night, performance.now());
     }
 
+    /** El Clima de Caracas: `null` hasta que llega o si falla. */
+    setClima(estado: Estado | null) {
+        this.estado = estado;
+        this.dirty = true;
+    }
+
     /** Dónde están el sol y la luna: lo actualiza la página, de a un minuto. */
     setSky(sky: Sky) {
         this.sky = sky;
@@ -540,7 +565,7 @@ export class EscenaGL {
     private draw(now: number) {
         const layout = this.layout;
         if (!layout || this.ready[this.theme] < 0) return;
-        if (this.onDemand && !this.dirty && !this.boveda.turning) return;
+        if (this.onDemand && !this.dirty && !this.boveda.turning && !this.weather.fading) return;
         this.dirty = false;
         const { viewport, frame, sink, sky: arc } = layout;
         const dt = Math.min(0.1, (now - (this.lastFrame || now)) / 1000);
@@ -568,6 +593,12 @@ export class EscenaGL {
         // De qué lado está el sol para los bordes iluminados: al ir a la Noche se pone a la izquierda
         // (al oeste); al volver al Día, sale a la derecha (al este).
         const side = toNight ? -1 : 1;
+        // Con una GPU por software no hay rayos: dibuja solo cuando algo cambia.
+        const w = this.weather.tick(now, this.estado);
+        const flash = this.onDemand ? 0 : w.flash;
+        const shade = w.dark * 0.3;
+        // Las nubes tapan el sol, la luna y las estrellas.
+        const dim = 1 - w.cover * 0.75;
         const rect = (r: { x: number; y: number; width: number; height: number }) => [
             r.x,
             r.y,
@@ -579,9 +610,11 @@ export class EscenaGL {
                 uSkyHigh: f.skyHigh,
                 uTime: time,
                 uSun: [sun.x + parallax.sky / viewport.width, sun.y, arc.size / 2],
-                uSunAlpha: b.sun.alpha,
-                uStars: [b.stars.alpha, b.stars.angle],
+                uSunAlpha: b.sun.alpha * dim,
+                uStars: [b.stars.alpha * dim, b.stars.angle],
                 uSweep: b.sweep,
+                uWeather: [w.cover, w.dark, flash],
+                uBoltX: w.boltX,
             },
             moon: {
                 uMoon: [
@@ -591,30 +624,57 @@ export class EscenaGL {
                 ],
                 uFraction: b.moon.fraction,
                 uRotation: (moonRotation(b.moon.tilt) * Math.PI) / 180,
-                uAlpha: b.moon.alpha,
+                uAlpha: b.moon.alpha * dim,
             },
             macaws: { uOffset: [f.macaws.x, f.macaws.y], uOpacity: 1 - this.night },
             clouds: {
                 uClouds: [f.cloudsShift, f.cloudsOpacity],
+                uCloudW: [w.cover, w.dark],
                 uParallax: parallax.sky,
                 uDusk: dusk,
                 uTime: time,
             },
-            far: { uOffset: [parallax.farRidge, f.shifts.farRidge], uDusk: dusk, uSunSide: side },
-            farMist: { uMist: [f.mist.farRidge, f.mist.halfHeight], uDusk: dusk, uTime: time },
-            avilaBack: { uOffset: [parallax.avila, f.shifts.avila], uDusk: dusk, uSunSide: side },
+            bolt: { uRain: 0, uBolt: [w.boltX, flash, w.boltSeed], uDusk: dusk, uTime: time },
+            far: {
+                uOffset: [parallax.farRidge, f.shifts.farRidge],
+                uDusk: dusk,
+                uSunSide: side,
+                uShade: shade,
+            },
+            farMist: {
+                uMist: [f.mist.farRidge, f.mist.halfHeight],
+                uDusk: dusk,
+                uTime: time,
+                uMistBoost: w.cover,
+            },
+            avilaBack: {
+                uOffset: [parallax.avila, f.shifts.avila],
+                uDusk: dusk,
+                uSunSide: side,
+                uShade: shade,
+            },
             cabin0: { uRect: rect(f.cabins[0]) },
             cabin1: { uRect: rect(f.cabins[1]) },
-            avilaFront: { uOffset: [parallax.avila, f.shifts.avila], uDusk: dusk, uSunSide: side },
+            avilaFront: {
+                uOffset: [parallax.avila, f.shifts.avila],
+                uDusk: dusk,
+                uSunSide: side,
+                uShade: shade,
+            },
             visitor: { uRect: rect(f.cabins[2]) },
-            avilaMist: { uMist: [f.mist.avila, f.mist.halfHeight], uDusk: dusk, uTime: time },
-            city: { uOffset: [parallax.city, f.shifts.city], uDusk: dusk },
+            avilaMist: {
+                uMist: [f.mist.avila, f.mist.halfHeight],
+                uDusk: dusk,
+                uTime: time,
+                uMistBoost: w.cover,
+            },
+            city: { uOffset: [parallax.city, f.shifts.city], uDusk: dusk, uShade: shade },
             cityLights: {
                 uOffset: [parallax.city, f.shifts.city],
                 uTime: time,
                 uCell: frame.scale,
             },
-            towers: { uOffset: [parallax.towers, f.shifts.towers], uDusk: dusk },
+            towers: { uOffset: [parallax.towers, f.shifts.towers], uDusk: dusk, uShade: shade },
             towersLights: {
                 uOffset: [parallax.towers, f.shifts.towers],
                 uTime: time,
@@ -624,8 +684,10 @@ export class EscenaGL {
                 uOffset: [parallax.street, f.street.layerTop],
                 uSize: [viewport.width, f.street.height * (1 + STREET_ABOVE)],
                 uDusk: dusk,
+                uShade: shade,
             },
             agents: { uTime: time },
+            rain: { uRain: w.rain, uBolt: [0, 0, 0], uDusk: dusk, uTime: time },
             front: {
                 uFront: f.frontClouds,
                 uHeight: f.height,
@@ -652,6 +714,9 @@ export class EscenaGL {
         }
         ORDER.forEach((pass, i) => {
             if ((pass === 'street' || pass === 'agents') && !streetVisible) return;
+            // Sin lluvia ni rayo, esos pases no dibujan nada: se ahorran.
+            if (pass === 'rain' && w.rain < 0.001) return;
+            if (pass === 'bolt' && flash < 0.001) return;
             const { mesh, fixed } = this.passes[pass];
             const u = mesh.program.uniforms;
             u.uRes.value = [viewport.width, viewport.height];
