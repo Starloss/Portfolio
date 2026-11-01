@@ -1,6 +1,7 @@
 import React, { createContext, use, useEffect, useRef, useState, useCallback } from 'react';
 import { BOVEDA_SECONDS } from '@app/scene/vault';
 import { trackTemaElegido } from '@lib/analytics';
+import { climaStore } from '@lib/clima';
 
 export type Theme = 'light' | 'dark';
 
@@ -29,8 +30,8 @@ function rememberChoice(theme: Theme) {
     } catch {
         /* ignore */
     }
-    // Una hora forzada es una prueba o una demostración: no se cuenta.
-    if (!matchesHour && horaForzada === undefined) trackTemaElegido(theme);
+    // Una hora o un Clima forzados son una prueba o una demostración: no se cuenta.
+    if (!matchesHour && horaForzada === undefined && !climaStore.forced) trackTemaElegido(theme);
 }
 
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {

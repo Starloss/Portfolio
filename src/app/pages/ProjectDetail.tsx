@@ -6,6 +6,7 @@ import { useI18n } from '@lib/i18n';
 import { localizedPath, projectPath } from '@lib/locale-path';
 
 import { Chip } from '../components/Block';
+import { ClimaCredit } from '../components/ClimaCredit';
 import { MainHeader } from '../components/MainHeader';
 import { Morph, titleTransitionName } from '../components/Morph';
 import { Gallery } from '../features/projects/Gallery';
@@ -96,7 +97,12 @@ const CaseStudyPage: React.FC<{ project: ResolvedProject }> = ({ project }) => {
                     <Story project={project} />
                 </div>
             </main>
-            <footer className="pb-10 text-center text-xs text-ink">© {currentYear()}</footer>
+            {/* Va sobre la Escena, y en pantallas angostas el crédito ocupa varias líneas. */}
+            <footer className="pb-10 text-center text-xs text-ink">
+                <span className="inline-block rounded-2xl bg-surface px-3 py-1">
+                    © {currentYear()} · <ClimaCredit />
+                </span>
+            </footer>
         </>
     );
 };

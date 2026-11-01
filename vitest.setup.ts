@@ -13,6 +13,8 @@ afterEach(() => cleanup());
 // Valores por defecto inertes: cada test puede reemplazarlos (p. ej. para simular
 // prefers-reduced-motion o una sección visible).
 if (typeof window !== 'undefined') {
+    // Ningún test llama a la API del Clima por accidente: la respuesta nunca llega.
+    window.fetch = () => new Promise(() => {});
     if (!window.matchMedia) {
         window.matchMedia = (query: string) =>
             ({

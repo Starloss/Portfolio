@@ -3,6 +3,8 @@ import { trackCvDownload } from '@lib/analytics';
 import { useI18n } from '@lib/i18n';
 import { cvPath } from '@lib/locale-path';
 
+import { CaracasIndicator } from './CaracasIndicator';
+
 /** Hero sin panel, en la franja de cielo de la Escena. */
 export const Hero: React.FC = () => {
     const { t, locale, content } = useI18n();
@@ -22,6 +24,7 @@ export const Hero: React.FC = () => {
                 <p className="mx-auto max-w-xl text-lg text-ink">{hero.valueProposition}</p>
                 <p className="mx-auto max-w-xl text-sm text-ink">{hero.location}</p>
             </div>
+            <CaracasIndicator />
             <div className="flex flex-wrap justify-center gap-3">
                 <a
                     href={cvPath(locale)}

@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test } from './test';
 
 // Escena WebGL (ADR 0003). Chromium de CI no tiene GPU: dibuja con SwiftShader, que la detección
 // previa descarta, así que estas pruebas la fuerzan con ?escena=webgl.

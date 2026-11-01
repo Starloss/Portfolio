@@ -68,6 +68,25 @@
     background: #fff8e0;
 }
 
+/* El tinte del Clima y las nubes que quita un cielo despejado: entran y cambian con un fundido. */
+.scene-tint {
+    position: absolute;
+    inset: 0;
+}
+
+.scene-tint,
+.scene-clouds-fade {
+    transition: opacity 1.5s ease;
+}
+
+.scene-tint-day {
+    background: rgb(112, 124, 136);
+}
+
+.scene-tint-night {
+    background: rgb(14, 19, 31);
+}
+
 /* Las estrellas y la franja de ocaso giran alrededor de un punto bajo el horizonte. */
 .scene-stars {
     position: absolute;
@@ -228,7 +247,9 @@
         transition: opacity 0.6s ease;
     }
     .scene-astro,
-    .scene-stars {
+    .scene-stars,
+    .scene-tint,
+    .scene-clouds-fade {
         transition: opacity 0.6s ease;
     }
 }

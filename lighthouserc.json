@@ -5,18 +5,18 @@
       "isSinglePageApplication": true,
       "numberOfRuns": 5,
       "url": [
-        "http://localhost/?hora=12:00",
-        "http://localhost/en/?hora=12:00",
-        "http://localhost/projects/superwallet?hora=12:00",
-        "http://localhost/projects/be-booking-engine?hora=12:00",
-        "http://localhost/projects/wedding-invitation?hora=12:00"
+        "http://localhost/?hora=12:00&clima=nublado",
+        "http://localhost/en/?hora=12:00&clima=nublado",
+        "http://localhost/projects/superwallet?hora=12:00&clima=nublado",
+        "http://localhost/projects/be-booking-engine?hora=12:00&clima=nublado",
+        "http://localhost/projects/wedding-invitation?hora=12:00&clima=nublado"
       ]
     },
     "assert": {
       "assertions": {
         "categories:performance": ["error", { "minScore": 0.9, "aggregationMethod": "median-run" }],
         "categories:accessibility": ["error", { "minScore": 0.9, "aggregationMethod": "median-run" }],
-        "resource-summary:script:size": ["error", { "maxNumericValue": 155000, "aggregationMethod": "median-run" }],
+        "resource-summary:script:size": ["error", { "maxNumericValue": 157000, "aggregationMethod": "median-run" }],
         "resource-summary:stylesheet:size": ["error", { "maxNumericValue": 15000, "aggregationMethod": "median-run" }],
         "resource-summary:font:size": ["error", { "maxNumericValue": 30000, "aggregationMethod": "median-run" }]
       }

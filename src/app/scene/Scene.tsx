@@ -1,5 +1,6 @@
 import React, { useLayoutEffect, useRef, useState } from 'react';
 import { m, useScroll, useTransform, type MotionStyle, type MotionValue } from 'motion/react';
+import { useClima } from '@lib/clima';
 import { useMediaQuery, usePrefersReducedMotion } from '@lib/motion';
 import { useTheme } from '@lib/theme';
 
@@ -25,6 +26,7 @@ import { useDocumentHidden, useElementViewport, useSceneCovered } from './enviro
 import { skyline } from './geometry';
 import { DAY, NIGHT, paletteVars, VARS } from './palette';
 import { BovedaCeleste } from './BovedaCeleste';
+import { ClimaTint } from './ClimaTint';
 import {
     Avenue,
     Avila,
@@ -185,6 +187,8 @@ export const Scene: React.FC<{ height?: number }> = ({ height }) => {
     const night = theme === 'dark';
     const mobile = useMediaQuery(MOBILE_QUERY);
     const reduced = usePrefersReducedMotion();
+    // Un cielo despejado no tiene nubes.
+    const clear = useClima()?.estado === 'despejado';
     // El tamaño sale de la propia Escena (100vh): no cambia cuando el teléfono muestra u oculta la
     // barra del navegador, así el encuadre no salta mientras se hace scroll.
     const rootRef = useRef<HTMLDivElement>(null);
@@ -225,29 +229,32 @@ export const Scene: React.FC<{ height?: number }> = ({ height }) => {
                     animate={animate}
                     twinkleGroups={mobile ? 2 : 3}
                 />
+                <ClimaTint night={night} />
                 {!night && !mobile && svg(<Macaws animate={animateDesktop} />)}
             </div>
             {!mobile && (
-                <m.div className="scene-layer" data-layer="clouds" style={styles.clouds}>
-                    {CLOUDS.map((cloud, i) => (
-                        <div
-                            // CLOUDS es constante y nunca cambia de orden: el índice es una key estable.
-                            // eslint-disable-next-line @eslint-react/no-array-index-key
-                            key={i}
-                            className="scene-cloud"
-                            data-anim={animateDesktop ? 'drift' : undefined}
-                            style={
-                                {
-                                    left: `${cloud.left}vw`,
-                                    top: `${cloud.top}vh`,
-                                    width: `${cloud.width}vw`,
-                                    height: `${cloud.width / CLOUD_ASPECT}vw`,
-                                    '--drift': `${cloud.drift}vw`,
-                                } as React.CSSProperties
-                            }
-                        />
-                    ))}
-                </m.div>
+                <div className="scene-layer scene-clouds-fade" style={{ opacity: clear ? 0 : 1 }}>
+                    <m.div className="scene-layer" data-layer="clouds" style={styles.clouds}>
+                        {CLOUDS.map((cloud, i) => (
+                            <div
+                                // CLOUDS es constante y nunca cambia de orden: el índice es una key estable.
+                                // eslint-disable-next-line @eslint-react/no-array-index-key
+                                key={i}
+                                className="scene-cloud"
+                                data-anim={animateDesktop ? 'drift' : undefined}
+                                style={
+                                    {
+                                        left: `${cloud.left}vw`,
+                                        top: `${cloud.top}vh`,
+                                        width: `${cloud.width}vw`,
+                                        height: `${cloud.width / CLOUD_ASPECT}vw`,
+                                        '--drift': `${cloud.drift}vw`,
+                                    } as React.CSSProperties
+                                }
+                            />
+                        ))}
+                    </m.div>
+                </div>
             )}
             {!mobile && (
                 <m.div className="scene-layer" data-layer="far-ridge" style={styles.farRidge}>
