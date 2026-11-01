@@ -48,7 +48,6 @@ export const SceneGL: React.FC<{
             engine = new EscenaClient(canvasRef.current!, {
                 dpr: Math.min(window.devicePixelRatio || 1, 2),
                 watch,
-                ...(height === undefined ? {} : { fixedProgress: progressForHeight(height) }),
             });
         } catch {
             // Nada llegó a verse: vuelve a la SVG sin fundido.
@@ -63,7 +62,14 @@ export const SceneGL: React.FC<{
             engine.destroy();
             engineRef.current = null;
         };
-    }, [watch, height]);
+    }, [watch]);
+
+    useEffect(() => {
+        engineRef.current?.setFixedProgress(
+            height === undefined ? undefined : progressForHeight(height),
+        );
+        // `watch` recrea el motor: el nuevo también necesita saber si la cámara está fija.
+    }, [height, watch]);
 
     const estado = useClima()?.estado ?? null;
     useEffect(() => {

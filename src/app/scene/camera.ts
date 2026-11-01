@@ -12,6 +12,9 @@ export function progressForHeight(height: number): number {
     return 0.5 - Math.sin(Math.asin(1 - 2 * eased) / 3);
 }
 
+/** La altura fija de la cámara en un Caso de estudio: cerca de la de Proyectos destacados en el Home. */
+export const CASE_STUDY_HEIGHT = 0.22;
+
 /** Keyframes del Viaje: progreso de scroll (0 a 1) y altura de la cámara en cada punto. */
 export interface CameraJourney {
     progress: number[];

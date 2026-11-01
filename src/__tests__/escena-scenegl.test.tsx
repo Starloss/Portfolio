@@ -22,13 +22,11 @@ vi.mock('@app/scene/gl/client', () => ({
         setLayout = vi.fn();
         setSky = vi.fn();
         setClima = vi.fn();
+        setFixedProgress = vi.fn();
         start = vi.fn();
         stop = vi.fn();
         destroy = vi.fn();
-        constructor(
-            _canvas: HTMLCanvasElement,
-            options: { dpr: number; watch: boolean; fixedProgress?: number },
-        ) {
+        constructor(_canvas: HTMLCanvasElement, options: { dpr: number; watch: boolean }) {
             if (engines.failOnCreate) throw new Error('Sin OffscreenCanvas');
             engines.last = this as unknown as Record<string, unknown>;
             engines.options = options;
@@ -41,6 +39,7 @@ type Fake = {
     onFailed: (reason: FallbackReason) => void;
     setNight: ReturnType<typeof vi.fn>;
     setLayout: ReturnType<typeof vi.fn>;
+    setFixedProgress: ReturnType<typeof vi.fn>;
     start: ReturnType<typeof vi.fn>;
     stop: ReturnType<typeof vi.fn>;
     destroy: ReturnType<typeof vi.fn>;
@@ -79,17 +78,25 @@ afterEach(() => {
 });
 
 describe('SceneGL', () => {
-    it('en el Viaje la cámara sigue al scroll; con `height`, queda fija a esa altura', () => {
-        const { view } = mount();
-        expect((engines.options as { fixedProgress?: number }).fixedProgress).toBeUndefined();
-        view.unmount();
-        render(
+    it('al cambiar de página, la misma Escena pasa de seguir al scroll a la cámara fija', () => {
+        const ui = (height?: number) => (
             <ThemeProvider>
-                <SceneGL watch onFallback={vi.fn()} height={0.22} />
-            </ThemeProvider>,
+                <SceneGL watch onFallback={vi.fn()} height={height} />
+            </ThemeProvider>
         );
-        const { fixedProgress } = engines.options as { fixedProgress?: number };
-        expect(cameraHeightAt(fixedProgress!)).toBeCloseTo(0.22, 5);
+        const view = render(ui());
+        const first = engine();
+        const fixed = first.setFixedProgress;
+        expect(fixed).toHaveBeenLastCalledWith(undefined);
+
+        view.rerender(ui(0.22));
+        expect(engine()).toBe(first);
+        expect(cameraHeightAt(fixed.mock.lastCall![0] as number)).toBeCloseTo(0.22, 5);
+
+        view.rerender(ui());
+        expect(engine()).toBe(first);
+        expect(fixed).toHaveBeenLastCalledWith(undefined);
+        expect(first.destroy).not.toHaveBeenCalled();
     });
 
     it('entra con un fundido y, ya a la vista, la SVG deja de pintarse', () => {

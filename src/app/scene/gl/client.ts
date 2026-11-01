@@ -20,19 +20,7 @@ export class EscenaClient {
 
     private fixedProgress: number | undefined;
 
-    constructor(
-        canvas: HTMLCanvasElement,
-        {
-            fixedProgress,
-            ...options
-        }: {
-            dpr: number;
-            watch: boolean;
-            /** En un Caso de estudio, la cámara no sigue al scroll. */
-            fixedProgress?: number;
-        },
-    ) {
-        this.fixedProgress = fixedProgress;
+    constructor(canvas: HTMLCanvasElement, options: { dpr: number; watch: boolean }) {
         const offscreen = canvas.transferControlToOffscreen();
         this.worker = new Worker(new URL('./worker.ts', import.meta.url), { type: 'module' });
         this.worker.onmessage = (event: MessageEvent<FromWorker>) => void this.receive(event.data);
@@ -112,6 +100,12 @@ export class EscenaClient {
 
     setLayout(layout: Layout) {
         this.post({ type: 'layout', layout });
+    }
+
+    /** En un Caso de estudio, la cámara no sigue al scroll; sin valor, vuelve a seguirlo. */
+    setFixedProgress(progress: number | undefined) {
+        this.fixedProgress = progress;
+        this.sendScroll();
     }
 
     setClima(estado: Estado | null) {

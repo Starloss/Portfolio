@@ -84,6 +84,13 @@ test('el foco no sale del visor y vuelve a la captura al cerrarlo', async ({ pag
     await expect(opener).toBeFocused();
 });
 
+test('el contenido de un Caso de estudio no queda pegado a la cabecera', async ({ page }) => {
+    await page.goto('/projects/superwallet');
+    const header = (await page.locator('header').boundingBox())!;
+    const main = (await page.locator('main > div').first().boundingBox())!;
+    expect(main.y - (header.y + header.height)).toBeGreaterThanOrEqual(24);
+});
+
 test('un Caso de estudio se abre desde arriba, venga de donde venga', async ({ page }) => {
     const scrollY = () => page.evaluate(() => window.scrollY);
     await page.goto('/#projects');

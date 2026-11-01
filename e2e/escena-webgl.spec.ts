@@ -91,6 +91,32 @@ test('una página de proyecto también tiene la Escena WebGL, con su Clima', asy
     await expect(page.locator('html')).toHaveAttribute('data-escena', 'webgl');
 });
 
+test('al navegar entre el Home y un proyecto, la Escena WebGL no se recrea', async ({ page }) => {
+    // Si se recreara, se vería un momento la SVG, sin las nubes ni la lluvia.
+    await page.goto('/?escena=webgl&clima=tormenta');
+    await expect(page.locator('html')).toHaveAttribute('data-escena', 'webgl', { timeout: 20_000 });
+    await page.evaluate(() => {
+        const state = { lost: false };
+        (window as unknown as { escena: typeof state }).escena = state;
+        new MutationObserver(() => {
+            if (document.documentElement.dataset.escena !== 'webgl') state.lost = true;
+        }).observe(document.documentElement, { attributeFilter: ['data-escena'] });
+        document.querySelector('.scene-gl canvas')!.setAttribute('data-misma', '');
+    });
+    await page.locator('a[href*="/projects/superwallet"]').first().click();
+    await expect(page).toHaveURL(/projects\/superwallet/);
+    await expect(page.locator('.scene-gl canvas[data-misma]')).toHaveCount(1);
+
+    await page.goBack();
+    await expect(page.locator('[data-hero-text]')).toBeVisible();
+    await expect(page.locator('.scene-gl canvas[data-misma]')).toHaveCount(1);
+    await expect(page.locator('html')).toHaveAttribute('data-escena', 'webgl');
+    const lost = await page.evaluate(
+        () => (window as unknown as { escena: { lost: boolean } }).escena.lost,
+    );
+    expect(lost).toBe(false);
+});
+
 test('si se pierde el contexto WebGL, vuelve a la Escena SVG', async ({ page }) => {
     await page.goto('/?escena=webgl');
     await expect(page.locator('html')).toHaveAttribute('data-escena', 'webgl', { timeout: 20_000 });

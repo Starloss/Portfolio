@@ -19,6 +19,13 @@ html {
     animation-duration: 220ms;
 }
 
+/* La cabecera y la Escena están fijas: no se desplazan, aunque al volver atrás cambie el scroll. */
+::view-transition-group(barra),
+::view-transition-group(escena),
+::view-transition-group(escena-gl) {
+    animation: none;
+}
+
 @media (prefers-reduced-motion: reduce) {
     ::view-transition-group(*),
     ::view-transition-old(*),
