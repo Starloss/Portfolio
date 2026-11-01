@@ -97,7 +97,7 @@ test('un cielo despejado no tiene nubes ni tinte, y uno con nubes sí', async ({
     await expect(tint(page)).toHaveCSS('opacity', '0');
 
     await page.goto('/?hora=12:00&clima=lluvia&escena=svg');
-    await expect(page.locator('.scene-clouds-fade')).toHaveCSS('opacity', '1');
+    await expect(page.locator('.scene-clouds-fade')).toHaveCSS('opacity', '0.6');
     await expect(tint(page)).toHaveCSS('opacity', '0.5');
 });
 

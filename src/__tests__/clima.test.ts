@@ -216,6 +216,25 @@ describe('createClimaStore', () => {
         expect(s.getSnapshot()?.estado).toBe('lluvia');
     });
 
+    it.each([
+        [
+            'del futuro',
+            { at: Date.parse('2026-10-31T18:00:00Z'), estado: 'tormenta', temperatura: 1 },
+        ],
+        ['sin temperatura', { at: Date.parse('2026-10-31T15:59:00Z'), estado: 'tormenta' }],
+        [
+            'con temperatura de otro tipo',
+            { at: Date.parse('2026-10-31T15:59:00Z'), estado: 'tormenta', temperatura: 'x' },
+        ],
+    ])('un dato guardado %s se vuelve a pedir', async (_, entry) => {
+        window.localStorage.setItem(CACHE_KEY, JSON.stringify(entry));
+        const s = store();
+        s.start();
+        await flush();
+        expect(fetchMock).toHaveBeenCalledTimes(1);
+        expect(s.getSnapshot()?.estado).toBe('lluvia');
+    });
+
     it('un dato guardado inválido se ignora', async () => {
         window.localStorage.setItem(CACHE_KEY, '{roto');
         const s = store();
