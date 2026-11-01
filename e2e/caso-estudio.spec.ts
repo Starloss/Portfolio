@@ -91,6 +91,22 @@ test('el contenido de un Caso de estudio no queda pegado a la cabecera', async (
     expect(main.y - (header.y + header.height)).toBeGreaterThanOrEqual(24);
 });
 
+test('al volver atrás, el scroll deja de ser suave mientras el navegador lo restaura', async ({
+    page,
+}) => {
+    const behavior = () =>
+        page.evaluate(() => getComputedStyle(document.documentElement).scrollBehavior);
+    await page.goto('/');
+    // Un enlace a una sección de la página sí anima el scroll.
+    expect(await behavior()).toBe('smooth');
+    await page.locator('a[href*="/projects/superwallet"]').first().click();
+    await expect(page).toHaveURL(/projects\/superwallet/);
+
+    await page.goBack();
+    expect(await behavior()).toBe('auto');
+    await expect.poll(behavior).toBe('smooth');
+});
+
 test('un Caso de estudio se abre desde arriba, venga de donde venga', async ({ page }) => {
     const scrollY = () => page.evaluate(() => window.scrollY);
     await page.goto('/#projects');

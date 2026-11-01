@@ -11,6 +11,30 @@ import { EscenaUpgrade } from './scene/EscenaUpgrade';
 
 import type { Locale } from '@/content';
 
+// El scroll suave es para los enlaces a secciones. Al ir atrás o adelante, el navegador restaura la
+// posición: si se animara, la página cruzaría todo el contenido hasta llegar.
+const RESTORE_SETTLE_MS = 1000;
+
+function useInstantHistoryScroll() {
+    useEffect(() => {
+        const root = document.documentElement;
+        let timer = 0;
+        const onPopState = () => {
+            root.style.scrollBehavior = 'auto';
+            window.clearTimeout(timer);
+            timer = window.setTimeout(
+                () => root.style.removeProperty('scroll-behavior'),
+                RESTORE_SETTLE_MS,
+            );
+        };
+        window.addEventListener('popstate', onPopState);
+        return () => {
+            window.removeEventListener('popstate', onPopState);
+            window.clearTimeout(timer);
+        };
+    }, []);
+}
+
 const LocaleLayout: React.FC<{ locale: Locale }> = ({ locale }) => {
     useEffect(() => {
         document.documentElement.lang = locale;
@@ -39,19 +63,22 @@ const SiteEscena: React.FC = () => {
     );
 };
 
-export const AppRoutes: React.FC = () => (
-    <>
-        <Routes>
-            <Route path="/en" element={<LocaleLayout locale="en" />}>
-                {localeRoutes('en')}
-            </Route>
-            <Route path="/" element={<LocaleLayout locale="es" />}>
-                {localeRoutes('es')}
-            </Route>
-        </Routes>
-        <SiteEscena />
-    </>
-);
+export const AppRoutes: React.FC = () => {
+    useInstantHistoryScroll();
+    return (
+        <>
+            <Routes>
+                <Route path="/en" element={<LocaleLayout locale="en" />}>
+                    {localeRoutes('en')}
+                </Route>
+                <Route path="/" element={<LocaleLayout locale="es" />}>
+                    {localeRoutes('es')}
+                </Route>
+            </Routes>
+            <SiteEscena />
+        </>
+    );
+};
 
 export const App: React.FC = () => (
     <BrowserRouter>
