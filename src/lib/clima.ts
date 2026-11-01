@@ -61,7 +61,11 @@ function readCache(): (Clima & { at: number }) | null {
         const raw = window.localStorage.getItem(CACHE_KEY);
         if (!raw) return null;
         const { at, estado, temperatura } = JSON.parse(raw) as Clima & { at: number };
-        return Date.now() - at < REFRESH_MS && ESTADOS.includes(estado)
+        const age = Date.now() - at;
+        return age >= 0 &&
+            age < REFRESH_MS &&
+            ESTADOS.includes(estado) &&
+            typeof temperatura === 'number'
             ? { estado, temperatura, at }
             : null;
     } catch {
