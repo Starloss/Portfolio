@@ -62,24 +62,27 @@ test('al bajar hasta la calle, un cielo nublado sigue teniendo nubes', async ({ 
         await page.waitForTimeout(800);
         // A la izquierda del cielo: sin el sol ni las guacamayas, que también cambian el brillo.
         const shot = await page.screenshot({ clip: { x: 0, y: 70, width: 300, height: 60 } });
-        return page.evaluate(async (src) => {
-            const image = new Image();
-            image.src = src;
-            await image.decode();
-            const c = document.createElement('canvas');
-            c.width = image.width;
-            c.height = image.height;
-            const x = c.getContext('2d')!;
-            x.drawImage(image, 0, 0);
-            const { data } = x.getImageData(0, 30, c.width, 1);
-            const values: number[] = [];
-            for (let i = 0; i < data.length; i += 4) values.push(data[i]);
-            return Math.max(...values) - Math.min(...values);
-        }, `data:image/png;base64,${shot.toString('base64')}`);
+        return page.evaluate(
+            async (src) => {
+                const image = new Image();
+                image.src = src;
+                await image.decode();
+                const c = document.createElement('canvas');
+                c.width = image.width;
+                c.height = image.height;
+                const x = c.getContext('2d')!;
+                x.drawImage(image, 0, 0);
+                const { data } = x.getImageData(0, 30, c.width, 1);
+                const values: number[] = [];
+                for (let i = 0; i < data.length; i += 4) values.push(data[i]);
+                return Math.max(...values) - Math.min(...values);
+            },
+            `data:image/png;base64,${shot.toString('base64')}`,
+        );
     };
     const clear = await unevenness('despejado');
-    const cloudy = await unevenness('nublado');
-    expect(cloudy).toBeGreaterThan(clear + 10);
+    expect(await unevenness('nublado')).toBeGreaterThan(clear + 10);
+    expect(await unevenness('parcial')).toBeGreaterThan(clear + 10);
 });
 
 test('una página de proyecto también tiene la Escena WebGL, con su Clima', async ({ page }) => {

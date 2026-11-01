@@ -1,6 +1,7 @@
 import React from 'react';
 import { afterEach, beforeEach, describe, it, expect, vi } from 'vitest';
 import { act, render } from '@testing-library/react';
+import { cameraHeightAt } from '@app/scene/camera';
 import { SceneGL, type FallbackReason } from '@app/scene/gl/SceneGL';
 import { ThemeProvider } from '@lib/theme';
 
@@ -24,7 +25,10 @@ vi.mock('@app/scene/gl/client', () => ({
         start = vi.fn();
         stop = vi.fn();
         destroy = vi.fn();
-        constructor(_canvas: HTMLCanvasElement, options: { dpr: number; watch: boolean }) {
+        constructor(
+            _canvas: HTMLCanvasElement,
+            options: { dpr: number; watch: boolean; fixedProgress?: number },
+        ) {
             if (engines.failOnCreate) throw new Error('Sin OffscreenCanvas');
             engines.last = this as unknown as Record<string, unknown>;
             engines.options = options;
@@ -75,6 +79,19 @@ afterEach(() => {
 });
 
 describe('SceneGL', () => {
+    it('en el Viaje la cámara sigue al scroll; con `height`, queda fija a esa altura', () => {
+        const { view } = mount();
+        expect((engines.options as { fixedProgress?: number }).fixedProgress).toBeUndefined();
+        view.unmount();
+        render(
+            <ThemeProvider>
+                <SceneGL watch onFallback={vi.fn()} height={0.22} />
+            </ThemeProvider>,
+        );
+        const { fixedProgress } = engines.options as { fixedProgress?: number };
+        expect(cameraHeightAt(fixedProgress!)).toBeCloseTo(0.22, 5);
+    });
+
     it('entra con un fundido y, ya a la vista, la SVG deja de pintarse', () => {
         const { canvas, view } = mount();
         expect(canvas().style.opacity).toBe('0');

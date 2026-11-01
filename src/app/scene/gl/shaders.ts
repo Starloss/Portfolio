@@ -233,9 +233,9 @@ void main() {
     // Con más cobertura, hay más nubes y ocupan más cielo; sin ninguna, un cielo despejado.
     float cover = uCloudW.x;
     if (cover <= 0.001) discard;
-    // Las nubes de siempre bajan y se apagan con la cámara, pero un cielo cubierto sigue cubierto
-    // desde la calle: están lejos, así que casi no se mueven.
-    float stay = smoothstep(0.3, 0.6, cover);
+    // Las nubes de siempre (sin Clima, cobertura 0,25) bajan y se apagan con la cámara. Las del Clima,
+    // desde parcial (0,42), siguen ahí desde la calle: están lejos, así que casi no se mueven.
+    float stay = smoothstep(0.25, 0.42, cover);
     float shift = uClouds.x * (1.0 - 0.85 * stay);
     float seen = max(uClouds.y, stay);
     float top = shift + (0.08 - 0.3 * cover) * uRes.y;
