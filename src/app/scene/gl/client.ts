@@ -18,7 +18,21 @@ export class EscenaClient {
     private worker: Worker;
     private disposed = false;
 
-    constructor(canvas: HTMLCanvasElement, options: { dpr: number; watch: boolean }) {
+    private fixedProgress: number | undefined;
+
+    constructor(
+        canvas: HTMLCanvasElement,
+        {
+            fixedProgress,
+            ...options
+        }: {
+            dpr: number;
+            watch: boolean;
+            /** En un Caso de estudio, la cámara no sigue al scroll. */
+            fixedProgress?: number;
+        },
+    ) {
+        this.fixedProgress = fixedProgress;
         const offscreen = canvas.transferControlToOffscreen();
         this.worker = new Worker(new URL('./worker.ts', import.meta.url), { type: 'module' });
         this.worker.onmessage = (event: MessageEvent<FromWorker>) => void this.receive(event.data);
@@ -40,7 +54,9 @@ export class EscenaClient {
 
     private sendScroll = () => {
         const doc = document.documentElement;
-        const progress = window.scrollY / Math.max(1, doc.scrollHeight - window.innerHeight);
+        const progress =
+            this.fixedProgress ??
+            window.scrollY / Math.max(1, doc.scrollHeight - window.innerHeight);
         this.post({ type: 'scroll', progress });
     };
 

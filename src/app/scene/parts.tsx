@@ -317,8 +317,10 @@ export const City: React.FC<PartProps & { withTowers?: boolean }> = ({
 );
 
 // Dos prismas gemelos ochavados, con caras laterales más claras, estría central y remate de
-// marco abierto. La torre Oeste lleva el helipuerto.
+// marco abierto. La torre Oeste lleva el helipuerto. Siguen por debajo de su base, hasta el borde de
+// abajo de la capa: entre los edificios no quedan en el aire.
 const TOWER_WIDTH = 24;
+const TOWER_FOOT = 40;
 // Ventanas de Noche de una torre centrada en x: un grupo por torre.
 const towerWindows = (height: number, x: number) => {
     let d = '';
@@ -334,10 +336,28 @@ export const Towers: React.FC<PartProps> = ({ c, night, animate }) => {
     const w = TOWER_WIDTH;
     const tower = (x: number, helipad: boolean, behind: boolean) => (
         <g transform={`translate(${x},0)`} opacity={behind ? 0.92 : 1}>
-            <rect x={-w / 2} y={-h} width={w} height={h} style={{ fill: c.towers }} />
-            <rect x={-w / 2} y={-h} width={4} height={h} style={{ fill: c.towersLight }} />
-            <rect x={w / 2 - 4} y={-h} width={4} height={h} style={{ fill: c.towersLight }} />
-            <rect x={-1.5} y={-h + 6} width={3} height={h - 6} style={{ fill: c.towersLight }} />
+            <rect x={-w / 2} y={-h} width={w} height={h + TOWER_FOOT} style={{ fill: c.towers }} />
+            <rect
+                x={-w / 2}
+                y={-h}
+                width={4}
+                height={h + TOWER_FOOT}
+                style={{ fill: c.towersLight }}
+            />
+            <rect
+                x={w / 2 - 4}
+                y={-h}
+                width={4}
+                height={h + TOWER_FOOT}
+                style={{ fill: c.towersLight }}
+            />
+            <rect
+                x={-1.5}
+                y={-h + 6}
+                width={3}
+                height={h - 6 + TOWER_FOOT}
+                style={{ fill: c.towersLight }}
+            />
             <rect x={-w / 2 + 2} y={-h - 9} width={2.5} height={9} style={{ fill: c.towers }} />
             <rect x={w / 2 - 4.5} y={-h - 9} width={2.5} height={9} style={{ fill: c.towers }} />
             <rect

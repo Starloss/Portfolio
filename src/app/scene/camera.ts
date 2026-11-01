@@ -6,6 +6,12 @@ import { LIFT_SHARE, streetBand } from './street';
 /** Altura de la cámara en el Hero: arriba, con las cumbres del Ávila y cielo libre para el texto. */
 export const HERO_HEIGHT = 0.8;
 
+/** El progreso del Viaje que deja la cámara a una altura: lo inverso de `cameraHeightAt`. */
+export function progressForHeight(height: number): number {
+    const eased = 1 - clamp(height / HERO_HEIGHT, 0, 1);
+    return 0.5 - Math.sin(Math.asin(1 - 2 * eased) / 3);
+}
+
 /** Keyframes del Viaje: progreso de scroll (0 a 1) y altura de la cámara en cada punto. */
 export interface CameraJourney {
     progress: number[];
@@ -47,8 +53,10 @@ export function journeyAt(progress: number, valueAt: (height: number) => number)
 }
 
 /** Profundidad de cada capa que se mueve: cuánto se hunde por unidad de altura, en altos de ventana. */
+// El Humboldt y el Teleférico se apoyan en la cresta lejana y van en la capa del Ávila: las dos se
+// mueven igual, o quedarían flotando.
 export const LAYER_DEPTH = {
-    farRidge: 0.35,
+    farRidge: 0.55,
     avila: 0.55,
     city: 0.8,
     towers: 0.9,
@@ -158,8 +166,7 @@ export function heroSink(
 }
 
 /**
- * Cuánto más hay que hundir la montaña (px) en el Hero, además de lo que ya bajó la cámara: la
- * cresta lejana es la capa que menos baja, así que manda ella.
+ * Cuánto más hay que hundir la montaña (px) en el Hero, además de lo que ya bajó la cámara.
  */
 export function mountainSink(
     viewport: Viewport,

@@ -4,7 +4,7 @@ import React, { useEffect, useEffectEvent, useRef, useState } from 'react';
 import { useClima } from '@lib/clima';
 import { useTheme } from '@lib/theme';
 
-import { sceneFrame } from '../camera';
+import { progressForHeight, sceneFrame } from '../camera';
 import {
     useCaracasSky,
     useDocumentHidden,
@@ -25,14 +25,16 @@ export const SceneGL: React.FC<{
     /** Con `?escena=webgl` no hay vigilante: lo usan CI y las pruebas manuales. */
     watch: boolean;
     onFallback: (reason: FallbackReason) => void;
-}> = ({ watch, onFallback }) => {
+    /** Con `height`, la cámara queda fija a esa altura, como en la Escena SVG de un Caso de estudio. */
+    height?: number;
+}> = ({ watch, onFallback, height }) => {
     const { theme } = useTheme();
     const night = theme === 'dark';
     const boxRef = useRef<HTMLDivElement>(null);
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const engineRef = useRef<EscenaClient | null>(null);
     const viewport = useElementViewport(boxRef);
-    const page = usePageLayout(true, viewport);
+    const page = usePageLayout(height === undefined, viewport);
     const hidden = useDocumentHidden();
     const covered = useSceneCovered();
     const paused = hidden || covered;
@@ -46,6 +48,7 @@ export const SceneGL: React.FC<{
             engine = new EscenaClient(canvasRef.current!, {
                 dpr: Math.min(window.devicePixelRatio || 1, 2),
                 watch,
+                ...(height === undefined ? {} : { fixedProgress: progressForHeight(height) }),
             });
         } catch {
             // Nada llegó a verse: vuelve a la SVG sin fundido.
@@ -60,7 +63,7 @@ export const SceneGL: React.FC<{
             engine.destroy();
             engineRef.current = null;
         };
-    }, [watch]);
+    }, [watch, height]);
 
     const estado = useClima()?.estado ?? null;
     useEffect(() => {

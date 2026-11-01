@@ -46,7 +46,8 @@ function decide(): Promise<Upgrade | null> {
     return decision;
 }
 
-export const EscenaUpgrade: React.FC = () => {
+/** `height`: la altura fija de la cámara en un Caso de estudio; sin ella, el Viaje de cámara. */
+export const EscenaUpgrade: React.FC<{ height?: number }> = ({ height }) => {
     const [upgrade, setUpgrade] = useState<Upgrade | null>(null);
     // Si en plena visita se pide menos movimiento, la WebGL se va: la SVG ya lo respeta. No es una
     // caída, así que no se registra ni se recuerda.
@@ -77,5 +78,5 @@ export const EscenaUpgrade: React.FC = () => {
         decision = Promise.resolve(null);
         setUpgrade(null);
     };
-    return <SceneGL watch={watch} onFallback={onFallback} />;
+    return <SceneGL watch={watch} onFallback={onFallback} height={height} />;
 };

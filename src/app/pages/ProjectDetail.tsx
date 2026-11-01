@@ -11,6 +11,7 @@ import { MainHeader } from '../components/MainHeader';
 import { Morph, titleTransitionName } from '../components/Morph';
 import { Gallery } from '../features/projects/Gallery';
 import { ProjectCover, ProjectType } from '../features/projects/ProjectCover';
+import { EscenaUpgrade } from '../scene/EscenaUpgrade';
 import { Scene } from '../scene/Scene';
 
 import type { ResolvedProject } from '@/content';
@@ -58,6 +59,7 @@ export const ProjectDetail: React.FC = () => {
         return (
             <>
                 <Scene height={CASE_STUDY_CAMERA_HEIGHT} />
+                <EscenaUpgrade height={CASE_STUDY_CAMERA_HEIGHT} />
                 <MainHeader />
                 <main className="mx-auto max-w-3xl px-4 py-14">
                     <div className="space-y-4 rounded-2xl border border-line bg-surface p-6 md:p-8">
@@ -90,6 +92,7 @@ const CaseStudyPage: React.FC<{ project: ResolvedProject }> = ({ project }) => {
     return (
         <>
             <Scene height={CASE_STUDY_CAMERA_HEIGHT} />
+            <EscenaUpgrade height={CASE_STUDY_CAMERA_HEIGHT} />
             <MainHeader activeId="projects" />
             <main className="mx-auto max-w-[1120px] px-4 pb-10">
                 <div className="grid gap-8 rounded-2xl border border-line bg-surface p-5 md:p-8 min-[900px]:grid-cols-[300px_minmax(0,1fr)]">

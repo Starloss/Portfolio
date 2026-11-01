@@ -101,3 +101,14 @@ test('en un Caso de estudio la Escena queda fija, como en Proyectos destacados d
     await page.waitForTimeout(400);
     expect(await avilaTop(page)).toBe(top);
 });
+
+test('las Torres van detrás de la ciudad y llegan hasta el suelo', async ({ page }) => {
+    await page.goto('/?escena=svg');
+    const order = await page.evaluate(() => {
+        const layers = [...document.querySelectorAll('[data-layer]')].map((el) =>
+            el.getAttribute('data-layer'),
+        );
+        return { towers: layers.indexOf('towers'), city: layers.indexOf('city') };
+    });
+    expect(order.towers).toBeLessThan(order.city);
+});

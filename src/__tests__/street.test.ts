@@ -41,7 +41,7 @@ describe('streetBand', () => {
 });
 
 describe('el paisaje sube con la calle', () => {
-    it('cada capa sube una parte del alzado: la ciudad entera, la montaña menos', () => {
+    it('cada capa sube una parte del alzado: la ciudad entera, el Ávila menos y en una pieza', () => {
         const lift = streetBand(0, 900).lift;
         for (const layer of ['farRidge', 'avila', 'city', 'towers'] as const) {
             expect(layerShift(layer, 0, 900, 0)).toBeCloseTo(
@@ -49,7 +49,8 @@ describe('el paisaje sube con la calle', () => {
             );
         }
         expect(LIFT_SHARE.city).toBe(1);
-        expect(LIFT_SHARE.farRidge).toBeLessThan(LIFT_SHARE.avila);
+        expect(LIFT_SHARE.farRidge).toBe(LIFT_SHARE.avila);
+        expect(LIFT_SHARE.avila).toBeLessThan(LIFT_SHARE.city);
     });
 
     it('en el Hero y en medio del Viaje no cambia nada', () => {
