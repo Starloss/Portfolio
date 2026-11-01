@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import {
+    progressForHeight,
     cabinPoint,
     CAMERA_JOURNEY,
     cameraHeightAt,
@@ -63,8 +64,8 @@ describe('Viaje de cámara: baja del Hero a la ciudad', () => {
 
 describe('Viaje de cámara: desplazamiento de las capas', () => {
     it('cada capa se hunde según su profundidad × la altura × el alto de la ventana', () => {
-        // Profundidades: cresta lejana 0,35, Ávila 0,55, ciudad 0,8 y Torres 0,9.
-        expect(layerOffset('farRidge', 1, 900)).toBeCloseTo(315, 5);
+        // Profundidades: cresta lejana y Ávila 0,55, ciudad 0,8 y Torres 0,9.
+        expect(layerOffset('farRidge', 1, 900)).toBeCloseTo(495, 5);
         expect(layerOffset('avila', 1, 900)).toBeCloseTo(495, 5);
         expect(layerOffset('city', 0.5, 900)).toBeCloseTo(360, 5);
         expect(layerOffset('towers', 0.5, 800)).toBeCloseTo(360, 5);
@@ -144,12 +145,12 @@ describe('Hundimiento del paisaje según el alto del Hero', () => {
     });
 
     it('la montaña solo se hunde lo que no alcanzó a bajar la cámara en el Hero', () => {
-        // En el Hero la cresta lejana ya bajó 0,35 × 0,8 × 900 = 252 px.
+        // En el Hero la cresta lejana ya bajó 0,55 × 0,8 × 900 = 396 px.
         const viewport = { width: 1440, height: 900 };
         const column = { left: 400, right: 1000, top: 120, bottom: 330 };
         expect(mountainSink(viewport, column, skyline)).toBe(0);
-        const low = { left: 400, right: 1000, top: 120, bottom: 600 };
-        // Haría falta 600 + 16 − 300 = 316 px: faltan 64.
+        const low = { left: 400, right: 1000, top: 120, bottom: 744 };
+        // Haría falta 744 + 16 − 300 = 460 px: faltan 64.
         expect(mountainSink(viewport, low, skyline)).toBeCloseTo(64, 5);
     });
 
@@ -194,5 +195,22 @@ describe('journeyAt', () => {
     it('fuera de 0 a 1 se queda en los extremos', () => {
         expect(journeyAt(-0.5, (h) => h)).toBeCloseTo(CAMERA_JOURNEY.height[0]);
         expect(journeyAt(1.5, (h) => h)).toBeCloseTo(CAMERA_JOURNEY.height.at(-1)!);
+    });
+});
+
+describe('El Ávila se mueve en una sola pieza', () => {
+    // El Humboldt y el Teleférico van en la capa del Ávila y se apoyan en la cresta lejana: si las dos
+    // se movieran distinto, quedarían flotando o hundidos.
+    it.each([0, 0.1, 0.22, 0.5, 0.8])(
+        'con la cámara a %d, la cresta lejana y el Ávila van juntos',
+        (h) => {
+            expect(layerShift('farRidge', h, 720, 30)).toBeCloseTo(layerShift('avila', h, 720, 30));
+        },
+    );
+});
+
+describe('progressForHeight', () => {
+    it.each([0, 0.22, 0.4, 0.8])('es el progreso del Viaje que da la altura %d', (h) => {
+        expect(cameraHeightAt(progressForHeight(h))).toBeCloseTo(h, 5);
     });
 });

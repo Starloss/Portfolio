@@ -1,6 +1,7 @@
 import React from 'react';
 import { afterEach, beforeEach, describe, it, expect, vi } from 'vitest';
 import { act, render } from '@testing-library/react';
+import { cameraHeightAt } from '@app/scene/camera';
 import { SceneGL, type FallbackReason } from '@app/scene/gl/SceneGL';
 import { ThemeProvider } from '@lib/theme';
 
@@ -21,6 +22,7 @@ vi.mock('@app/scene/gl/client', () => ({
         setLayout = vi.fn();
         setSky = vi.fn();
         setClima = vi.fn();
+        setFixedProgress = vi.fn();
         start = vi.fn();
         stop = vi.fn();
         destroy = vi.fn();
@@ -37,6 +39,7 @@ type Fake = {
     onFailed: (reason: FallbackReason) => void;
     setNight: ReturnType<typeof vi.fn>;
     setLayout: ReturnType<typeof vi.fn>;
+    setFixedProgress: ReturnType<typeof vi.fn>;
     start: ReturnType<typeof vi.fn>;
     stop: ReturnType<typeof vi.fn>;
     destroy: ReturnType<typeof vi.fn>;
@@ -75,6 +78,27 @@ afterEach(() => {
 });
 
 describe('SceneGL', () => {
+    it('al cambiar de página, la misma Escena pasa de seguir al scroll a la cámara fija', () => {
+        const ui = (height?: number) => (
+            <ThemeProvider>
+                <SceneGL watch onFallback={vi.fn()} height={height} />
+            </ThemeProvider>
+        );
+        const view = render(ui());
+        const first = engine();
+        const fixed = first.setFixedProgress;
+        expect(fixed).toHaveBeenLastCalledWith(undefined);
+
+        view.rerender(ui(0.22));
+        expect(engine()).toBe(first);
+        expect(cameraHeightAt(fixed.mock.lastCall![0] as number)).toBeCloseTo(0.22, 5);
+
+        view.rerender(ui());
+        expect(engine()).toBe(first);
+        expect(fixed).toHaveBeenLastCalledWith(undefined);
+        expect(first.destroy).not.toHaveBeenCalled();
+    });
+
     it('entra con un fundido y, ya a la vista, la SVG deja de pintarse', () => {
         const { canvas, view } = mount();
         expect(canvas().style.opacity).toBe('0');

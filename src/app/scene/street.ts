@@ -37,7 +37,7 @@ export function streetBand(height: number, viewportHeight: number) {
 }
 
 /** Qué parte del alzado sube cada capa: la ciudad, que está a nivel de calle, sube entera. */
-export const LIFT_SHARE = { farRidge: 0.55, avila: 0.75, city: 1, towers: 1 } as const;
+export const LIFT_SHARE = { farRidge: 0.75, avila: 0.75, city: 1, towers: 1 } as const;
 
 export type AgentKind = 'car' | 'bus' | 'moto' | 'walker';
 

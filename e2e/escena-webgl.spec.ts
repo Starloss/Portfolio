@@ -48,6 +48,75 @@ test('el Clima se ve en la Escena WebGL, no solo en el Indicador', async ({ page
     expect(storm).toBeLessThan(clear - 20);
 });
 
+test('al bajar hasta la calle, un cielo nublado sigue teniendo nubes', async ({ page }) => {
+    // Cuánto varía el brillo del cielo: uno con nubes tiene manchas; uno limpio, un degradado suave.
+    const unevenness = async (clima: string) => {
+        await page.goto(`/?escena=webgl&hora=12:00&clima=${clima}`);
+        await expect(page.locator('html')).toHaveAttribute('data-escena', 'webgl', {
+            timeout: 20_000,
+        });
+        await page.evaluate(() =>
+            window.scrollTo({ top: document.documentElement.scrollHeight, behavior: 'instant' }),
+        );
+        await page.addStyleTag({ content: 'main, footer { visibility: hidden !important; }' });
+        await page.waitForTimeout(800);
+        // A la izquierda del cielo: sin el sol ni las guacamayas, que también cambian el brillo.
+        const shot = await page.screenshot({ clip: { x: 0, y: 70, width: 300, height: 60 } });
+        return page.evaluate(
+            async (src) => {
+                const image = new Image();
+                image.src = src;
+                await image.decode();
+                const c = document.createElement('canvas');
+                c.width = image.width;
+                c.height = image.height;
+                const x = c.getContext('2d')!;
+                x.drawImage(image, 0, 0);
+                const { data } = x.getImageData(0, 30, c.width, 1);
+                const values: number[] = [];
+                for (let i = 0; i < data.length; i += 4) values.push(data[i]);
+                return Math.max(...values) - Math.min(...values);
+            },
+            `data:image/png;base64,${shot.toString('base64')}`,
+        );
+    };
+    const clear = await unevenness('despejado');
+    expect(await unevenness('nublado')).toBeGreaterThan(clear + 10);
+    expect(await unevenness('parcial')).toBeGreaterThan(clear + 10);
+});
+
+test('una página de proyecto también tiene la Escena WebGL, con su Clima', async ({ page }) => {
+    await page.goto('/projects/superwallet?escena=webgl&clima=tormenta');
+    await expect(page.locator(canvas)).toHaveCSS('opacity', '1', { timeout: 20_000 });
+    await expect(page.locator('html')).toHaveAttribute('data-escena', 'webgl');
+});
+
+test('al navegar entre el Home y un proyecto, la Escena WebGL no se recrea', async ({ page }) => {
+    // Si se recreara, se vería un momento la SVG, sin las nubes ni la lluvia.
+    await page.goto('/?escena=webgl&clima=tormenta');
+    await expect(page.locator('html')).toHaveAttribute('data-escena', 'webgl', { timeout: 20_000 });
+    await page.evaluate(() => {
+        const state = { lost: false };
+        (window as unknown as { escena: typeof state }).escena = state;
+        new MutationObserver(() => {
+            if (document.documentElement.dataset.escena !== 'webgl') state.lost = true;
+        }).observe(document.documentElement, { attributeFilter: ['data-escena'] });
+        document.querySelector('.scene-gl canvas')!.setAttribute('data-misma', '');
+    });
+    await page.locator('a[href*="/projects/superwallet"]').first().click();
+    await expect(page).toHaveURL(/projects\/superwallet/);
+    await expect(page.locator('.scene-gl canvas[data-misma]')).toHaveCount(1);
+
+    await page.goBack();
+    await expect(page.locator('[data-hero-text]')).toBeVisible();
+    await expect(page.locator('.scene-gl canvas[data-misma]')).toHaveCount(1);
+    await expect(page.locator('html')).toHaveAttribute('data-escena', 'webgl');
+    const lost = await page.evaluate(
+        () => (window as unknown as { escena: { lost: boolean } }).escena.lost,
+    );
+    expect(lost).toBe(false);
+});
+
 test('si se pierde el contexto WebGL, vuelve a la Escena SVG', async ({ page }) => {
     await page.goto('/?escena=webgl');
     await expect(page.locator('html')).toHaveAttribute('data-escena', 'webgl', { timeout: 20_000 });

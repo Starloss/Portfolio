@@ -280,14 +280,14 @@ export const Scene: React.FC<{ height?: number }> = ({ height }) => {
                     </svg>
                 </m.div>
             </m.div>
-            <m.div className="scene-layer" data-layer="city" style={styles.city}>
-                {svg(<City c={VARS} night={night} animate={animateDesktop} withTowers={mobile} />)}
-            </m.div>
             {!mobile && (
                 <m.div className="scene-layer" data-layer="towers" style={styles.towers}>
                     {svg(<Towers c={VARS} night={night} animate={animateDesktop} />)}
                 </m.div>
             )}
+            <m.div className="scene-layer" data-layer="city" style={styles.city}>
+                {svg(<City c={VARS} night={night} animate={animateDesktop} withTowers={mobile} />)}
+            </m.div>
             {/* Solo en el Viaje: fija a otra altura (un Caso de estudio) nunca llega a la calle.
                 Quieta: en la Escena WebGL la gente y los vehículos se mueven. */}
             {journeyMode && (

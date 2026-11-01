@@ -1,13 +1,39 @@
 import React, { useEffect } from 'react';
-import { BrowserRouter, Navigate, Outlet, Route, Routes } from 'react-router-dom';
+import { BrowserRouter, Navigate, Outlet, Route, Routes, useLocation } from 'react-router-dom';
 import { MotionProvider } from '@lib/motion';
 import { I18nProvider } from '@lib/i18n';
 import { localizedPath } from '@lib/locale-path';
 
 import { Home } from './pages/Home';
 import { ProjectDetail } from './pages/ProjectDetail';
+import { CASE_STUDY_HEIGHT } from './scene/camera';
+import { EscenaUpgrade } from './scene/EscenaUpgrade';
 
 import type { Locale } from '@/content';
+
+// El scroll suave es para los enlaces a secciones. Al ir atrás o adelante, el navegador restaura la
+// posición: si se animara, la página cruzaría todo el contenido hasta llegar.
+const RESTORE_SETTLE_MS = 1000;
+
+function useInstantHistoryScroll() {
+    useEffect(() => {
+        const root = document.documentElement;
+        let timer = 0;
+        const onPopState = () => {
+            root.style.scrollBehavior = 'auto';
+            window.clearTimeout(timer);
+            timer = window.setTimeout(
+                () => root.style.removeProperty('scroll-behavior'),
+                RESTORE_SETTLE_MS,
+            );
+        };
+        window.addEventListener('popstate', onPopState);
+        return () => {
+            window.removeEventListener('popstate', onPopState);
+            window.clearTimeout(timer);
+        };
+    }, []);
+}
 
 const LocaleLayout: React.FC<{ locale: Locale }> = ({ locale }) => {
     useEffect(() => {
@@ -28,16 +54,31 @@ const localeRoutes = (locale: Locale) => (
     </>
 );
 
-export const AppRoutes: React.FC = () => (
-    <Routes>
-        <Route path="/en" element={<LocaleLayout locale="en" />}>
-            {localeRoutes('en')}
-        </Route>
-        <Route path="/" element={<LocaleLayout locale="es" />}>
-            {localeRoutes('es')}
-        </Route>
-    </Routes>
-);
+// Una sola Escena WebGL para todo el sitio, fuera de las rutas: al navegar conserva el Clima y no se
+// ve la SVG mientras otra se prepara. Va después de las rutas, para pintarse encima de la Escena SVG.
+const SiteEscena: React.FC = () => {
+    const { pathname } = useLocation();
+    return (
+        <EscenaUpgrade height={pathname.includes('/projects/') ? CASE_STUDY_HEIGHT : undefined} />
+    );
+};
+
+export const AppRoutes: React.FC = () => {
+    useInstantHistoryScroll();
+    return (
+        <>
+            <Routes>
+                <Route path="/en" element={<LocaleLayout locale="en" />}>
+                    {localeRoutes('en')}
+                </Route>
+                <Route path="/" element={<LocaleLayout locale="es" />}>
+                    {localeRoutes('es')}
+                </Route>
+            </Routes>
+            <SiteEscena />
+        </>
+    );
+};
 
 export const App: React.FC = () => (
     <BrowserRouter>

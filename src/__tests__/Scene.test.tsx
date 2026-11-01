@@ -143,12 +143,12 @@ describe('prefers-reduced-motion', () => {
 
     it('la Escena queda en el encuadre del Hero y no se mueve con el scroll', () => {
         // Encuadre del Hero: cámara a 0,8 con una ventana de 1000 px; cada capa baja
-        // profundidad × 0,8 × 1000 (cresta lejana 0,35, Ávila 0,55, ciudad 0,8, Torres 0,9).
+        // profundidad × 0,8 × 1000 (cresta lejana y Ávila 0,55, ciudad 0,8, Torres 0,9).
         vi.spyOn(window, 'innerHeight', 'get').mockReturnValue(1000);
         const { shift } = renderScene({ reducedMotion: true });
         const before = ['far-ridge', 'avila', 'city', 'towers'].map(shift);
         expect(before).toEqual([
-            'translateY(280.0px)',
+            'translateY(440.0px)',
             'translateY(440.0px)',
             'translateY(640.0px)',
             'translateY(720.0px)',
@@ -166,7 +166,7 @@ describe('Caso de estudio', () => {
     it('la Escena queda fija sobre las nubes: cada capa hundida según su profundidad', () => {
         vi.spyOn(window, 'innerHeight', 'get').mockReturnValue(1000);
         const { shift, scene } = renderScene({ height: 1 });
-        expect(shift('far-ridge')).toBe('translateY(350.0px)');
+        expect(shift('far-ridge')).toBe('translateY(550.0px)');
         expect(shift('avila')).toBe('translateY(550.0px)');
         expect(shift('city')).toBe('translateY(800.0px)');
         expect(shift('towers')).toBe('translateY(900.0px)');
