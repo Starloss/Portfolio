@@ -1,13 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import { WeatherClock, weatherTarget } from '@app/scene/weather';
+import { ClimaClock, climaTarget } from '@app/scene/climaFrame';
 
-const settled = (clock: WeatherClock, estado: Parameters<WeatherClock['tick']>[1], from = 0) => {
+const settled = (clock: ClimaClock, estado: Parameters<ClimaClock['tick']>[1], from = 0) => {
     let frame = clock.tick(from, estado);
     for (let t = from; t < from + 6000; t += 100) frame = clock.tick(t, estado);
     return frame;
 };
 
-describe('weatherTarget', () => {
+describe('climaTarget', () => {
     it.each([
         ['despejado', { cover: 0, dark: 0, rain: 0 }],
         ['parcial', { cover: 0.42, dark: 0.04, rain: 0 }],
@@ -15,27 +15,27 @@ describe('weatherTarget', () => {
         ['lluvia', { cover: 0.93, dark: 0.4, rain: 0.7 }],
         ['tormenta', { cover: 1, dark: 0.65, rain: 1 }],
     ] as const)('%s', (estado, expected) => {
-        expect(weatherTarget(estado)).toEqual(expected);
+        expect(climaTarget(estado)).toEqual(expected);
     });
 
     it('sin Clima quedan las nubes de siempre: ni despejado ni cubierto', () => {
-        const base = weatherTarget(null);
+        const base = climaTarget(null);
         expect(base.cover).toBeGreaterThan(0);
-        expect(base.cover).toBeLessThan(weatherTarget('parcial').cover);
+        expect(base.cover).toBeLessThan(climaTarget('parcial').cover);
         expect(base.dark).toBe(0);
         expect(base.rain).toBe(0);
     });
 });
 
-describe('WeatherClock', () => {
+describe('ClimaClock', () => {
     it('al arrancar ya está en el Clima, sin fundido', () => {
-        const frame = new WeatherClock().tick(0, 'nublado');
+        const frame = new ClimaClock().tick(0, 'nublado');
         expect(frame.cover).toBe(0.82);
         expect(frame.dark).toBe(0.2);
     });
 
     it('al cambiar, se acerca con un fundido de cerca de 1,5 s, sin saltar', () => {
-        const clock = new WeatherClock();
+        const clock = new ClimaClock();
         clock.tick(0, 'despejado');
         const soon = clock.tick(100, 'tormenta');
         expect(soon.cover).toBeGreaterThan(0);
@@ -49,12 +49,12 @@ describe('WeatherClock', () => {
     });
 
     it.each(['despejado', 'nublado', 'lluvia', null] as const)('con %s no hay rayos', (estado) => {
-        const clock = new WeatherClock(() => 0);
+        const clock = new ClimaClock(() => 0);
         for (let t = 0; t < 30_000; t += 20) expect(clock.tick(t, estado).flash).toBe(0);
     });
 
     it('en tormenta hay rayos: dos pulsos cortos, con al menos 5 s entre un rayo y otro', () => {
-        const clock = new WeatherClock(() => 0.5);
+        const clock = new ClimaClock(() => 0.5);
         const strikes: number[] = [];
         let wasFlashing = false;
         let lastFlash = -Infinity;
@@ -73,7 +73,7 @@ describe('WeatherClock', () => {
     });
 
     it('en cada rayo, nunca más de 3 destellos por segundo', () => {
-        const clock = new WeatherClock(() => 0);
+        const clock = new ClimaClock(() => 0);
         const rises: number[] = [];
         let was = false;
         for (let t = 0; t < 7000; t += 5) {
@@ -88,7 +88,7 @@ describe('WeatherClock', () => {
     it('cada rayo cae en otro lugar, dentro de la pantalla', () => {
         const values = [0, 0.9];
         let i = 0;
-        const clock = new WeatherClock(() => values[i++ % 2]);
+        const clock = new ClimaClock(() => values[i++ % 2]);
         const places = new Set<number>();
         for (let t = 0; t < 30_000; t += 10) {
             const frame = clock.tick(t, 'tormenta');
@@ -101,7 +101,22 @@ describe('WeatherClock', () => {
         expect(places.size).toBeGreaterThan(1);
     });
 
+    it('un cuadro largo no se salta el fundido', () => {
+        const clock = new ClimaClock();
+        clock.tick(0, 'despejado');
+        expect(clock.tick(2000, 'tormenta').cover).toBeLessThan(0.5);
+    });
+
+    it('al asentarse llega justo al objetivo, sin restos', () => {
+        const clock = new ClimaClock();
+        clock.tick(0, 'lluvia');
+        let frame = clock.tick(100, 'despejado');
+        for (let t = 200; t < 8000; t += 100) frame = clock.tick(t, 'despejado');
+        expect(frame).toMatchObject({ cover: 0, dark: 0, rain: 0 });
+        expect(clock.fading).toBe(false);
+    });
+
     it('se ve el clima al asentarse', () => {
-        expect(settled(new WeatherClock(), 'lluvia').rain).toBeCloseTo(0.7);
+        expect(settled(new ClimaClock(), 'lluvia').rain).toBeCloseTo(0.7);
     });
 });

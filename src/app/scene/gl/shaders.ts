@@ -60,7 +60,7 @@ uniform vec3 uSun;
 uniform float uSunAlpha;
 uniform vec2 uStars;
 uniform float uSweep;
-uniform vec3 uWeather;
+uniform vec3 uClima;
 uniform float uBoltX;
 
 const vec3 DAY_TOP = ${vec(DAY.skyTop, 3)};
@@ -86,13 +86,13 @@ void main() {
     }
     vec3 sky = mix(mix(DAY_TOP, DAY_BOTTOM, t), mix(NIGHT_TOP, NIGHT_BOTTOM, t), nightHere);
     sky = mix(sky, DUSK_BAND, band * 0.9);
-    // El Clima: x cobertura, y oscuridad, z la luz del rayo, que se ve en el cielo y dentro de las nubes.
+    // El Clima: x cobertura, y oscuridad, z la luz del rayo.
     vec3 overcast = mix(vec3(0.63, 0.69, 0.74), vec3(0.055, 0.075, 0.12), nightHere);
-    sky = mix(sky, overcast, uWeather.x * uWeather.x * 0.85);
-    sky *= 1.0 - uWeather.y * 0.6;
-    if (uWeather.z > 0.001) {
+    sky = mix(sky, overcast, uClima.x * uClima.x * 0.85);
+    sky *= 1.0 - uClima.y * 0.6;
+    if (uClima.z > 0.001) {
         float glow = 0.3 * exp(-length(p - vec2(uBoltX * uRes.x, 0.45 * uRes.y)) / (0.28 * uRes.y));
-        sky += vec3(0.85, 0.88, 1.0) * uWeather.z * (0.14 + glow);
+        sky += vec3(0.85, 0.88, 1.0) * uClima.z * (0.14 + glow);
     }
     sky = mix(sky, mix(DAY_HIGH, NIGHT_HIGH, uNight), uSkyHigh * max(0.0, 1.0 - t / 0.75));
     // Las estrellas giran alrededor del mismo punto, y titilan cada una a su ritmo.
@@ -226,7 +226,7 @@ ${SCREEN}
 ${ATMOSPHERE}
 uniform vec2 uClouds;
 uniform float uParallax;
-uniform vec2 uCloudW;
+uniform vec3 uCloudW;
 
 void main() {
     vec2 p = screen();
@@ -240,7 +240,9 @@ void main() {
     float n = noise2(vec2(p.x - uParallax + uTime * 7.0, p.y * 1.9) / 1100.0);
     float lo = mix(0.68, 0.3, cover);
     float d = smoothstep(lo, lo + 0.13, n) * band * uClouds.y * smoothstep(0.0, 0.1, cover) * mix(0.92, 0.5 + 0.28 * cover, uNight);
-    outColor = vec4(cloudColor(smoothstep(lo, lo + 0.34, n)) * (1.0 - uCloudW.y * 0.6) * d, d);
+    // El rayo también se ve dentro de las nubes: si no, un cielo cubierto lo taparía.
+    vec3 lit = cloudColor(smoothstep(lo, lo + 0.34, n)) * (1.0 - uCloudW.y * 0.6) + vec3(0.85, 0.88, 1.0) * uCloudW.z * 0.35;
+    outColor = vec4(lit * d, d);
 }
 `;
 
@@ -287,7 +289,7 @@ void main() {
 `;
 
 /** La lluvia, en dos planos de gotas, y la línea del rayo. Cada pase usa solo una de las dos. */
-export const WEATHER_FRAGMENT = /* glsl */ `#version 300 es
+export const CLIMA_FRAGMENT = /* glsl */ `#version 300 es
 precision highp float;
 out vec4 outColor;
 ${SCREEN}

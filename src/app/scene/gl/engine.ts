@@ -8,7 +8,7 @@ import type { Estado } from '@lib/clima';
 import { sky as skyAt, type Sky } from '../sky';
 import { STREET_ABOVE, streetAgents } from '../street';
 import { arcPoint, BOVEDA_SECONDS, BovedaClock, moonRotation, restOf } from '../vault';
-import { WeatherClock } from '../weather';
+import { ClimaClock } from '../climaFrame';
 
 import { isSoftwareGpu, rendererName } from './detect';
 import { advanceClocks, escenaFrame, followPointer, type ClockAnchor, type Clocks } from './frame';
@@ -28,7 +28,7 @@ import {
     SKY_FRAGMENT,
     SPRITE_FRAGMENT,
     SPRITE_VERTEX,
-    WEATHER_FRAGMENT,
+    CLIMA_FRAGMENT,
 } from './shaders';
 import type { LayerName } from './textures';
 import { createWatchdog } from './watchdog';
@@ -125,7 +125,7 @@ export class EscenaGL {
     private boveda = new BovedaClock(BOVEDA_SECONDS);
     private sky: Sky = skyAt(Date.now());
     private estado: Estado | null = null;
-    private weather = new WeatherClock();
+    private climaClock = new ClimaClock();
     private progress = 0;
     private pointer = 0;
     private pointerTarget = 0;
@@ -201,7 +201,7 @@ export class EscenaGL {
         return program;
     }
 
-    // Ocho programas para dieciocho pases: compilar shaders es lo más caro del arranque (con una
+    // Diez programas para veintiún pases: compilar shaders es lo más caro del arranque (con una
     // GPU por software, cientos de ms). Cada pase fija sus uniforms justo antes de dibujarse.
     private build(): Record<Pass, PassSpec> {
         const gl = this.gl;
@@ -219,7 +219,7 @@ export class EscenaGL {
             flipY: false,
         });
         const textures = { tDay: { value: null }, tNight: { value: null } };
-        // Ruido, tiempo y atardecer: lo comparten las nubes y la niebla.
+        // Ruido, tiempo y atardecer: lo comparten las nubes, la niebla y el Clima.
         const atmosphere = {
             tNoise: { value: noise },
             uTime: { value: 0 },
@@ -232,7 +232,7 @@ export class EscenaGL {
             uSunAlpha: { value: 0 },
             uStars: { value: [0, 0] },
             uSweep: { value: -1 },
-            uWeather: { value: [0, 0, 0] },
+            uClima: { value: [0, 0, 0] },
             uBoltX: { value: 0.5 },
         });
         const moon = this.program(FULLSCREEN_VERTEX, MOON_FRAGMENT, {
@@ -244,7 +244,7 @@ export class EscenaGL {
         const clouds = this.program(FULLSCREEN_VERTEX, CLOUDS_FRAGMENT, {
             ...atmosphere,
             uClouds: { value: [0, 0] },
-            uCloudW: { value: [0, 0] },
+            uCloudW: { value: [0, 0, 0] },
             uParallax: { value: 0 },
         });
         const mist = this.program(FULLSCREEN_VERTEX, MIST_FRAGMENT, {
@@ -276,7 +276,7 @@ export class EscenaGL {
             uSunSide: { value: -1 },
             uSize: { value: [1, 1] },
         });
-        const weather = this.program(FULLSCREEN_VERTEX, WEATHER_FRAGMENT, {
+        const clima = this.program(FULLSCREEN_VERTEX, CLIMA_FRAGMENT, {
             ...atmosphere,
             uRain: { value: 0 },
             uBolt: { value: [0, 0, 0] },
@@ -330,8 +330,8 @@ export class EscenaGL {
             moon: pass(fullscreen, moon),
             macaws: pass(fullscreen, layer, { ...still, ...tex('macaws:day', 'macaws:day') }),
             clouds: pass(fullscreen, clouds),
-            bolt: pass(fullscreen, weather),
-            rain: pass(fullscreen, weather),
+            bolt: pass(fullscreen, clima),
+            rain: pass(fullscreen, clima),
             far: both('far', 0.8),
             farMist: mistOf({ scale: 1300, drift: 5, strength: 0.4 }),
             avilaBack: both('avilaBack', 1),
@@ -565,7 +565,7 @@ export class EscenaGL {
     private draw(now: number) {
         const layout = this.layout;
         if (!layout || this.ready[this.theme] < 0) return;
-        if (this.onDemand && !this.dirty && !this.boveda.turning && !this.weather.fading) return;
+        if (this.onDemand && !this.dirty && !this.boveda.turning && !this.climaClock.fading) return;
         this.dirty = false;
         const { viewport, frame, sink, sky: arc } = layout;
         const dt = Math.min(0.1, (now - (this.lastFrame || now)) / 1000);
@@ -594,7 +594,7 @@ export class EscenaGL {
         // (al oeste); al volver al Día, sale a la derecha (al este).
         const side = toNight ? -1 : 1;
         // Con una GPU por software no hay rayos: dibuja solo cuando algo cambia.
-        const w = this.weather.tick(now, this.estado);
+        const w = this.climaClock.tick(now, this.estado);
         const flash = this.onDemand ? 0 : w.flash;
         const shade = w.dark * 0.3;
         // Las nubes tapan el sol, la luna y las estrellas.
@@ -613,7 +613,7 @@ export class EscenaGL {
                 uSunAlpha: b.sun.alpha * dim,
                 uStars: [b.stars.alpha * dim, b.stars.angle],
                 uSweep: b.sweep,
-                uWeather: [w.cover, w.dark, flash],
+                uClima: [w.cover, w.dark, flash],
                 uBoltX: w.boltX,
             },
             moon: {
@@ -629,12 +629,12 @@ export class EscenaGL {
             macaws: { uOffset: [f.macaws.x, f.macaws.y], uOpacity: 1 - this.night },
             clouds: {
                 uClouds: [f.cloudsShift, f.cloudsOpacity],
-                uCloudW: [w.cover, w.dark],
+                uCloudW: [w.cover, w.dark, flash],
                 uParallax: parallax.sky,
                 uDusk: dusk,
                 uTime: time,
             },
-            bolt: { uRain: 0, uBolt: [w.boltX, flash, w.boltSeed], uDusk: dusk, uTime: time },
+            bolt: { uRain: 0, uBolt: [w.boltX, flash, w.boltSeed], uTime: time },
             far: {
                 uOffset: [parallax.farRidge, f.shifts.farRidge],
                 uDusk: dusk,
@@ -687,7 +687,7 @@ export class EscenaGL {
                 uShade: shade,
             },
             agents: { uTime: time },
-            rain: { uRain: w.rain, uBolt: [0, 0, 0], uDusk: dusk, uTime: time },
+            rain: { uRain: w.rain, uBolt: [0, 0, 0], uTime: time },
             front: {
                 uFront: f.frontClouds,
                 uHeight: f.height,
