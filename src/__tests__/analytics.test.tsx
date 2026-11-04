@@ -68,6 +68,18 @@ describe('Script de Umami', () => {
         expect(tag).toContain('data-domains="www.diegorangel.dev"');
     });
 
+    it('una URL de prueba queda marcada al cargar, aunque se navegue antes de que llegue Umami', () => {
+        const inline = html.match(/<script>([^<]*umamiAntesDeEnviar[^<]*)<\/script>/)?.[1] ?? '';
+        window.history.replaceState(null, '', '/?dia=domingo');
+        new Function(inline)();
+        window.history.replaceState(null, '', '/projects/superwallet');
+        const { umamiAntesDeEnviar } = window as unknown as {
+            umamiAntesDeEnviar: (type: string, payload: object) => unknown;
+        };
+        expect(umamiAntesDeEnviar('event', { url: '/projects/superwallet' })).toBe(false);
+        window.history.replaceState(null, '', '/');
+    });
+
     it('no se usan los atributos data-umami-event, que anulan el download del CV', () => {
         const { container } = renderAt('/');
         expect(container.querySelector('[data-umami-event]')).toBeNull();
