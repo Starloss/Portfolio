@@ -225,7 +225,7 @@ export class EscenaGL {
         return program;
     }
 
-    // Diez programas para diecinueve pases: compilar shaders es lo más caro del arranque (con una
+    // Once programas para diecinueve pases: compilar shaders es lo más caro del arranque (con una
     // GPU por software, cientos de ms). Cada pase fija sus uniforms justo antes de dibujarse.
     private build(): Record<Pass, PassSpec> {
         const gl = this.gl;
