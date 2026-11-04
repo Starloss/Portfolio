@@ -1,13 +1,12 @@
 // Mensajes entre la página y el Worker que dibuja la Escena WebGL (ADR 0003). La página no hace
-// nada de WebGL: le pasa al Worker el canvas, el scroll, las medidas, el tema y el reloj de las
-// animaciones de CSS, y le rasteriza las texturas cuando las pide.
+// nada de WebGL: le pasa al Worker el canvas, el scroll, las medidas, el tema y cuándo vuelan las
+// guacamayas, y le rasteriza las texturas cuando las pide.
 import type { Estado } from '@lib/clima';
 
 import type { SceneFrame, Viewport } from '../camera';
+import type { FlightContext } from '../flights';
 import type { Sky } from '../sky';
 import type { SkyLayout } from '../vault';
-
-import type { ClockAnchor } from './frame';
 
 export type FallbackReason = 'slow' | 'context-lost' | 'init-failed';
 
@@ -32,7 +31,7 @@ export type ToWorker =
     | { type: 'sky'; sky: Sky }
     | { type: 'clima'; estado: Estado | null }
     | { type: 'scroll'; progress: number }
-    | { type: 'clocks'; anchor: ClockAnchor }
+    | { type: 'flights'; context: FlightContext }
     | { type: 'pointer'; x: number }
     | { type: 'run'; running: boolean }
     | { type: 'textures'; id: number; images: Record<string, ImageBitmap> | null }

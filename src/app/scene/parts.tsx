@@ -37,23 +37,23 @@ const delay = (seconds: number): React.CSSProperties => ({ animationDelay: `${se
 
 // ---------- Cielo ----------
 
-// Guacamaya roja de perfil, volando hacia la derecha: ala cercana levantada, banda amarilla,
-// primarias azules, cola larga roja con punta azul, cara clara y pico curvo.
+// Guacamaya azul y amarilla de perfil (Ara ararauna, la más común en Caracas), volando hacia la
+// derecha: ala cercana levantada, espalda y cola azules, pecho amarillo, cara clara y pico curvo.
 const Macaw: React.FC<{ x: number; y: number; s: number }> = ({ x, y, s }) => (
     <g transform={`translate(${x},${y}) scale(${s})`}>
-        <path d="M-8 1 Q-24 6 -42 14 L-40 10 Q-24 2 -8 -2 Z" style={{ fill: '#c81d25' }} />
-        <path d="M-33 10.5 L-42 14 L-40 10 Z" style={{ fill: '#1d4ed8' }} />
-        <path d="M-2 0 Q-10 6 -20 12 L-12 12 Q-4 6 4 1 Z" style={{ fill: '#8f1218' }} />
+        <path d="M-8 1 Q-24 6 -42 14 L-40 10 Q-24 2 -8 -2 Z" style={{ fill: '#1d6fd6' }} />
+        <path d="M-33 10.5 L-42 14 L-40 10 Z" style={{ fill: '#134a9c' }} />
+        <path d="M-2 0 Q-10 6 -20 12 L-12 12 Q-4 6 4 1 Z" style={{ fill: '#174f9e' }} />
         <path
             d="M-10 0 Q-2 -6 10 -4 Q15 -3 16 0 Q12 4 0 4 Q-6 4 -10 0 Z"
-            style={{ fill: '#d62828' }}
+            style={{ fill: '#f4bf1c' }}
         />
-        <circle cx={15} cy={-3} r={4} style={{ fill: '#d62828' }} />
+        <circle cx={15} cy={-3} r={4} style={{ fill: '#1d6fd6' }} />
         <ellipse cx={16.5} cy={-3.2} rx={1.8} ry={1.3} style={{ fill: '#f1ece2' }} />
         <path d="M18.5 -4.5 Q23 -3.5 20.5 0 L18.5 -1 Z" style={{ fill: '#e9e3d6' }} />
-        <path d="M6 -3 Q0 -14 -14 -26 L-6 -27 Q4 -16 11 -4 Z" style={{ fill: '#c81d25' }} />
-        <path d="M2.5 -9 Q-2 -15 -7 -20 L-3 -21 Q2 -15 6 -9 Z" style={{ fill: '#f2c200' }} />
-        <path d="M-14 -26 L-24 -34 L-12 -31 L-6 -27 Z" style={{ fill: '#1d4ed8' }} />
+        <path d="M6 -3 Q0 -14 -14 -26 L-6 -27 Q4 -16 11 -4 Z" style={{ fill: '#1d6fd6' }} />
+        <path d="M2.5 -9 Q-2 -15 -7 -20 L-3 -21 Q2 -15 6 -9 Z" style={{ fill: '#3d8ee8' }} />
+        <path d="M-14 -26 L-24 -34 L-12 -31 L-6 -27 Z" style={{ fill: '#134a9c' }} />
     </g>
 );
 

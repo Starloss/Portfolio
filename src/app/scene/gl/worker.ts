@@ -50,8 +50,8 @@ self.onmessage = (event: MessageEvent<ToWorker>) => {
             return engine.setSky(message.sky);
         case 'scroll':
             return engine.setScroll(message.progress);
-        case 'clocks':
-            return engine.setClocks(message.anchor);
+        case 'flights':
+            return engine.setFlights(message.context);
         case 'pointer':
             return engine.setPointer(message.x);
         case 'run':

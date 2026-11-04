@@ -1,4 +1,4 @@
-import { afterEach, describe, it, expect } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import {
     cameraHeightAt,
     journeyAt,
@@ -10,32 +10,19 @@ import {
 } from '@app/scene/camera';
 import { circuitAt } from '@app/scene/circuit';
 import { cableLinePoint } from '@app/scene/geometry';
-import {
-    cssEaseInOut,
-    advanceClocks,
-    circuitOnScreen,
-    cubicBezier,
-    escenaFrame,
-    followPointer,
-    loopAt,
-    PARALLAX_PX,
-    type Clocks,
-} from '@app/scene/gl/frame';
-import { readClocks } from '@app/scene/gl/clocks';
+import { circuitOnScreen, escenaFrame, followPointer, PARALLAX_PX } from '@app/scene/gl/frame';
 
-// Lo que la Escena WebGL dibuja en cada cuadro sale del mismo Viaje de cámara que la SVG y del
-// reloj de sus animaciones de CSS: así el fundido cruzado entre las dos no salta.
+// Lo que la Escena WebGL dibuja en cada cuadro sale del mismo Viaje de cámara que la SVG: así el
+// fundido cruzado entre las dos no salta.
 
 const viewport = { width: 1440, height: 900 };
 const frame = sceneFrame(viewport);
-const still: Clocks = { macaws: 0 };
-const at = (progress: number, clocks: Partial<Clocks> = {}, pointer = 0) =>
+const at = (progress: number, pointer = 0) =>
     escenaFrame({
         progress,
         sink: 30,
         viewport,
         frame,
-        clocks: { ...still, ...clocks },
         pointer,
     });
 
@@ -56,7 +43,7 @@ describe('escenaFrame', () => {
     });
 
     it('las cabinas del circuito cuelgan de su cable y se mueven con el Ávila', () => {
-        const f = at(0.5, {}, 1);
+        const f = at(0.5, 1);
         const onScreen = circuitOnScreen(12, frame, f);
         circuitAt(12).forEach((cabin, i) => {
             const p = cableLinePoint(cabin.t, cabin.line);
@@ -73,61 +60,11 @@ describe('escenaFrame', () => {
         expect(up.scale).toBeCloseTo(frame.scale);
     });
 
-    it('las guacamayas van y vuelven cada 16 s, con el mismo recorrido que en CSS', () => {
-        expect(at(0).macaws).toEqual({ x: 0, y: 0 });
-        expect(at(0, { macaws: 8 }).macaws.x).toBeCloseTo(-40 * frame.scale);
-        expect(at(0, { macaws: 8 }).macaws.y).toBeCloseTo(-12 * frame.scale);
-        expect(at(0, { macaws: 16 }).macaws.x).toBeCloseTo(0);
-    });
-
     it('las nubes lejanas bajan con la cámara, como la capa de nubes de la SVG', () => {
         for (const progress of [0, 0.5, 1]) {
             const f = at(progress);
             expect(f.cloudsShift).toBeCloseTo(cloudsAt(f.height, 900).y);
         }
-    });
-});
-
-describe('curvas de CSS y loopAt', () => {
-    it('ease-in-out: lenta en los extremos y simétrica', () => {
-        expect(cssEaseInOut(0)).toBe(0);
-        expect(cssEaseInOut(1)).toBe(1);
-        expect(cssEaseInOut(0.5)).toBeCloseTo(0.5);
-        expect(cssEaseInOut(0.1)).toBeLessThan(0.05);
-        expect(cssEaseInOut(0.25) + cssEaseInOut(0.75)).toBeCloseTo(1);
-    });
-
-    it('una curva recta no cambia nada', () => {
-        expect(cubicBezier(0, 0, 1, 1)(0.3)).toBeCloseTo(0.3);
-    });
-
-    it('loopAt da la fracción de una animación infinita, con o sin alternate', () => {
-        expect(loopAt(5, 10, false)).toBeCloseTo(0.5);
-        expect(loopAt(15, 10, false)).toBeCloseTo(0.5);
-        expect(loopAt(15, 10, true)).toBeCloseTo(0.5);
-        expect(loopAt(12, 10, true)).toBeCloseTo(0.8);
-    });
-});
-
-describe('advanceClocks', () => {
-    it('el Worker avanza los relojes de CSS con el tiempo que pasó desde el ancla', () => {
-        const anchor = { at: 10_000, clocks: { macaws: 2 } };
-        expect(advanceClocks(anchor, 12_500)).toEqual({ macaws: 4.5 });
-    });
-});
-
-describe('readClocks', () => {
-    afterEach(() => document.body.replaceChildren());
-
-    it('toma la hora de cada animación de CSS de la Escena SVG', () => {
-        document.body.innerHTML = `<div class="scene"><g data-anim="macaws"></g></div>`;
-        const macaws = document.querySelector<HTMLElement>('[data-anim="macaws"]')!;
-        macaws.getAnimations = () => [{ currentTime: 12_500 } as Animation];
-        expect(readClocks(3)).toEqual({ macaws: 12.5 });
-    });
-
-    it('si una animación no está montada, usa el reloj de respaldo', () => {
-        expect(readClocks(7)).toEqual({ macaws: 7 });
     });
 });
 
@@ -140,7 +77,7 @@ describe('efectos', () => {
     });
 
     it('con el puntero a un lado, lo lejano se mueve menos que lo cercano y en sentido contrario', () => {
-        const f = at(0.5, {}, 1);
+        const f = at(0.5, 1);
         expect(f.parallax.farRidge).toBeLessThan(0);
         expect(Math.abs(f.parallax.farRidge)).toBeLessThan(Math.abs(f.parallax.avila));
         expect(Math.abs(f.parallax.avila)).toBeLessThan(Math.abs(f.parallax.city));

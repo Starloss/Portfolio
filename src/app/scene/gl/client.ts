@@ -1,15 +1,13 @@
 // La Escena WebGL vista desde la página: transfiere el canvas a un Worker y le pasa lo que solo se
-// sabe aquí (scroll, medidas, tema, reloj de las animaciones de CSS). Cuando el Worker pide
+// sabe aquí (scroll, medidas, tema, la hora de Caracas para las guacamayas). Cuando el Worker pide
 // texturas, las rasteriza de las piezas SVG y se las manda como ImageBitmap.
 import type { Estado } from '@lib/clima';
 
+import type { FlightContext } from '../flights';
 import type { Sky } from '../sky';
 
-import { readClocks } from './clocks';
 import type { FallbackReason, FromWorker, Layout, ToWorker } from './protocol';
 import { themeLayers } from './textures';
-
-const epoch = () => performance.timeOrigin + performance.now();
 
 export class EscenaClient {
     onFirstFrame?: () => void;
@@ -47,12 +45,6 @@ export class EscenaClient {
             window.scrollY / Math.max(1, doc.scrollHeight - window.innerHeight);
         this.post({ type: 'scroll', progress });
     };
-
-    // El reloj de las animaciones de CSS de la SVG, en este instante: el Worker lo avanza solo.
-    private sendClocks() {
-        const at = epoch();
-        this.post({ type: 'clocks', anchor: { at, clocks: readClocks(performance.now() / 1000) } });
-    }
 
     private loseContext = () => this.post({ type: 'lose-context' });
 
@@ -112,19 +104,20 @@ export class EscenaClient {
         this.post({ type: 'clima', estado });
     }
 
+    setFlights(context: FlightContext) {
+        this.post({ type: 'flights', context });
+    }
+
     setSky(sky: Sky) {
         this.post({ type: 'sky', sky });
     }
 
     setNight(night: boolean) {
         this.post({ type: 'night', night });
-        // Las guacamayas recién montadas arrancan su animación de cero.
-        this.sendClocks();
     }
 
     start() {
         this.sendScroll();
-        this.sendClocks();
         this.post({ type: 'run', running: true });
     }
 

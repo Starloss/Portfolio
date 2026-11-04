@@ -114,6 +114,13 @@ test('las Torres van detrás de la ciudad y llegan hasta el suelo', async ({ pag
     expect(order.towers).toBeLessThan(order.city);
 });
 
+test('con lluvia, la SVG no muestra guacamayas', async ({ page }) => {
+    await page.goto('/?escena=svg&hora=12:00&clima=despejado');
+    await expect(page.locator('[data-part="macaws"]')).toHaveCount(1);
+    await page.goto('/?escena=svg&hora=12:00&clima=lluvia');
+    await expect(page.locator('[data-part="macaws"]')).toHaveCount(0);
+});
+
 test('el Teleférico de la SVG tiene dos cables y cabinas quietas en los dos', async ({ page }) => {
     await page.goto('/?escena=svg');
     await expect(page.locator('[data-part="return-cable"]')).toHaveCount(1);

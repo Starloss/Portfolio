@@ -33,8 +33,29 @@ const withUmami = () => {
     return track;
 };
 
+// Cada test es una visita nueva: sin marca de prueba, ni guardada ni en memoria.
+const newVisit = () => {
+    sessionStorage.clear();
+    delete window.visitaDePrueba;
+};
+
 afterEach(() => {
     delete window.umami;
+    newVisit();
+});
+
+describe('Visitas de prueba', () => {
+    it('con un parámetro de prueba de la Escena no se envía nada', () => {
+        const track = withUmami();
+        window.history.replaceState(null, '', '/?guacamayas=ya');
+        trackContact('email');
+        expect(track).not.toHaveBeenCalled();
+        // Una visita nueva, sin el parámetro, sí se cuenta.
+        window.history.replaceState(null, '', '/');
+        newVisit();
+        trackContact('email');
+        expect(track).toHaveBeenCalledOnce();
+    });
 });
 
 describe('Script de Umami', () => {
@@ -91,5 +112,31 @@ describe('Señales de interés', () => {
             },
         };
         expect(() => trackContact('email')).not.toThrow();
+    });
+});
+
+describe('Visitas de prueba, al navegar', () => {
+    it('la marca dura toda la visita, aunque la siguiente página no lleve el parámetro', () => {
+        const track = withUmami();
+        window.history.replaceState(null, '', '/?dia=domingo');
+        trackContact('email');
+        window.history.replaceState(null, '', '/projects/superwallet');
+        trackContact('email');
+        expect(track).not.toHaveBeenCalled();
+        window.history.replaceState(null, '', '/');
+    });
+
+    it('sin sessionStorage, la marca dura mientras no se recargue la página', () => {
+        const track = withUmami();
+        vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
+            throw new Error('bloqueado');
+        });
+        window.history.replaceState(null, '', '/?trafico=tranca');
+        trackContact('email');
+        window.history.replaceState(null, '', '/projects/superwallet');
+        trackContact('email');
+        expect(track).not.toHaveBeenCalled();
+        window.history.replaceState(null, '', '/');
+        vi.restoreAllMocks();
     });
 });

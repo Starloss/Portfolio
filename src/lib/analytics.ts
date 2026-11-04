@@ -13,12 +13,31 @@ import type { Locale } from '@/content';
 declare global {
     interface Window {
         umami?: { track: (event: string, data?: Record<string, string>) => unknown };
+        /** La marca de visita de prueba en memoria, por si sessionStorage falla (index.html). */
+        visitaDePrueba?: boolean;
     }
 }
 
 export type ContactChannel = 'email' | 'linkedin';
 
+// Las visitas con un parámetro de prueba de la Escena en movimiento son pruebas o demostraciones:
+// no se cuentan (spec #99). Los enlaces del sitio no llevan la query, así que la marca dura toda la
+// visita; el script de index.html la usa también para las páginas vistas.
+const TEST_PARAMS = ['guacamayas', 'dia', 'trafico'];
+const TEST_VISIT_KEY = 'visita-de-prueba';
+const isTestVisit = () => {
+    const params = new URLSearchParams(window.location.search);
+    if (TEST_PARAMS.some((p) => params.has(p))) window.visitaDePrueba = true;
+    try {
+        if (window.visitaDePrueba) sessionStorage.setItem(TEST_VISIT_KEY, '1');
+        return sessionStorage.getItem(TEST_VISIT_KEY) === '1';
+    } catch {
+        return window.visitaDePrueba === true;
+    }
+};
+
 const track = (event: string, data: Record<string, string>) => {
+    if (isTestVisit()) return;
     try {
         window.umami?.track(event, data);
     } catch {

@@ -1,7 +1,7 @@
 // La Escena WebGL encima de la SVG (ADR 0003). Entra con un fundido cruzado; si el vigilante de FPS
 // la ve lenta, se funde de vuelta a la SVG, y si falla (contexto perdido, texturas), vuelve enseguida.
 import React, { useEffect, useEffectEvent, useRef, useState } from 'react';
-import { useClima } from '@lib/clima';
+import { useCaracasClock, useClima } from '@lib/clima';
 import { useTheme } from '@lib/theme';
 
 import { progressForHeight, sceneFrame } from '../camera';
@@ -11,6 +11,7 @@ import {
     useElementViewport,
     useSceneCovered,
 } from '../environment';
+import { flightForced } from '../flights';
 import { pageFit, usePageLayout } from '../Scene';
 
 import { EscenaClient } from './client';
@@ -76,6 +77,18 @@ export const SceneGL: React.FC<{
         engineRef.current?.setClima(estado);
         // `watch` recrea el motor: el nuevo también necesita saber el Clima.
     }, [estado, watch]);
+
+    // Las guacamayas: cuándo vuelan sale de la hora de Caracas y de si llueve.
+    const { hour, minute } = useCaracasClock();
+    const raining = estado === 'lluvia' || estado === 'tormenta';
+    useEffect(() => {
+        engineRef.current?.setFlights({
+            hour: hour + minute / 60,
+            raining,
+            forced: flightForced(window.location.search),
+        });
+        // `watch` recrea el motor: el nuevo también necesita saber cuándo vuelan.
+    }, [hour, minute, raining, watch]);
 
     const sky = useCaracasSky();
     useEffect(() => {

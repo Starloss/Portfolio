@@ -1,6 +1,5 @@
 // Lo que la Escena WebGL dibuja en cada cuadro, como funciones puras. Sale del mismo Viaje de
-// cámara que la Escena SVG (camera.ts) y repite sus animaciones de CSS con sus mismas curvas, sobre
-// el reloj de esas mismas animaciones: así el fundido cruzado entre las dos no salta.
+// cámara que la Escena SVG (camera.ts): así el fundido cruzado entre las dos no salta.
 import {
     journeyAt,
     cloudsAt,
@@ -14,65 +13,6 @@ import {
 import { circuitAt } from '../circuit';
 import { cableLinePoint, RETURN_CABLE, type CableLine } from '../geometry';
 import { streetBand } from '../street';
-
-/** Una curva `cubic-bezier()` de CSS, como función del progreso. */
-export function cubicBezier(x1: number, y1: number, x2: number, y2: number) {
-    const at = (u: number, a: number, b: number) =>
-        3 * a * u * (1 - u) ** 2 + 3 * b * u * u * (1 - u) + u ** 3;
-    return (t: number) => {
-        if (t <= 0) return 0;
-        if (t >= 1) return 1;
-        // La x de la curva es monótona: alcanza con bisección para hallar el parámetro.
-        let lo = 0;
-        let hi = 1;
-        for (let i = 0; i < 24; i++) {
-            const mid = (lo + hi) / 2;
-            if (at(mid, x1, x2) < t) lo = mid;
-            else hi = mid;
-        }
-        return at((lo + hi) / 2, y1, y2);
-    };
-}
-
-export const cssEaseInOut = cubicBezier(0.42, 0, 0.58, 1);
-
-/** Fracción (0 a 1) de una animación infinita de `duration` s; `alternate` va y vuelve. */
-export function loopAt(time: number, duration: number, alternate: boolean): number {
-    const cycles = time / duration;
-    const fraction = cycles - Math.floor(cycles);
-    return alternate && Math.floor(cycles) % 2 === 1 ? 1 - fraction : fraction;
-}
-
-// Keyframes en 0, 50% y 100%: CSS aplica el ease-in-out a cada tramo por separado.
-function twoStep(t: number, a: Point, b: Point, c: Point): Point {
-    const [from, to, u] = t < 0.5 ? [a, b, t / 0.5] : [b, c, (t - 0.5) / 0.5];
-    const k = cssEaseInOut(u);
-    return { x: from.x + (to.x - from.x) * k, y: from.y + (to.y - from.y) * k };
-}
-
-interface Point {
-    x: number;
-    y: number;
-}
-
-const MACAW_SECONDS = 16;
-const MACAW_SWING = { x: -40, y: -12 };
-
-/** Segundos de cada animación de CSS de la Escena SVG (su `currentTime`). */
-export interface Clocks {
-    macaws: number;
-}
-
-/** Los relojes de CSS en un instante (ms desde el epoch): el Worker los avanza con el suyo. */
-export interface ClockAnchor {
-    at: number;
-    clocks: Clocks;
-}
-
-export function advanceClocks({ at, clocks }: ClockAnchor, now: number): Clocks {
-    const elapsed = (now - at) / 1000;
-    return { macaws: clocks.macaws + elapsed };
-}
 
 /** El puntero en x, de -1 (izquierda) a 1, seguido con suavidad: nunca salta ni se pasa. */
 export function followPointer(current: number, target: number, dt: number): number {
@@ -103,12 +43,11 @@ export interface EscenaInputs {
     sink: number;
     viewport: Viewport;
     frame: SceneFrame;
-    clocks: Clocks;
     /** El puntero en x ya suavizado (`followPointer`); 0, al centro, si no hay mouse. */
     pointer: number;
 }
 
-export function escenaFrame({ progress, sink, viewport, frame, clocks, pointer }: EscenaInputs) {
+export function escenaFrame({ progress, sink, viewport, frame, pointer }: EscenaInputs) {
     // Lo que depende de la altura de la cámara se interpola entre las muestras del Viaje, igual que
     // en la Escena SVG: así el fundido cruzado entre las dos no salta.
     const sample = (valueAt: (height: number) => number) => journeyAt(progress, valueAt);
@@ -130,15 +69,6 @@ export function escenaFrame({ progress, sink, viewport, frame, clocks, pointer }
         towers: sway(PARALLAX_DEPTH.towers),
         street: sway(PARALLAX_DEPTH.street),
     };
-    const macaws = twoStep(
-        loopAt(clocks.macaws, MACAW_SECONDS, false),
-        { x: 0, y: 0 },
-        MACAW_SWING,
-        {
-            x: 0,
-            y: 0,
-        },
-    );
     const clouds = {
         y: sample((h) => cloudsAt(h, vh).y),
         opacity: sample((h) => cloudsAt(h, vh).opacity),
@@ -151,7 +81,6 @@ export function escenaFrame({ progress, sink, viewport, frame, clocks, pointer }
         cloudsOpacity: clouds.opacity,
         /** Cuánto bajó la capa de nubes lejanas con la cámara (px). */
         cloudsShift: clouds.y,
-        macaws: { x: macaws.x * frame.scale + parallax.sky, y: macaws.y * frame.scale },
         parallax,
         /** La franja de la Avenida Bolívar (street.ts): su borde de arriba y su alto, en px. */
         street: {

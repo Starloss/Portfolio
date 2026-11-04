@@ -335,10 +335,103 @@ void main() {
 `;
 
 /**
+ * Las guacamayas en vuelo: una instancia por ave (birds.ts), de perfil, con la silueta y el aleteo
+ * hechos en el shader (cada ave aletea a su ritmo). vP va en largos de ave, con x hacia adelante y
+ * y hacia arriba; el quad mide 1,5 largos. De Noche no se ven.
+ */
+export const BIRD_VERTEX = /* glsl */ `#version 300 es
+in vec2 position;
+in vec2 aAnchor;
+in float aLength;
+in vec3 aMeta;
+uniform vec2 uRes;
+out vec2 vP;
+out vec3 vMeta;
+out float vLength;
+void main() {
+    vec2 local = (position - 0.5) * 1.5;
+    vec2 px = aAnchor + vec2(local.x, -local.y) * aLength;
+    gl_Position = vec4(px.x / uRes.x * 2.0 - 1.0, 1.0 - px.y / uRes.y * 2.0, 0.0, 1.0);
+    vP = vec2(local.x * aMeta.x, local.y);
+    vMeta = aMeta;
+    vLength = aLength;
+}
+`;
+
+export const BIRD_FRAGMENT = /* glsl */ `#version 300 es
+precision highp float;
+in vec2 vP;
+in vec3 vMeta;
+in float vLength;
+uniform float uNight;
+out vec4 outColor;
+
+float sdCap(vec2 p, vec2 a, vec2 b, float r) {
+    vec2 pa = p - a, ba = b - a;
+    float h = clamp(dot(pa, ba) / dot(ba, ba), 0.0, 1.0);
+    return length(pa - ba * h) - r;
+}
+float along(vec2 p, vec2 a, vec2 b) {
+    vec2 ba = b - a;
+    return clamp(dot(p - a, ba) / dot(ba, ba), 0.0, 1.0);
+}
+// Cubre en px de pantalla: el borde queda suave a cualquier tamaño.
+float cover(float d) { return 1.0 - smoothstep(-0.5, 0.5, d * vLength); }
+
+void main() {
+    vec2 p = vP;
+    float species = vMeta.z;
+    float s = sin(vMeta.y);
+    // Por especie: espalda, pecho, ala junto al cuerpo y punta del ala.
+    vec3 back, belly, wingIn, wingTip;
+    if (species < 0.5) {
+        back = vec3(0.1, 0.42, 0.86); belly = vec3(0.99, 0.77, 0.12);
+        wingIn = back; wingTip = vec3(0.06, 0.24, 0.62);
+    } else if (species < 1.5) {
+        back = vec3(0.86, 0.13, 0.12); belly = back;
+        wingIn = vec3(0.99, 0.8, 0.14); wingTip = vec3(0.12, 0.32, 0.86);
+    } else {
+        back = vec3(0.78, 0.12, 0.14); belly = back;
+        wingIn = vec3(0.16, 0.58, 0.34); wingTip = vec3(0.12, 0.3, 0.8);
+    }
+    vec2 pivot = vec2(0.03, 0.05);
+    // Aleteo lento y poco profundo: el ala sube y baja, siempre algo hacia atrás.
+    vec2 tip = pivot + vec2(-0.2 + 0.06 * s, 0.4 * s + 0.04);
+    vec2 mid = mix(pivot, tip, 0.5) + vec2(0.04, 0.0);
+    vec2 farTip = pivot + vec2(-0.16 + 0.05 * s, 0.32 * s + 0.08);
+    vec2 farMid = mix(pivot, farTip, 0.5);
+
+    vec4 color = vec4(0.0);
+    // El ala lejana, más oscura, detrás del cuerpo.
+    float farWing = min(sdCap(p, pivot, farMid, 0.06), sdCap(p, farMid, farTip, 0.035));
+    color = mix(color, vec4(mix(wingIn, wingTip, along(p, pivot, farTip)) * 0.7, 1.0), cover(farWing));
+    // La cola, larga y en punta.
+    float tail = min(sdCap(p, vec2(-0.12, -0.01), vec2(-0.38, -0.06), 0.04), sdCap(p, vec2(-0.38, -0.06), vec2(-0.64, -0.12), 0.018));
+    color = mix(color, vec4(species < 0.5 ? back : mix(back, wingTip, 0.6), 1.0), cover(tail));
+    // El cuerpo, con el pecho de otro color.
+    float body = sdCap(p, vec2(-0.12, 0.0), vec2(0.18, 0.03), 0.075);
+    color = mix(color, vec4(mix(belly, back, smoothstep(-0.01, 0.03, p.y - p.x * 0.1)), 1.0), cover(body));
+    // La cabeza, con la cara clara de la azul y amarilla, y el pico oscuro.
+    float head = length(p - vec2(0.27, 0.06)) - 0.07;
+    float face = species < 0.5 ? smoothstep(0.03, 0.0, length(p - vec2(0.3, 0.05)) - 0.02) : 0.0;
+    color = mix(color, vec4(mix(back, vec3(0.95), face), 1.0), cover(head));
+    float beak = length(p - vec2(0.345, 0.035)) - 0.035;
+    color = mix(color, vec4(0.12, 0.12, 0.14, 1.0), cover(beak));
+    // El ala cercana, encima del cuerpo.
+    float wing = min(sdCap(p, pivot, mid, 0.07), sdCap(p, mid, tip, 0.04));
+    float t = max(along(p, pivot, mid) * 0.5, 0.5 + along(p, mid, tip) * 0.5 * step(0.0001, dot(p - mid, tip - mid)));
+    color = mix(color, vec4(mix(wingIn, wingTip, t), 1.0), cover(wing));
+
+    // color ya sale premultiplicado: cada forma se mezcla sobre vec4(0.0).
+    outColor = color * (1.0 - uNight);
+}
+`;
+
+/**
  * Las cabinas del circuito del Teleférico: una instancia por cabina (cabins.ts). Cada una cuelga de
  * su punto del cable con la forma de CabinShape (viewBox de -6 a 6 en x y de 0 a 17 en y; el quad
- * suma un margen arriba) y se mece girando alrededor de ese punto. Es la única silueta que no sale
- * de una textura: el vaivén de cada cabina se gira en el shader (ADR 0003).
+ * suma un margen arriba) y se mece girando alrededor de ese punto. Como las guacamayas, no sale de
+ * una textura: el vaivén de cada cabina se gira en el shader (ADR 0003).
  */
 export const CABIN_VERTEX = /* glsl */ `#version 300 es
 in vec2 position;
