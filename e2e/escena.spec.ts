@@ -129,13 +129,15 @@ test('el Teleférico de la SVG tiene dos cables y cabinas quietas en los dos', a
 });
 
 test('la Afluencia de la SVG sigue a la hora, al día y al Clima', async ({ page }) => {
-    const walkers = () =>
-        page.evaluate(() =>
+    const walkers = async () => {
+        await page.locator('[data-part="avenue"]').waitFor({ state: 'attached' });
+        return page.evaluate(() =>
             [...document.querySelectorAll<HTMLElement>('[data-walkers]')].reduce(
                 (n, el) => n + Number(el.dataset.walkers),
                 0,
             ),
         );
+    };
     const umbrellas = () =>
         page.evaluate(() =>
             [...document.querySelectorAll<HTMLElement>('[data-umbrellas]')].reduce(
