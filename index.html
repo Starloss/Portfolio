@@ -27,7 +27,8 @@
             // Se marca al cargar, no al enviar: un enlace interno quita la query, y puede seguirse
             // antes de que llegue Umami. Sin sessionStorage, la marca queda en memoria: al menos
             // dura este documento.
-            if (/[?&](guacamayas|dia|trafico)=/.test(location.search)) {
+            const parametros = new URLSearchParams(location.search);
+            if (['guacamayas', 'dia', 'trafico'].some((p) => parametros.has(p))) {
                 window.visitaDePrueba = true;
                 try {
                     sessionStorage.setItem('visita-de-prueba', '1');

@@ -80,6 +80,32 @@ describe('Script de Umami', () => {
         window.history.replaceState(null, '', '/');
     });
 
+    it.each(['?%67uacamayas=ya', '?%64ia=domingo', '?%74rafico=tranca', '?dia'])(
+        'marca la visita con %s antes de que llegue Umami',
+        (search) => {
+            const inline = html.match(/<script>([^<]*umamiAntesDeEnviar[^<]*)<\/script>/)?.[1] ?? '';
+            window.history.replaceState(null, '', `/${search}`);
+            new Function(inline)();
+            window.history.replaceState(null, '', '/');
+            const { umamiAntesDeEnviar } = window as unknown as {
+                umamiAntesDeEnviar: (type: string, payload: object) => unknown;
+            };
+            expect(umamiAntesDeEnviar('pageview', { url: '/' })).toBe(false);
+        },
+    );
+
+    it('cuenta una visita sin parámetros de prueba', () => {
+        const inline = html.match(/<script>([^<]*umamiAntesDeEnviar[^<]*)<\/script>/)?.[1] ?? '';
+        window.history.replaceState(null, '', '/?otro=dia');
+        new Function(inline)();
+        const { umamiAntesDeEnviar } = window as unknown as {
+            umamiAntesDeEnviar: (type: string, payload: object) => unknown;
+        };
+        const payload = { url: '/' };
+        expect(umamiAntesDeEnviar('pageview', payload)).toBe(payload);
+        window.history.replaceState(null, '', '/');
+    });
+
     it('no se usan los atributos data-umami-event, que anulan el download del CV', () => {
         const { container } = renderAt('/');
         expect(container.querySelector('[data-umami-event]')).toBeNull();
