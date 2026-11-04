@@ -116,7 +116,7 @@ export async function themeLayers(
                     height={Math.round(streetSize.height * dpr)}
                 >
                     <LampGradient />
-                    <Avenue c={c} width={viewport.width} height={H} night={night} agents={false} />
+                    <Avenue c={c} width={viewport.width} height={H} night={night} crowd={null} />
                 </svg>,
             ).then(rasterize),
         ]);

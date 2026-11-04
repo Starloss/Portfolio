@@ -2,6 +2,8 @@
 // cámara. Funciones puras que comparten la Escena SVG (quieta) y la WebGL (animada). Todo en px de
 // pantalla, relativo a la franja de la calle: alto H, y `s` de 0 (arriba) a 1 (abajo).
 
+import type { CrowdParams } from './rhythm';
+
 const smoothstep = (t: number) => t * t * (3 - 2 * t);
 const clamp = (v: number, min: number, max: number) => Math.min(max, Math.max(min, v));
 
@@ -72,7 +74,67 @@ export const LIGHT_HEIGHT: Record<Exclude<AgentKind, 'walker'>, number> = {
 
 // Carriles: los de atrás van hacia la izquierda y los de adelante hacia la derecha.
 export const STREET_LANES = { far: [0.47, 0.6], near: [0.76, 0.89] };
-export const STREET_WALKS = { back: 0.27, front: 0.995 };
+/**
+ * Las líneas de cada acera, de atrás hacia adelante: la de atrás tiene tres y la de adelante dos.
+ * `perSpan` es cuánta gente camina por cada H de ancho con la acera llena.
+ */
+export const SIDEWALK_LINES = [
+    { s: 0.14, scale: 0.6, perSpan: 1.5 },
+    { s: 0.2, scale: 0.66, perSpan: 1.5 },
+    { s: 0.27, scale: 0.72, perSpan: 1.5 },
+    { s: 0.965, scale: 0.94, perSpan: 1.7 },
+    { s: 0.995, scale: 1, perSpan: 1.7 },
+] as const;
+
+/** Colores de paraguas (RGB de 0 a 1). */
+export const UMBRELLA_COLORS: ReadonlyArray<readonly [number, number, number]> = [
+    [0.12, 0.13, 0.16],
+    [0.75, 0.16, 0.18],
+    [0.16, 0.36, 0.7],
+    [0.95, 0.72, 0.16],
+    [0.2, 0.55, 0.42],
+];
+
+/** Alguien de la acera, quieto: dónde va (en H desde el borde) y si lleva paraguas. */
+export interface StillWalker {
+    u: number;
+    s: number;
+    dir: 1 | -1;
+    scale: number;
+    umbrella: (typeof UMBRELLA_COLORS)[number] | null;
+}
+
+// Un número entre 0 y 1 que parece al azar, pero siempre igual para el mismo i: la SVG no cambia
+// entre un render y otro.
+const scatter = (i: number) => {
+    const x = Math.sin(i * 12.9898) * 43758.5453;
+    return x - Math.floor(x);
+};
+
+/**
+ * La gente de la Escena SVG, quieta: la misma cantidad que la Escena WebGL simula para esa Afluencia,
+ * repartida con una fórmula en una ventana de `span` H de ancho.
+ */
+export function crowdFormation({ afluencia, weather }: CrowdParams, span: number): StillWalker[] {
+    const out: StillWalker[] = [];
+    SIDEWALK_LINES.forEach(({ s, scale, perSpan }, line) => {
+        const count = Math.round(afluencia * perSpan * span);
+        for (let k = 0; k < count; k++) {
+            const i = line * 97 + k;
+            out.push({
+                u: ((k + scatter(i) * 0.7) / count) * (span + 2) - 1,
+                s,
+                dir: scatter(i + 0.5) < 0.5 ? 1 : -1,
+                scale: scale * (0.9 + scatter(i + 0.25) * 0.2),
+                umbrella:
+                    weather === 'lluvia' && scatter(i + 0.75) < 0.75
+                        ? UMBRELLA_COLORS[Math.floor(scatter(i + 0.9) * UMBRELLA_COLORS.length)]
+                        : null,
+            });
+        }
+    });
+    return out;
+}
 
 /** La formación de la calle, siempre la misma: un generador con semilla. */
 export function streetAgents(): StreetAgent[] {
@@ -94,21 +156,6 @@ export function streetAgents(): StreetAgent[] {
     };
     STREET_LANES.far.forEach((s) => lane(s, -1, 0.88, 3));
     STREET_LANES.near.forEach((s) => lane(s, 1, 1, 3));
-    const walkers = (s: number, scale: number, count: number) => {
-        for (let i = 0; i < count; i++) {
-            agents.push({
-                kind: 'walker',
-                s,
-                dir: rand() < 0.5 ? 1 : -1,
-                speed: 22 + rand() * 14,
-                scale: scale * (0.9 + rand() * 0.2),
-                x: rand(),
-                phase: rand() * 6.28,
-            });
-        }
-    };
-    walkers(STREET_WALKS.back, 0.72, 7);
-    walkers(STREET_WALKS.front, 1, 5);
     // De atrás hacia adelante: así se dibujan en orden.
     return agents.sort((a, b) => a.s - b.s);
 }

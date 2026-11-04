@@ -1,6 +1,14 @@
 import { describe, it, expect } from 'vitest';
 import { cameraHeightAt, HERO_HEIGHT, layerShift, layerOffset } from '@app/scene/camera';
-import { agentX, AGENT_SIZE, LIFT_SHARE, streetAgents, streetBand } from '@app/scene/street';
+import {
+    agentX,
+    AGENT_SIZE,
+    crowdFormation,
+    LIFT_SHARE,
+    SIDEWALK_LINES,
+    streetAgents,
+    streetBand,
+} from '@app/scene/street';
 
 // La Avenida Bolívar: la capa más cercana al final del Viaje de cámara. Al entrar, el paisaje sube
 // con ella para que la ciudad quede apoyada en la acera (la usan la Escena SVG y la WebGL).
@@ -68,9 +76,9 @@ describe('streetAgents', () => {
         expect(streetAgents()).toEqual(agents);
     });
 
-    it('trae carros, camioneticas, motorizados y peatones', () => {
+    it('trae carros, camioneticas y motorizados; la gente la pone la Afluencia', () => {
         const kinds = new Set(agents.map((a) => a.kind));
-        expect(kinds).toEqual(new Set(['car', 'bus', 'moto', 'walker']));
+        expect(kinds).toEqual(new Set(['car', 'bus', 'moto']));
     });
 
     it('los carriles de atrás van a la izquierda y los de adelante a la derecha', () => {
@@ -114,5 +122,25 @@ describe('agentX', () => {
             expect(x).toBeGreaterThanOrEqual(-H);
             expect(x).toBeLessThanOrEqual(width + H);
         }
+    });
+});
+
+describe('crowdFormation', () => {
+    const span = 1280 / 150;
+
+    it('pone tanta gente como la Escena WebGL para esa Afluencia, y siempre igual', () => {
+        expect(crowdFormation({ afluencia: 0, weather: 'seco' }, span)).toHaveLength(0);
+        const full = crowdFormation({ afluencia: 1, weather: 'seco' }, span);
+        const expected = SIDEWALK_LINES.reduce((n, l) => n + Math.round(l.perSpan * span), 0);
+        expect(full).toHaveLength(expected);
+        expect(crowdFormation({ afluencia: 1, weather: 'seco' }, span)).toEqual(full);
+    });
+
+    it('con lluvia la mayoría lleva paraguas; con tormenta, nadie', () => {
+        const rain = crowdFormation({ afluencia: 0.5, weather: 'lluvia' }, span);
+        expect(rain.filter((w) => w.umbrella).length / rain.length).toBeGreaterThan(0.5);
+        expect(
+            crowdFormation({ afluencia: 0.5, weather: 'tormenta' }, span).some((w) => w.umbrella),
+        ).toBe(false);
     });
 });

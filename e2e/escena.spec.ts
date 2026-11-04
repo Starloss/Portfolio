@@ -120,3 +120,29 @@ test('el Teleférico de la SVG tiene dos cables y cabinas quietas en los dos', a
     await expect(page.locator('[data-cabin="up"]')).toHaveCount(4);
     await expect(page.locator('[data-cabin="down"]')).toHaveCount(4);
 });
+
+test('la Afluencia de la SVG sigue a la hora, al día y al Clima', async ({ page }) => {
+    const walkers = () =>
+        page.evaluate(() =>
+            [...document.querySelectorAll<HTMLElement>('[data-walkers]')].reduce(
+                (n, el) => n + Number(el.dataset.walkers),
+                0,
+            ),
+        );
+    const umbrellas = () =>
+        page.evaluate(() =>
+            [...document.querySelectorAll<HTMLElement>('[data-umbrellas]')].reduce(
+                (n, el) => n + Number(el.dataset.umbrellas),
+                0,
+            ),
+        );
+    await page.goto('/?escena=svg&hora=02:00&dia=habil&clima=despejado');
+    expect(await walkers()).toBe(0);
+    await page.goto('/?escena=svg&hora=12:00&dia=habil&clima=despejado');
+    const full = await walkers();
+    expect(full).toBeGreaterThan(50);
+    await page.goto('/?escena=svg&hora=12:00&dia=domingo&clima=despejado');
+    expect(await walkers()).toBeLessThan(full);
+    await page.goto('/?escena=svg&hora=12:00&dia=habil&clima=lluvia');
+    expect(await umbrellas()).toBeGreaterThan(0);
+});

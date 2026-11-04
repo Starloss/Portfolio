@@ -220,3 +220,33 @@ describe('Accesibilidad y pausa', () => {
         expect(scene).not.toHaveAttribute('data-paused');
     });
 });
+
+describe('Afluencia en la SVG', () => {
+    // Un miércoles: a las 2 AM no hay nadie, y al mediodía la acera está llena.
+    const at = (hour: string) => {
+        document.documentElement.dataset.horaForzada = String(
+            Date.parse(`2026-11-04T${hour}:00-04:00`),
+        );
+    };
+    afterEach(() => delete document.documentElement.dataset.horaForzada);
+    const walkers = (scene: HTMLElement) =>
+        [...scene.querySelectorAll<HTMLElement>('[data-walkers]')].reduce(
+            (n, el) => n + Number(el.dataset.walkers),
+            0,
+        );
+
+    it('a las 2 AM no camina nadie y al mediodía la acera está llena', () => {
+        at('02:00');
+        expect(walkers(renderScene().scene)).toBe(0);
+        cleanupScene();
+        at('12:00');
+        expect(walkers(renderScene().scene)).toBeGreaterThan(50);
+    });
+
+    it('con la acera llena sigue sin pasar del presupuesto de elementos SVG', () => {
+        at('12:00');
+        expect(renderScene({ night: true }).svgElements()).toBeLessThanOrEqual(600);
+        cleanupScene();
+        expect(renderScene({ night: true, mobile: true }).svgElements()).toBeLessThanOrEqual(300);
+    });
+});

@@ -1,12 +1,18 @@
-// La gente y los vehículos de la Avenida Bolívar en la Escena WebGL: la misma formación que la
-// Escena SVG (street.ts), en movimiento. Se dibujan en un solo pase instanciado; de Noche suman
-// faros y luces traseras (la luz de los postes ya viene en la textura de la calle).
+// La gente y los vehículos de la Avenida Bolívar en la Escena WebGL: los vehículos, la misma
+// formación que la Escena SVG (street.ts) en movimiento; la gente, la que simula crowd.ts. Se dibujan
+// en un solo pase instanciado; de Noche suman faros y luces traseras (la luz de los postes ya viene
+// en la textura de la calle).
+import type { Walker } from '../crowd';
 import { AGENT_SIZE, agentX, LIGHT_HEIGHT, type StreetAgent } from '../street';
 
 /** Qué dibuja cada instancia (aMeta.x en el shader). */
 export const KIND = { car: 0, bus: 1, moto: 2, walker: 3, beam: 4, dot: 5 } as const;
 
-export const MAX_INSTANCES = 128;
+// Una tranca de Noche con la acera llena, con faros y luces, llega a unas 330 (spec #99).
+export const MAX_INSTANCES = 384;
+
+// El paso de cada peatón, como lo lee el shader: aMeta.w = paraguas + 2 × paso.
+const GAIT_CODE = { walk: 0, stand: 1, run: 2 } as const;
 
 const BLACK = [0, 0, 0] as const;
 const HEADLIGHT: [number, number, number] = [1, 0.97, 0.88];
@@ -36,11 +42,13 @@ export function createInstances(): Instances {
 
 /**
  * Llena `into` con la calle a los `time` s: con la calzada arriba en `top`, de alto `H` y `width`
- * de ancho, corrida `shiftX` px por el parallax. `night` (0 a 1) enciende las luces.
+ * de ancho, corrida `shiftX` px por el parallax. `night` (0 a 1) enciende las luces. La gente
+ * (`walkers`) va en altos de calzada desde el borde izquierdo.
  */
 export function writeInstances(
     into: Instances,
     agents: readonly StreetAgent[],
+    walkers: readonly Walker[],
     {
         time,
         top,
@@ -84,6 +92,26 @@ export function writeInstances(
         into.color[n * 3 + 2] = rgb[2];
         n++;
     };
+    const [ww, wh] = AGENT_SIZE.walker;
+    const walk = (w: Walker) => {
+        const x = w.u * H;
+        if (x < -H || x > width + H) return;
+        const code = (w.umbrella ? 1 : 0) + 2 * GAIT_CODE[w.gait];
+        push(
+            KIND.walker,
+            x,
+            top + w.s * H,
+            ww * H * w.scale,
+            wh * H * w.scale,
+            w.dir,
+            w.phase,
+            code,
+            w.color,
+        );
+    };
+    // De atrás hacia adelante: la acera de atrás, los carriles y la acera de adelante.
+    const front = walkers.filter((w) => w.s > 0.5);
+    walkers.filter((w) => w.s <= 0.5).forEach(walk);
     for (const a of agents) {
         const [fw, fh] = AGENT_SIZE[a.kind];
         const w = fw * H * a.scale;
@@ -113,6 +141,7 @@ export function writeInstances(
             push(KIND.dot, back, lampY, 0.07 * H, 0.07 * H, a.dir, 0, night, TAILLIGHT);
         }
     }
+    front.forEach(walk);
     into.size.fill(0, n * 2);
     into.count = n;
     return into;

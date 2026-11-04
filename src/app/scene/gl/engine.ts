@@ -6,8 +6,10 @@ import { Geometry, Mesh, Program, Renderer, Texture, Triangle } from 'ogl';
 import type { Estado } from '@lib/clima';
 
 import { sky as skyAt, type Sky } from '../sky';
+import { Crowd } from '../crowd';
 import { Flights, type FlightContext } from '../flights';
-import { STREET_ABOVE, streetAgents } from '../street';
+import type { CrowdParams } from '../rhythm';
+import { STREET_ABOVE, streetAgents, streetHeight } from '../street';
 import { arcPoint, BOVEDA_SECONDS, BovedaClock, moonRotation, restOf } from '../vault';
 import { ClimaClock } from '../climaFrame';
 
@@ -143,6 +145,9 @@ export class EscenaGL {
     private pointer = 0;
     private pointerTarget = 0;
     private lastFrame = 0;
+    // La gente de la Avenida.
+    private crowd = new Crowd();
+    private crowdParams: CrowdParams | null = null;
     // Las guacamayas en vuelo.
     private flights = new Flights();
     private flightContext: FlightContext = { hour: 12, raining: false, forced: false };
@@ -560,6 +565,15 @@ export class EscenaGL {
         this.dirty = true;
     }
 
+    setCrowd(params: CrowdParams) {
+        this.crowdParams = params;
+        const span = this.layout
+            ? this.layout.viewport.width / streetHeight(this.layout.viewport.height)
+            : 9;
+        this.crowd.set(params, span);
+        this.dirty = true;
+    }
+
     setFlights(context: FlightContext) {
         this.flightContext = context;
     }
@@ -730,8 +744,10 @@ export class EscenaGL {
         };
         // Con la calle a la vista, la gente y los vehículos avanzan a su ritmo.
         const streetVisible = f.street.layerTop < viewport.height;
+        const span = viewport.width / f.street.height;
+        if (this.crowdParams && !this.onDemand) this.crowd.step(dt, span);
         if (streetVisible) {
-            writeInstances(this.instances, this.agents, {
+            writeInstances(this.instances, this.agents, this.crowd.walkers, {
                 time,
                 top: f.street.top,
                 H: f.street.height,

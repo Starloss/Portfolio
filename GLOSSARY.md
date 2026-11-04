@@ -95,6 +95,10 @@ _Avoid_: modo clima, escena dinámica
 El estado del tiempo actual en Caracas que muestra la Escena: despejado, parcial, nublado, lluvia o tormenta. Nunca es el del lugar del visitante.
 _Avoid_: tiempo, weather
 
+**Afluencia**:
+Cuánta gente camina por la Avenida Bolívar en la Escena, de nadie a la acera llena, según la hora, el tipo de día (hábil, fin de semana o feriado) y el Clima de Caracas. Es un modelo, no un conteo real.
+_Avoid_: tráfico peatonal, multitud
+
 **Indicador**:
 La píldora del Hero que muestra la hora y el Clima de Caracas.
 _Avoid_: widget, badge

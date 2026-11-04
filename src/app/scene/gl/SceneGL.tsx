@@ -7,6 +7,7 @@ import { useTheme } from '@lib/theme';
 import { progressForHeight, sceneFrame } from '../camera';
 import {
     useCaracasSky,
+    useCrowd,
     useDocumentHidden,
     useElementViewport,
     useSceneCovered,
@@ -77,6 +78,12 @@ export const SceneGL: React.FC<{
         engineRef.current?.setClima(estado);
         // `watch` recrea el motor: el nuevo también necesita saber el Clima.
     }, [estado, watch]);
+
+    const crowd = useCrowd();
+    useEffect(() => {
+        engineRef.current?.setCrowd(crowd);
+        // `watch` recrea el motor: el nuevo también necesita su gente.
+    }, [crowd, watch]);
 
     // Las guacamayas: cuándo vuelan sale de la hora de Caracas y de si llueve.
     const { hour, minute } = useCaracasClock();
