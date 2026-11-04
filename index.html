@@ -24,16 +24,20 @@
              con un parámetro de prueba de la Escena (?guacamayas=, ?dia=, ?trafico=) no se cuenta,
              tampoco sus páginas vistas: la marca dura la visita (src/lib/analytics.ts). -->
         <script>
-            window.umamiAntesDeEnviar = function (type, payload) {
-                // Sin sessionStorage, la marca queda en memoria: al menos dura este documento.
-                if (/[?&](guacamayas|dia|trafico)=/.test(location.search))
-                    window.visitaDePrueba = true;
+            // Se marca al cargar, no al enviar: un enlace interno quita la query, y puede seguirse
+            // antes de que llegue Umami. Sin sessionStorage, la marca queda en memoria: al menos
+            // dura este documento.
+            if (/[?&](guacamayas|dia|trafico)=/.test(location.search)) {
+                window.visitaDePrueba = true;
                 try {
-                    if (window.visitaDePrueba) sessionStorage.setItem('visita-de-prueba', '1');
-                    return sessionStorage.getItem('visita-de-prueba') === '1' ? false : payload;
-                } catch (e) {
-                    return window.visitaDePrueba ? false : payload;
-                }
+                    sessionStorage.setItem('visita-de-prueba', '1');
+                } catch (e) {}
+            }
+            window.umamiAntesDeEnviar = function (type, payload) {
+                try {
+                    if (sessionStorage.getItem('visita-de-prueba') === '1') return false;
+                } catch (e) {}
+                return window.visitaDePrueba ? false : payload;
             };
         </script>
         <script
