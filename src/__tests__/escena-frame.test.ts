@@ -84,9 +84,7 @@ describe('efectos', () => {
 
     it('la calle sobra a cada lado más de lo que la corre el parallax: su borde nunca entra', () => {
         for (const pointer of [-1, 1]) {
-            expect(Math.abs(at(0.5, {}, pointer).parallax.street)).toBeLessThanOrEqual(
-                STREET_BLEED,
-            );
+            expect(Math.abs(at(0.5, pointer).parallax.street)).toBeLessThanOrEqual(STREET_BLEED);
         }
     });
 
