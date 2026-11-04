@@ -4,7 +4,8 @@ import { EscenaGL } from '@app/scene/gl/engine';
 import type { AfluenciaParams, NivelTrafico } from '@app/scene/rhythm';
 import { Traffic } from '@app/scene/traffic';
 
-// Exercise the engine's agent update path without constructing a WebGL context.
+// La gente y los vehículos de la Escena WebGL al cambiar la Afluencia o el Tráfico, sin crear un
+// contexto WebGL.
 function engine(onDemand: boolean) {
     return Object.assign(Object.create(EscenaGL.prototype), {
         onDemand,
@@ -26,8 +27,8 @@ function engine(onDemand: boolean) {
 
 const update = (scene: ReturnType<typeof engine>) => scene.updateAgents(0.1, 1280 / 150, 260 / 150);
 
-describe('EscenaGL agent updates', () => {
-    it('repopulates static agents when their settings change and leaves them still otherwise', () => {
+describe('La Avenida de la Escena WebGL al cambiar la Afluencia o el Tráfico', () => {
+    it('quieta, se vuelve a poblar cuando cambian, y si no cambian queda igual', () => {
         const scene = engine(true);
         scene.setCrowd({ afluencia: 0, lluvia: 'seca' });
         scene.setTraffic('vacia');
@@ -61,7 +62,7 @@ describe('EscenaGL agent updates', () => {
         expect(scene.traffic.vehicles.length).toBe(emptyTraffic);
     });
 
-    it('keeps and advances the simulations when animated settings change', () => {
+    it('en movimiento, sigue con la misma gente y los mismos vehículos, que avanzan', () => {
         const scene = engine(false);
         scene.setCrowd({ afluencia: 1, lluvia: 'seca' });
         scene.setTraffic('fluida');
