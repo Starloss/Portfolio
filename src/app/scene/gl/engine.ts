@@ -15,7 +15,7 @@ import { arcPoint, BOVEDA_SECONDS, BovedaClock, moonRotation, restOf } from '../
 import { ClimaClock } from '../climaFrame';
 
 import { isSoftwareGpu, rendererName } from './detect';
-import { circuitOnScreen, escenaFrame, followPointer } from './frame';
+import { circuitOnScreen, escenaFrame, followPointer, STREET_BLEED } from './frame';
 import { noiseData } from './noise';
 import type { FallbackReason, Layout, TextureRequest } from './protocol';
 import { createInstances, writeInstances } from './agents';
@@ -718,8 +718,8 @@ export class EscenaGL {
                 uCell: frame.scale,
             },
             street: {
-                uOffset: [parallax.street, f.street.layerTop],
-                uSize: [viewport.width, f.street.height * (1 + STREET_ABOVE)],
+                uOffset: [parallax.street - STREET_BLEED, f.street.layerTop],
+                uSize: [viewport.width + 2 * STREET_BLEED, f.street.height * (1 + STREET_ABOVE)],
                 uDusk: dusk,
                 uShade: shade,
             },

@@ -599,7 +599,8 @@ const StillTraffic: React.FC<{
 /**
  * La Avenida Bolívar en una franja de `width` px de ancho: la calzada mide `height`, y los postes y
  * los árboles suben hasta 0,8 de eso por encima. Con `crowd` y `trafico`, la gente y los vehículos
- * que corresponden, quietos; la Escena WebGL los dibuja aparte, en movimiento.
+ * que corresponden, quietos; la Escena WebGL los dibuja aparte, en movimiento. Con `bleed`, la
+ * calle sigue esos px más allá de cada borde.
  */
 export const Avenue: React.FC<{
     c: ScenePalette;
@@ -608,25 +609,35 @@ export const Avenue: React.FC<{
     night: boolean;
     crowd: AfluenciaParams | null;
     trafico: NivelTrafico | null;
-}> = ({ c, width, height: H, night, crowd, trafico }) => {
+    bleed?: number;
+}> = ({ c, width, height: H, night, crowd, trafico, bleed = 0 }) => {
     const top = STREET_ABOVE * H;
     const band = (from: number, to: number, fill: string) => (
-        <rect x={0} y={top + from * H} width={width} height={(to - from) * H} style={{ fill }} />
+        <rect
+            x={-bleed}
+            y={top + from * H}
+            width={width + 2 * bleed}
+            height={(to - from) * H}
+            style={{ fill }}
+        />
     );
+    // Las rayas empiezan en x = 0 con o sin `bleed`, como en la SVG.
     const mark = (s: number, stroke: string, dash?: string) => (
         <line
-            x1={0}
+            x1={-bleed}
             y1={top + s * H}
-            x2={width}
+            x2={width + bleed}
             y2={top + s * H}
             style={{ stroke }}
             strokeWidth={0.012 * H}
             strokeDasharray={dash}
+            strokeDashoffset={dash && bleed ? -bleed : undefined}
         />
     );
+    const first = -Math.ceil(bleed / POST_EVERY);
     const posts = Array.from(
-        { length: Math.ceil(width / POST_EVERY) + 1 },
-        (_, i) => i * POST_EVERY,
+        { length: Math.ceil((width + bleed) / POST_EVERY) + 1 - first },
+        (_, i) => (first + i) * POST_EVERY,
     );
     return (
         <g data-part="avenue">

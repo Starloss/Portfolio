@@ -10,7 +10,13 @@ import {
 } from '@app/scene/camera';
 import { circuitAt } from '@app/scene/circuit';
 import { cableLinePoint } from '@app/scene/geometry';
-import { circuitOnScreen, escenaFrame, followPointer, PARALLAX_PX } from '@app/scene/gl/frame';
+import {
+    circuitOnScreen,
+    escenaFrame,
+    followPointer,
+    PARALLAX_PX,
+    STREET_BLEED,
+} from '@app/scene/gl/frame';
 
 // Lo que la Escena WebGL dibuja en cada cuadro sale del mismo Viaje de cámara que la SVG: así el
 // fundido cruzado entre las dos no salta.
@@ -74,6 +80,12 @@ describe('efectos', () => {
         expect(half).toBeGreaterThan(0);
         expect(half).toBeLessThan(1);
         expect(followPointer(0, 1, 5)).toBe(1);
+    });
+
+    it('la calle sobra a cada lado más de lo que la corre el parallax: su borde nunca entra', () => {
+        for (const pointer of [-1, 1]) {
+            expect(Math.abs(at(0.5, pointer).parallax.street)).toBeLessThanOrEqual(STREET_BLEED);
+        }
     });
 
     it('con el puntero a un lado, lo lejano se mueve menos que lo cercano y en sentido contrario', () => {
