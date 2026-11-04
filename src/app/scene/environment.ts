@@ -10,7 +10,7 @@ import {
 import { caracasNow, useCaracasClock, useClima } from '@lib/clima';
 
 import type { Viewport } from './camera';
-import { afluenciaAt, dayKind, readForcedDay, weatherOf, type CrowdParams } from './rhythm';
+import { afluenciaAt, dayKind, lluviaDe, readForcedDay, type AfluenciaParams } from './rhythm';
 import { sky, type Sky } from './sky';
 
 /** Tamaño de un elemento; hasta poder medirlo (o si mide 0, como en jsdom), el de la ventana. */
@@ -90,12 +90,12 @@ export function useCaracasSky(): Sky {
  * La gente de la Avenida ahora: la Afluencia por la hora y el tipo de día de Caracas (o el que fije
  * `?dia=`) y el Clima. Cambia con el minuto y con el Clima.
  */
-export function useCrowd(): CrowdParams {
+export function useAfluencia(): AfluenciaParams {
     const { hour, minute } = useCaracasClock();
     const estado = useClima()?.estado ?? null;
     const day = dayKind(caracasNow(), readForcedDay(window.location.search));
     const afluencia = afluenciaAt(hour + minute / 60, day, estado);
-    const weather = weatherOf(estado);
+    const lluvia = lluviaDe(estado);
     // Un objeto nuevo solo si algo cambió: así los efectos que lo usan no se repiten en cada render.
-    return useMemo(() => ({ afluencia, weather }), [afluencia, weather]);
+    return useMemo(() => ({ afluencia, lluvia }), [afluencia, lluvia]);
 }

@@ -6,6 +6,7 @@ import {
     crowdFormation,
     LIFT_SHARE,
     SIDEWALK_LINES,
+    standingCount,
     streetAgents,
     streetBand,
 } from '@app/scene/street';
@@ -127,20 +128,24 @@ describe('agentX', () => {
 
 describe('crowdFormation', () => {
     const span = 1280 / 150;
+    const trees = 260 / 150;
 
     it('pone tanta gente como la Escena WebGL para esa Afluencia, y siempre igual', () => {
-        expect(crowdFormation({ afluencia: 0, weather: 'seco' }, span)).toHaveLength(0);
-        const full = crowdFormation({ afluencia: 1, weather: 'seco' }, span);
-        const expected = SIDEWALK_LINES.reduce((n, l) => n + Math.round(l.perSpan * span), 0);
+        expect(crowdFormation({ afluencia: 0, lluvia: 'seca' }, span, trees)).toHaveLength(0);
+        const full = crowdFormation({ afluencia: 1, lluvia: 'seca' }, span, trees);
+        const moving = SIDEWALK_LINES.reduce((n, l) => n + Math.round(l.perSpan * span), 0);
+        const expected = moving + standingCount({ afluencia: 1, lluvia: 'seca' }, span);
         expect(full).toHaveLength(expected);
-        expect(crowdFormation({ afluencia: 1, weather: 'seco' }, span)).toEqual(full);
+        expect(crowdFormation({ afluencia: 1, lluvia: 'seca' }, span, trees)).toEqual(full);
     });
 
     it('con lluvia la mayoría lleva paraguas; con tormenta, nadie', () => {
-        const rain = crowdFormation({ afluencia: 0.5, weather: 'lluvia' }, span);
+        const rain = crowdFormation({ afluencia: 0.5, lluvia: 'lluvia' }, span, trees);
         expect(rain.filter((w) => w.umbrella).length / rain.length).toBeGreaterThan(0.5);
         expect(
-            crowdFormation({ afluencia: 0.5, weather: 'tormenta' }, span).some((w) => w.umbrella),
+            crowdFormation({ afluencia: 0.5, lluvia: 'tormenta' }, span, trees).some(
+                (w) => w.umbrella,
+            ),
         ).toBe(false);
     });
 });

@@ -61,14 +61,14 @@ const AFLUENCIA_POR_CLIMA: Record<Estado, number> = {
 };
 
 /** Lo que la calle sabe del Clima: si está seca, si llueve o si hay tormenta. */
-export type Weather = 'seco' | 'lluvia' | 'tormenta';
-export const weatherOf = (estado: Estado | null): Weather =>
-    estado === 'lluvia' || estado === 'tormenta' ? estado : 'seco';
+export type Lluvia = 'seca' | 'lluvia' | 'tormenta';
+export const lluviaDe = (estado: Estado | null): Lluvia =>
+    estado === 'lluvia' || estado === 'tormenta' ? estado : 'seca';
 
-/** La gente de la Avenida: cuánta (la Afluencia, de 0 a 1) y con qué Clima. */
-export interface CrowdParams {
+/** La gente de la Avenida: cuánta (la Afluencia, de 0 a 1) y si llueve. */
+export interface AfluenciaParams {
     afluencia: number;
-    weather: Weather;
+    lluvia: Lluvia;
 }
 
 /** Interpola una curva de 24 horas a una hora decimal. */

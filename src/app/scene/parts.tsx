@@ -18,12 +18,14 @@ import {
     VIEW,
 } from './geometry';
 import { NIGHT_LIGHTS, type ScenePalette } from './palette';
-import type { CrowdParams } from './rhythm';
+import type { AfluenciaParams } from './rhythm';
 import {
     AGENT_SIZE,
     agentX,
     crowdFormation,
+    isBackSidewalk,
     LIGHT_HEIGHT,
+    POST_EVERY,
     type StillWalker,
     STREET_ABOVE,
     streetAgents,
@@ -400,7 +402,6 @@ export const HaloGradient: React.FC = () => (
 // ---------- Avenida Bolívar ----------
 
 // Cada cuánto hay un poste (con un árbol a mitad de camino), en px de pantalla.
-const POST_EVERY = 260;
 
 const circlePath = (x: number, y: number, r: number) =>
     `M${x - r} ${y} a${r} ${r} 0 1 0 ${2 * r} 0 a${r} ${r} 0 1 0 ${-2 * r} 0 Z`;
@@ -544,7 +545,6 @@ export const StreetAgentShape: React.FC<{
             </g>
         );
     }
-    // La gente quieta no pasa por aquí: StillCrowd la dibuja toda junta.
     return null;
 };
 
@@ -558,7 +558,7 @@ export const Avenue: React.FC<{
     width: number;
     height: number;
     night: boolean;
-    crowd: CrowdParams | null;
+    crowd: AfluenciaParams | null;
 }> = ({ c, width, height: H, night, crowd }) => {
     const top = STREET_ABOVE * H;
     const band = (from: number, to: number, fill: string) => (
@@ -645,7 +645,9 @@ export const Avenue: React.FC<{
                     />
                 </g>
             ))}
-            {crowd && <StillCrowd c={c} crowd={crowd} width={width} H={H} top={top} back />}
+            {crowd && (
+                <StillCrowd c={c} crowd={crowd} width={width} H={H} top={top} night={night} back />
+            )}
             {crowd &&
                 streetAgents().map((a, i) => {
                     const [fw, fh] = AGENT_SIZE[a.kind];
@@ -669,13 +671,24 @@ export const Avenue: React.FC<{
                         </g>
                     );
                 })}
-            {crowd && <StillCrowd c={c} crowd={crowd} width={width} H={H} top={top} back={false} />}
+            {crowd && (
+                <StillCrowd
+                    c={c}
+                    crowd={crowd}
+                    width={width}
+                    H={H}
+                    top={top}
+                    night={night}
+                    back={false}
+                />
+            )}
         </g>
     );
 };
 
-const rgb = (color: readonly [number, number, number]) =>
-    `rgb(${color.map((v) => Math.round(v * 255)).join(',')})`;
+// Un color de paraguas en CSS; `shade` lo oscurece (de Noche, 0,35, como en la Escena WebGL).
+const rgb = (color: readonly number[], shade = 1) =>
+    `rgb(${color.map((v) => Math.round(v * shade * 255)).join(',')})`;
 
 // Un peatón a mitad de paso, de `h` de alto, parado en (x, y) y mirando hacia `dir`: el cuerpo y la
 // cabeza (un punto con la punta redonda) en un trazo, y las piernas y los brazos en otro.
@@ -702,14 +715,15 @@ function walkerStrokes(x: number, y: number, h: number, dir: 1 | -1) {
  */
 const StillCrowd: React.FC<{
     c: ScenePalette;
-    crowd: CrowdParams;
+    crowd: AfluenciaParams;
     width: number;
     H: number;
     top: number;
+    night: boolean;
     back: boolean;
-}> = ({ c, crowd, width, H, top, back }) => {
-    const walkers = crowdFormation(crowd, width / H).filter(
-        (w) => w.s <= 0.5 === back && w.u * H > -H && w.u * H < width + H,
+}> = ({ c, crowd, width, H, top, night, back }) => {
+    const walkers = crowdFormation(crowd, width / H, POST_EVERY / H).filter(
+        (w) => isBackSidewalk(w.s) === back && w.u * H > -H && w.u * H < width + H,
     );
     if (!walkers.length) return null;
     const height = (w: StillWalker) => AGENT_SIZE.walker[1] * H * w.scale;
@@ -722,25 +736,26 @@ const StillCrowd: React.FC<{
         torso.push(strokes.torso);
         limbs.push(strokes.limbs);
         if (w.umbrella) {
-            const color = rgb(w.umbrella);
+            // De Noche, más oscuros, como en la Escena WebGL.
+            const color = rgb(w.umbrella, night ? 0.35 : 1);
             const canopy = `M${x - 0.34 * h} ${y - 1.06 * h} A${0.34 * h} ${0.17 * h} 0 0 1 ${x + 0.34 * h} ${y - 1.06 * h} Z M${x} ${y - 1.06 * h} L${x + w.dir * 0.02 * h} ${y - 0.78 * h}`;
             umbrellas.set(color, [...(umbrellas.get(color) ?? []), canopy]);
         }
     }
     // Un grosor por acera: el de su gente de tamaño medio.
     const h = height(walkers[Math.floor(walkers.length / 2)]);
-    const line = (d: string[], width: number) => (
+    const trace = (d: string[], strokeWidth: number) => (
         <path
             d={d.join(' ')}
             style={{ stroke: c.vehicle, fill: 'none' }}
-            strokeWidth={width}
+            strokeWidth={strokeWidth}
             strokeLinecap="round"
         />
     );
     return (
         <g data-walkers={walkers.length} data-umbrellas={walkers.filter((w) => w.umbrella).length}>
-            {line(torso, 0.16 * h)}
-            {line(limbs, 0.07 * h)}
+            {trace(torso, 0.16 * h)}
+            {trace(limbs, 0.07 * h)}
             {[...umbrellas].map(([color, d]) => (
                 <path
                     key={color}

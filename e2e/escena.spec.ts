@@ -145,4 +145,5 @@ test('la Afluencia de la SVG sigue a la hora, al día y al Clima', async ({ page
     expect(await walkers()).toBeLessThan(full);
     await page.goto('/?escena=svg&hora=12:00&dia=habil&clima=lluvia');
     expect(await umbrellas()).toBeGreaterThan(0);
+    expect(await walkers()).toBeLessThan(full);
 });

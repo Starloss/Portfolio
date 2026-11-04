@@ -3,7 +3,7 @@
 // en un solo pase instanciado; de Noche suman faros y luces traseras (la luz de los postes ya viene
 // en la textura de la calle).
 import type { Walker } from '../crowd';
-import { AGENT_SIZE, agentX, LIGHT_HEIGHT, type StreetAgent } from '../street';
+import { AGENT_SIZE, agentX, isBackSidewalk, LIGHT_HEIGHT, type StreetAgent } from '../street';
 
 /** Qué dibuja cada instancia (aMeta.x en el shader). */
 export const KIND = { car: 0, bus: 1, moto: 2, walker: 3, beam: 4, dot: 5 } as const;
@@ -106,12 +106,12 @@ export function writeInstances(
             w.dir,
             w.phase,
             code,
-            w.color,
+            w.umbrella ?? BLACK,
         );
     };
     // De atrás hacia adelante: la acera de atrás, los carriles y la acera de adelante.
-    const front = walkers.filter((w) => w.s > 0.5);
-    walkers.filter((w) => w.s <= 0.5).forEach(walk);
+    const front = walkers.filter((w) => !isBackSidewalk(w.s));
+    walkers.filter((w) => isBackSidewalk(w.s)).forEach(walk);
     for (const a of agents) {
         const [fw, fh] = AGENT_SIZE[a.kind];
         const w = fw * H * a.scale;

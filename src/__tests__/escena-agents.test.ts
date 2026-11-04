@@ -68,10 +68,8 @@ describe('writeInstances', () => {
             scale: 1,
             phase: 0,
             gait: 'walk',
-            umbrella: false,
-            color: [0, 0, 0],
+            umbrella: null,
             group: 0,
-            sheltered: false,
             ...extra,
         });
         const i = writeInstances(createInstances(), agents, [person(0.995), person(0.2)], {
@@ -96,17 +94,15 @@ describe('writeInstances', () => {
                 scale: 1,
                 phase: 0,
                 gait: 'walk',
-                umbrella: false,
-                color: [0.9, 0.7, 0.1],
+                umbrella: null,
                 group: 0,
-                sheltered: false,
                 ...extra,
             };
             return writeInstances(createInstances(), [], [walker], { ...street, time: 0, night: 0 })
                 .meta[3];
         };
         expect(code({})).toBe(0);
-        expect(code({ umbrella: true })).toBe(1);
+        expect(code({ umbrella: [0.9, 0.7, 0.1] })).toBe(1);
         expect(code({ gait: 'stand' })).toBe(2);
         expect(code({ gait: 'run' })).toBe(4);
     });

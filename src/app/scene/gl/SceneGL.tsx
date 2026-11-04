@@ -7,7 +7,7 @@ import { useTheme } from '@lib/theme';
 import { progressForHeight, sceneFrame } from '../camera';
 import {
     useCaracasSky,
-    useCrowd,
+    useAfluencia,
     useDocumentHidden,
     useElementViewport,
     useSceneCovered,
@@ -79,7 +79,7 @@ export const SceneGL: React.FC<{
         // `watch` recrea el motor: el nuevo también necesita saber el Clima.
     }, [estado, watch]);
 
-    const crowd = useCrowd();
+    const crowd = useAfluencia();
     useEffect(() => {
         engineRef.current?.setCrowd(crowd);
         // `watch` recrea el motor: el nuevo también necesita su gente.

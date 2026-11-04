@@ -2,7 +2,7 @@
 // cámara. Funciones puras que comparten la Escena SVG (quieta) y la WebGL (animada). Todo en px de
 // pantalla, relativo a la franja de la calle: alto H, y `s` de 0 (arriba) a 1 (abajo).
 
-import type { CrowdParams } from './rhythm';
+import type { AfluenciaParams } from './rhythm';
 
 const smoothstep = (t: number) => t * t * (3 - 2 * t);
 const clamp = (v: number, min: number, max: number) => Math.min(max, Math.max(min, v));
@@ -86,8 +86,33 @@ export const SIDEWALK_LINES = [
     { s: 0.995, scale: 1, perSpan: 1.7 },
 ] as const;
 
-/** Colores de paraguas (RGB de 0 a 1). */
-export const UMBRELLA_COLORS: ReadonlyArray<readonly [number, number, number]> = [
+/** Cada cuántos px va un poste con su árbol. */
+export const POST_EVERY = 260;
+
+/** La acera de atrás (detrás de los carriles); el resto es la de adelante. */
+export const isBackSidewalk = (s: number) => s <= 0.5;
+
+/** Cuánta gente camina por una línea de acera con esa Afluencia, en una ventana de `span` H. */
+export const walkersOnLine = (afluencia: number, line: number, span: number) =>
+    Math.round(afluencia * SIDEWALK_LINES[line].perSpan * span);
+
+/**
+ * Cuánta gente está parada (esperando, conversando) en una ventana de `span` H. Con lluvia se juntan
+ * más bajo los árboles; con tormenta, nadie se queda.
+ */
+export function standingCount({ afluencia, lluvia }: AfluenciaParams, span: number): number {
+    if (lluvia === 'tormenta') return 0;
+    return Math.round(afluencia * (lluvia === 'lluvia' ? 1.4 : 0.45) * span);
+}
+
+/** Con lluvia, cuántos de cada 4 llevan paraguas. */
+export const UMBRELLA_SHARE = 0.75;
+
+/** Un color de paraguas (RGB de 0 a 1). */
+export type Umbrella = readonly [number, number, number];
+
+/** Colores de paraguas. */
+export const UMBRELLA_COLORS: readonly Umbrella[] = [
     [0.12, 0.13, 0.16],
     [0.75, 0.16, 0.18],
     [0.16, 0.36, 0.7],
@@ -101,7 +126,7 @@ export interface StillWalker {
     s: number;
     dir: 1 | -1;
     scale: number;
-    umbrella: (typeof UMBRELLA_COLORS)[number] | null;
+    umbrella: Umbrella | null;
 }
 
 // Un número entre 0 y 1 que parece al azar, pero siempre igual para el mismo i: la SVG no cambia
@@ -112,13 +137,19 @@ const scatter = (i: number) => {
 };
 
 /**
- * La gente de la Escena SVG, quieta: la misma cantidad que la Escena WebGL simula para esa Afluencia,
- * repartida con una fórmula en una ventana de `span` H de ancho.
+ * La gente de la Escena SVG, quieta: la misma cantidad que la Escena WebGL simula para esa Afluencia
+ * (la que camina y la que está parada, con lluvia bajo los árboles), repartida con una fórmula en una
+ * ventana de `span` H de ancho, con un árbol cada `treeEvery` H.
  */
-export function crowdFormation({ afluencia, weather }: CrowdParams, span: number): StillWalker[] {
+export function crowdFormation(
+    params: AfluenciaParams,
+    span: number,
+    treeEvery: number,
+): StillWalker[] {
+    const { afluencia, lluvia } = params;
     const out: StillWalker[] = [];
-    SIDEWALK_LINES.forEach(({ s, scale, perSpan }, line) => {
-        const count = Math.round(afluencia * perSpan * span);
+    SIDEWALK_LINES.forEach(({ s, scale }, line) => {
+        const count = walkersOnLine(afluencia, line, span);
         for (let k = 0; k < count; k++) {
             const i = line * 97 + k;
             out.push({
@@ -127,12 +158,29 @@ export function crowdFormation({ afluencia, weather }: CrowdParams, span: number
                 dir: scatter(i + 0.5) < 0.5 ? 1 : -1,
                 scale: scale * (0.9 + scatter(i + 0.25) * 0.2),
                 umbrella:
-                    weather === 'lluvia' && scatter(i + 0.75) < 0.75
+                    lluvia === 'lluvia' && scatter(i + 0.75) < UMBRELLA_SHARE
                         ? UMBRELLA_COLORS[Math.floor(scatter(i + 0.9) * UMBRELLA_COLORS.length)]
                         : null,
             });
         }
     });
+    // La gente parada, en la línea de atrás y en la de adelante; con lluvia, bajo los árboles.
+    const trees = Math.max(1, Math.floor(span / treeEvery));
+    const standing = standingCount(params, span);
+    for (let k = 0; k < standing; k++) {
+        const line = SIDEWALK_LINES[k % 3 === 0 ? SIDEWALK_LINES.length - 1 : 2];
+        const u =
+            lluvia === 'lluvia'
+                ? ((k % trees) + 0.5) * treeEvery + (scatter(k + 0.3) - 0.5) * 0.3
+                : ((k + scatter(k + 0.3)) / standing) * span;
+        out.push({
+            u,
+            s: line.s - 0.01,
+            dir: scatter(k + 0.6) < 0.5 ? 1 : -1,
+            scale: line.scale,
+            umbrella: null,
+        });
+    }
     return out;
 }
 

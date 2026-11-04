@@ -8,8 +8,8 @@ import type { Estado } from '@lib/clima';
 import { sky as skyAt, type Sky } from '../sky';
 import { Crowd } from '../crowd';
 import { Flights, type FlightContext } from '../flights';
-import type { CrowdParams } from '../rhythm';
-import { STREET_ABOVE, streetAgents, streetHeight } from '../street';
+import type { AfluenciaParams } from '../rhythm';
+import { POST_EVERY, STREET_ABOVE, streetAgents } from '../street';
 import { arcPoint, BOVEDA_SECONDS, BovedaClock, moonRotation, restOf } from '../vault';
 import { ClimaClock } from '../climaFrame';
 
@@ -147,7 +147,9 @@ export class EscenaGL {
     private lastFrame = 0;
     // La gente de la Avenida.
     private crowd = new Crowd();
-    private crowdParams: CrowdParams | null = null;
+    private crowdParams: AfluenciaParams | null = null;
+    // La gente se ubica en el primer cuadro con medidas: antes no se sabe el ancho de la ventana.
+    private crowdChanged = false;
     // Las guacamayas en vuelo.
     private flights = new Flights();
     private flightContext: FlightContext = { hour: 12, raining: false, forced: false };
@@ -565,12 +567,9 @@ export class EscenaGL {
         this.dirty = true;
     }
 
-    setCrowd(params: CrowdParams) {
+    setCrowd(params: AfluenciaParams) {
         this.crowdParams = params;
-        const span = this.layout
-            ? this.layout.viewport.width / streetHeight(this.layout.viewport.height)
-            : 9;
-        this.crowd.set(params, span);
+        this.crowdChanged = true;
         this.dirty = true;
     }
 
@@ -745,7 +744,12 @@ export class EscenaGL {
         // Con la calle a la vista, la gente y los vehículos avanzan a su ritmo.
         const streetVisible = f.street.layerTop < viewport.height;
         const span = viewport.width / f.street.height;
-        if (this.crowdParams && !this.onDemand) this.crowd.step(dt, span);
+        const treeEvery = POST_EVERY / f.street.height;
+        if (this.crowdParams && this.crowdChanged) {
+            this.crowdChanged = false;
+            this.crowd.set(this.crowdParams, span, treeEvery);
+        }
+        if (this.crowdParams && !this.onDemand) this.crowd.step(dt, span, treeEvery);
         if (streetVisible) {
             writeInstances(this.instances, this.agents, this.crowd.walkers, {
                 time,

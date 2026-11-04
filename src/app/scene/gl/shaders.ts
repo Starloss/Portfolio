@@ -633,11 +633,6 @@ void main() {
         float t = uTime * mix(4.2, 8.5, running) + vMeta.z;
         float sw = sin(t) * mix(0.42, 0.7, running) * moving;
         p.y -= abs(cos(t)) * mix(0.015, 0.04, running) * h * moving;
-        if (mod(vMeta.w, 2.0) > 0.5) {
-            vec2 c = p - vec2(0.0, 1.06 * h);
-            umbrella = max((length(c / vec2(0.34 * h, 0.17 * h)) - 1.0) * 0.17 * h, -c.y);
-            d = min(d, sdCap(p, vec2(0.02 * h, 0.78 * h), vec2(0.0, 1.06 * h), 0.012 * h));
-        }
         vec2 hip = vec2(0.0, 0.5 * h);
         vec2 sh = vec2(0.0, 0.76 * h);
         d = length(p - vec2(0.0, 0.9 * h)) - 0.075 * h;
@@ -646,6 +641,12 @@ void main() {
         d = min(d, sdCap(p, hip, hip + vec2(sin(-sw), -cos(-sw)) * 0.48 * h, 0.04 * h));
         d = min(d, sdCap(p, sh, sh + vec2(sin(-sw * 0.8), -cos(sw * 0.8)) * 0.33 * h, 0.03 * h));
         d = min(d, sdCap(p, sh, sh + vec2(sin(sw * 0.8), -cos(sw * 0.8)) * 0.33 * h, 0.03 * h));
+        // El paraguas: la tela y el mango.
+        if (mod(vMeta.w, 2.0) > 0.5) {
+            vec2 c = p - vec2(0.0, 1.06 * h);
+            umbrella = max((length(c / vec2(0.34 * h, 0.17 * h)) - 1.0) * 0.17 * h, -c.y);
+            d = min(d, sdCap(p, vec2(0.02 * h, 0.78 * h), vec2(0.0, 1.06 * h), 0.012 * h));
+        }
     }
     vec3 sil = mix(SIL_DAY, SIL_NIGHT, uNight);
     float body = 1.0 - smoothstep(-0.5, 0.5, d);
