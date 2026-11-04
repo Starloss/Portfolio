@@ -17,7 +17,12 @@ import {
     type TextColumn,
     type Viewport,
 } from './camera';
-import { useDocumentHidden, useElementViewport, useSceneCovered } from './environment';
+import {
+    useAfluencia,
+    useDocumentHidden,
+    useElementViewport,
+    useSceneCovered,
+} from './environment';
 import { skyline } from './geometry';
 import { DAY, NIGHT, paletteVars, VARS } from './palette';
 import { BovedaCeleste } from './BovedaCeleste';
@@ -159,6 +164,7 @@ export const Scene: React.FC<{ height?: number }> = ({ height }) => {
     const mobile = useMediaQuery(MOBILE_QUERY);
     const reduced = usePrefersReducedMotion();
     const estado = useClima()?.estado ?? null;
+    const crowd = useAfluencia();
     const raining = estado === 'lluvia' || estado === 'tormenta';
     // El tamaño sale de la propia Escena (100vh): no cambia cuando el teléfono muestra u oculta la
     // barra del navegador, así el encuadre no salta mientras se hace scroll.
@@ -263,7 +269,13 @@ export const Scene: React.FC<{ height?: number }> = ({ height }) => {
                         height={H * (1 + STREET_ABOVE)}
                     >
                         <LampGradient />
-                        <Avenue c={VARS} width={viewport.width} height={H} night={night} agents />
+                        <Avenue
+                            c={VARS}
+                            width={viewport.width}
+                            height={H}
+                            night={night}
+                            crowd={crowd}
+                        />
                     </svg>
                 </m.div>
             )}

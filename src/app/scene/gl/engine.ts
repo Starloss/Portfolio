@@ -6,13 +6,15 @@ import { Geometry, Mesh, Program, Renderer, Texture, Triangle } from 'ogl';
 import type { Estado } from '@lib/clima';
 
 import { sky as skyAt, type Sky } from '../sky';
+import { Crowd } from '../crowd';
 import { Flights, type FlightContext } from '../flights';
-import { STREET_ABOVE, streetAgents } from '../street';
+import type { AfluenciaParams } from '../rhythm';
+import { POST_EVERY, STREET_ABOVE, streetAgents } from '../street';
 import { arcPoint, BOVEDA_SECONDS, BovedaClock, moonRotation, restOf } from '../vault';
 import { ClimaClock } from '../climaFrame';
 
 import { isSoftwareGpu, rendererName } from './detect';
-import { circuitOnScreen, escenaFrame, followPointer } from './frame';
+import { circuitOnScreen, escenaFrame, followPointer, STREET_BLEED } from './frame';
 import { noiseData } from './noise';
 import type { FallbackReason, Layout, TextureRequest } from './protocol';
 import { createInstances, writeInstances } from './agents';
@@ -141,6 +143,11 @@ export class EscenaGL {
     private pointer = 0;
     private pointerTarget = 0;
     private lastFrame = 0;
+    // La gente de la Avenida.
+    private crowd = new Crowd();
+    private crowdParams: AfluenciaParams | null = null;
+    // La gente se ubica en el primer cuadro con medidas: antes no se sabe el ancho de la ventana.
+    private crowdChanged = false;
     // Las guacamayas en vuelo.
     private flights = new Flights();
     private flightContext: FlightContext = { hour: 12, raining: false, forced: false };
@@ -550,6 +557,12 @@ export class EscenaGL {
         this.dirty = true;
     }
 
+    setCrowd(params: AfluenciaParams) {
+        this.crowdParams = params;
+        this.crowdChanged = true;
+        this.dirty = true;
+    }
+
     setFlights(context: FlightContext) {
         this.flightContext = context;
     }
@@ -696,8 +709,8 @@ export class EscenaGL {
                 uCell: frame.scale,
             },
             street: {
-                uOffset: [parallax.street, f.street.layerTop],
-                uSize: [viewport.width, f.street.height * (1 + STREET_ABOVE)],
+                uOffset: [parallax.street - STREET_BLEED, f.street.layerTop],
+                uSize: [viewport.width + 2 * STREET_BLEED, f.street.height * (1 + STREET_ABOVE)],
                 uDusk: dusk,
                 uShade: shade,
             },
@@ -713,8 +726,15 @@ export class EscenaGL {
         };
         // Con la calle a la vista, la gente y los vehículos avanzan a su ritmo.
         const streetVisible = f.street.layerTop < viewport.height;
+        const span = viewport.width / f.street.height;
+        const treeEvery = POST_EVERY / f.street.height;
+        if (this.crowdParams && this.crowdChanged) {
+            this.crowdChanged = false;
+            this.crowd.set(this.crowdParams, span, treeEvery);
+        }
+        if (this.crowdParams && !this.onDemand) this.crowd.step(dt, span, treeEvery);
         if (streetVisible) {
-            writeInstances(this.instances, this.agents, {
+            writeInstances(this.instances, this.agents, this.crowd.walkers, {
                 time,
                 top: f.street.top,
                 H: f.street.height,

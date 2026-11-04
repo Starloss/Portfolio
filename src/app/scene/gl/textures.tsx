@@ -9,6 +9,8 @@ import { DAY, NIGHT, type ScenePalette } from '../palette';
 import { Avenue, Avila, City, FarRidge, HaloGradient, LampGradient, Towers } from '../parts';
 import { STREET_ABOVE, streetHeight } from '../street';
 
+import { STREET_BLEED } from './frame';
+
 // Fuera del ciclo de React (un efecto no puede usar flushSync), por eso cede un turno antes.
 async function markup(node: React.ReactNode): Promise<string> {
     await new Promise((resolve) => setTimeout(resolve));
@@ -71,7 +73,10 @@ export async function themeLayers(
         ).then(rasterize);
     const still = { night, animate: false };
     const H = streetHeight(viewport.height);
-    const streetSize = { width: viewport.width, height: H * (1 + STREET_ABOVE) };
+    const streetSize = {
+        width: viewport.width + 2 * STREET_BLEED,
+        height: H * (1 + STREET_ABOVE),
+    };
     const [far, avilaBack, avilaFront, city, towers, cityLights, towersLights, street] =
         await Promise.all([
             full(<FarRidge c={c} />),
@@ -91,12 +96,19 @@ export async function themeLayers(
             markup(
                 <svg
                     xmlns="http://www.w3.org/2000/svg"
-                    viewBox={`0 0 ${streetSize.width} ${streetSize.height}`}
+                    viewBox={`${-STREET_BLEED} 0 ${streetSize.width} ${streetSize.height}`}
                     width={Math.round(streetSize.width * dpr)}
                     height={Math.round(streetSize.height * dpr)}
                 >
                     <LampGradient />
-                    <Avenue c={c} width={viewport.width} height={H} night={night} agents={false} />
+                    <Avenue
+                        c={c}
+                        width={viewport.width}
+                        height={H}
+                        night={night}
+                        crowd={null}
+                        bleed={STREET_BLEED}
+                    />
                 </svg>,
             ).then(rasterize),
         ]);

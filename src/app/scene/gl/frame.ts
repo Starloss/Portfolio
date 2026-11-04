@@ -30,6 +30,8 @@ const PARALLAX_DEPTH = {
     towers: 0.9,
     street: 1.1,
 };
+/** Lo que la calle se dibuja de más a cada lado (px): con el parallax, su borde nunca entra. */
+export const STREET_BLEED = Math.ceil(PARALLAX_PX * PARALLAX_DEPTH.street);
 
 // Altura de la cámara donde la atraviesan las nubes cercanas, y cuánto dura el cruce.
 const FRONT_CLOUDS = { height: 0.6, spread: 0.11, density: 0.9 };

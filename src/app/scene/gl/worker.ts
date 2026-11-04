@@ -52,6 +52,8 @@ self.onmessage = (event: MessageEvent<ToWorker>) => {
             return engine.setScroll(message.progress);
         case 'flights':
             return engine.setFlights(message.context);
+        case 'crowd':
+            return engine.setCrowd(message.params);
         case 'pointer':
             return engine.setPointer(message.x);
         case 'run':

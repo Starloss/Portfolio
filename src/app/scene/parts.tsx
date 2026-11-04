@@ -18,10 +18,15 @@ import {
     VIEW,
 } from './geometry';
 import { NIGHT_LIGHTS, type ScenePalette } from './palette';
+import type { AfluenciaParams } from './rhythm';
 import {
     AGENT_SIZE,
     agentX,
+    crowdFormation,
+    isBackSidewalk,
     LIGHT_HEIGHT,
+    POST_EVERY,
+    type StillWalker,
     STREET_ABOVE,
     streetAgents,
     type AgentKind,
@@ -397,7 +402,6 @@ export const HaloGradient: React.FC = () => (
 // ---------- Avenida Bolívar ----------
 
 // Cada cuánto hay un poste (con un árbol a mitad de camino), en px de pantalla.
-const POST_EVERY = 260;
 
 const circlePath = (x: number, y: number, r: number) =>
     `M${x - r} ${y} a${r} ${r} 0 1 0 ${2 * r} 0 a${r} ${r} 0 1 0 ${-2 * r} 0 Z`;
@@ -541,58 +545,50 @@ export const StreetAgentShape: React.FC<{
             </g>
         );
     }
-    // Un peatón a mitad de paso.
-    const step = 0.3;
-    const leg = (a: number): [number, number] => [
-        Math.sin(a) * 0.48 * h,
-        0.5 * h - Math.cos(a) * 0.48 * h,
-    ];
-    const arm = (a: number): [number, number] => [
-        Math.sin(a) * 0.33 * h,
-        0.76 * h - Math.cos(a) * 0.33 * h,
-    ];
-    return (
-        <g>
-            <circle cx={0} cy={-0.9 * h} r={0.075 * h} style={{ fill: c.vehicle }} />
-            <Stroke from={[0, 0.54 * h]} to={[0, 0.78 * h]} r={0.085 * h} fill={c.vehicle} />
-            <Stroke from={[0, 0.5 * h]} to={leg(step)} r={0.04 * h} fill={c.vehicle} />
-            <Stroke from={[0, 0.5 * h]} to={leg(-step)} r={0.04 * h} fill={c.vehicle} />
-            <Stroke from={[0, 0.76 * h]} to={arm(-step * 0.8)} r={0.03 * h} fill={c.vehicle} />
-            <Stroke from={[0, 0.76 * h]} to={arm(step * 0.8)} r={0.03 * h} fill={c.vehicle} />
-        </g>
-    );
+    return null;
 };
 
 /**
  * La Avenida Bolívar en una franja de `width` px de ancho: la calzada mide `height`, y los postes y
- * los árboles suben hasta 0,8 de eso por encima. Con `agents`, la gente y los vehículos quietos en
- * su lugar de partida; la Escena WebGL los dibuja aparte, en movimiento.
+ * los árboles suben hasta 0,8 de eso por encima. Con `crowd`, la gente que corresponde a esa
+ * Afluencia y los vehículos, quietos; la Escena WebGL los dibuja aparte, en movimiento. Con
+ * `bleed`, la calle sigue esos px más allá de cada borde.
  */
 export const Avenue: React.FC<{
     c: ScenePalette;
     width: number;
     height: number;
     night: boolean;
-    agents: boolean;
-}> = ({ c, width, height: H, night, agents }) => {
+    crowd: AfluenciaParams | null;
+    bleed?: number;
+}> = ({ c, width, height: H, night, crowd, bleed = 0 }) => {
     const top = STREET_ABOVE * H;
     const band = (from: number, to: number, fill: string) => (
-        <rect x={0} y={top + from * H} width={width} height={(to - from) * H} style={{ fill }} />
+        <rect
+            x={-bleed}
+            y={top + from * H}
+            width={width + 2 * bleed}
+            height={(to - from) * H}
+            style={{ fill }}
+        />
     );
+    // Las rayas empiezan en x = 0 con o sin `bleed`, como en la SVG.
     const mark = (s: number, stroke: string, dash?: string) => (
         <line
-            x1={0}
+            x1={-bleed}
             y1={top + s * H}
-            x2={width}
+            x2={width + bleed}
             y2={top + s * H}
             style={{ stroke }}
             strokeWidth={0.012 * H}
             strokeDasharray={dash}
+            strokeDashoffset={dash && bleed ? -bleed : undefined}
         />
     );
+    const first = -Math.ceil(bleed / POST_EVERY);
     const posts = Array.from(
-        { length: Math.ceil(width / POST_EVERY) + 1 },
-        (_, i) => i * POST_EVERY,
+        { length: Math.ceil((width + bleed) / POST_EVERY) + 1 - first },
+        (_, i) => (first + i) * POST_EVERY,
     );
     return (
         <g data-part="avenue">
@@ -660,7 +656,10 @@ export const Avenue: React.FC<{
                     />
                 </g>
             ))}
-            {agents &&
+            {crowd && (
+                <StillCrowd c={c} crowd={crowd} width={width} H={H} top={top} night={night} back />
+            )}
+            {crowd &&
                 streetAgents().map((a, i) => {
                     const [fw, fh] = AGENT_SIZE[a.kind];
                     const x = agentX(a, 0, width, H);
@@ -683,6 +682,99 @@ export const Avenue: React.FC<{
                         </g>
                     );
                 })}
+            {crowd && (
+                <StillCrowd
+                    c={c}
+                    crowd={crowd}
+                    width={width}
+                    H={H}
+                    top={top}
+                    night={night}
+                    back={false}
+                />
+            )}
+        </g>
+    );
+};
+
+// Un color de paraguas en CSS; `shade` lo oscurece (de Noche, 0,35, como en la Escena WebGL).
+const rgb = (color: readonly number[], shade = 1) =>
+    `rgb(${color.map((v) => Math.round(v * shade * 255)).join(',')})`;
+
+// Un peatón a mitad de paso, de `h` de alto, parado en (x, y) y mirando hacia `dir`: el cuerpo y la
+// cabeza (un punto con la punta redonda) en un trazo, y las piernas y los brazos en otro.
+const STEP = 0.3;
+function walkerStrokes(x: number, y: number, h: number, dir: 1 | -1) {
+    const at = (px: number, py: number) => `${x + dir * px} ${y - py}`;
+    const limb = (fromY: number, length: number, angle: number) =>
+        `M${at(0, fromY * h)} L${at(Math.sin(angle) * length * h, fromY * h - Math.cos(angle) * length * h)}`;
+    return {
+        torso: `M${at(0, 0.54 * h)} L${at(0, 0.78 * h)} M${at(0, 0.9 * h)} l0 0.01`,
+        limbs: [
+            limb(0.5, 0.48, STEP),
+            limb(0.5, 0.48, -STEP),
+            limb(0.76, 0.33, -STEP * 0.8),
+            limb(0.76, 0.33, STEP * 0.8),
+        ].join(' '),
+    };
+}
+
+/**
+ * La gente de una acera (la de atrás o la de adelante), quieta: crowdFormation en street.ts. Con la
+ * acera llena son casi cien, y la SVG cuenta sus elementos: van todos en un par de trazos, más uno
+ * por color de paraguas.
+ */
+const StillCrowd: React.FC<{
+    c: ScenePalette;
+    crowd: AfluenciaParams;
+    width: number;
+    H: number;
+    top: number;
+    night: boolean;
+    back: boolean;
+}> = ({ c, crowd, width, H, top, night, back }) => {
+    const walkers = crowdFormation(crowd, width / H, POST_EVERY / H).filter(
+        (w) => isBackSidewalk(w.s) === back && w.u * H > -H && w.u * H < width + H,
+    );
+    if (!walkers.length) return null;
+    const height = (w: StillWalker) => AGENT_SIZE.walker[1] * H * w.scale;
+    const torso: string[] = [];
+    const limbs: string[] = [];
+    const umbrellas = new Map<string, string[]>();
+    for (const w of walkers) {
+        const [x, y, h] = [w.u * H, top + w.s * H, height(w)];
+        const strokes = walkerStrokes(x, y, h, w.dir);
+        torso.push(strokes.torso);
+        limbs.push(strokes.limbs);
+        if (w.umbrella) {
+            // De Noche, más oscuros, como en la Escena WebGL.
+            const color = rgb(w.umbrella, night ? 0.35 : 1);
+            const canopy = `M${x - 0.34 * h} ${y - 1.06 * h} A${0.34 * h} ${0.17 * h} 0 0 1 ${x + 0.34 * h} ${y - 1.06 * h} Z M${x} ${y - 1.06 * h} L${x + w.dir * 0.02 * h} ${y - 0.78 * h}`;
+            umbrellas.set(color, [...(umbrellas.get(color) ?? []), canopy]);
+        }
+    }
+    // Un grosor por acera: el de su gente de tamaño medio.
+    const h = height(walkers[Math.floor(walkers.length / 2)]);
+    const trace = (d: string[], strokeWidth: number) => (
+        <path
+            d={d.join(' ')}
+            style={{ stroke: c.vehicle, fill: 'none' }}
+            strokeWidth={strokeWidth}
+            strokeLinecap="round"
+        />
+    );
+    return (
+        <g data-walkers={walkers.length} data-umbrellas={walkers.filter((w) => w.umbrella).length}>
+            {trace(torso, 0.16 * h)}
+            {trace(limbs, 0.07 * h)}
+            {[...umbrellas].map(([color, d]) => (
+                <path
+                    key={color}
+                    d={d.join(' ')}
+                    style={{ fill: color, stroke: color }}
+                    strokeWidth={0.024 * h}
+                />
+            ))}
         </g>
     );
 };

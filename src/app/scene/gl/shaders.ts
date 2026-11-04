@@ -510,7 +510,9 @@ void main() {
     } else {
         // Margen para los peatones, que abren las piernas, y para las ruedas.
         float padX = kind > 2.5 ? 2.4 : 1.15;
-        local = vec2((position.x - 0.5) * aSize.x * padX, mix(-0.06, 1.06, position.y) * aSize.y);
+        // Con paraguas, el peatón necesita más alto.
+        float top = kind > 2.5 ? 1.3 : 1.06;
+        local = vec2((position.x - 0.5) * aSize.x * padX, mix(-0.06, top, position.y) * aSize.y);
     }
     vec2 px = aAnchor + vec2(local.x, kind > 3.5 ? local.y : -local.y);
     gl_Position = vec4(px.x / uRes.x * 2.0 - 1.0, 1.0 - px.y / uRes.y * 2.0, 0.0, 1.0);
@@ -571,6 +573,7 @@ void main() {
     }
     float d = 1e5;
     float win = 1e5;
+    float umbrella = 1e5;
     if (kind < 0.5) {
         d = sdRound(p - vec2(0.0, 0.36 * h), vec2(0.5 * w, 0.2 * h), 0.12 * h);
         vec2 q = p - vec2(-0.06 * w, 0.68 * h);
@@ -597,10 +600,14 @@ void main() {
         d = min(d, sdCap(p, vec2(0.06 * w, 0.72 * h), vec2(0.3 * w, 0.55 * h), 0.04 * h));
         d = min(d, sdCap(p, vec2(-0.02 * w, 0.45 * h), vec2(0.12 * w, 0.25 * h), 0.05 * h));
     } else {
-        // Un peatón caminando: piernas y brazos que van y vienen, con un leve rebote.
-        float t = uTime * 4.2 + vMeta.z;
-        float sw = sin(t) * 0.42;
-        p.y -= abs(cos(t)) * 0.015 * h;
+        // Un peatón: piernas y brazos que van y vienen, con un leve rebote. vMeta.w = paraguas +
+        // 2 × paso: camina (0), está parado (1) o corre (2), más rápido y con pasos más largos.
+        float gait = floor(vMeta.w / 2.0 + 0.01);
+        float moving = gait > 0.5 && gait < 1.5 ? 0.0 : 1.0;
+        float running = step(1.5, gait);
+        float t = uTime * mix(4.2, 8.5, running) + vMeta.z;
+        float sw = sin(t) * mix(0.42, 0.7, running) * moving;
+        p.y -= abs(cos(t)) * mix(0.015, 0.04, running) * h * moving;
         vec2 hip = vec2(0.0, 0.5 * h);
         vec2 sh = vec2(0.0, 0.76 * h);
         d = length(p - vec2(0.0, 0.9 * h)) - 0.075 * h;
@@ -609,11 +616,20 @@ void main() {
         d = min(d, sdCap(p, hip, hip + vec2(sin(-sw), -cos(-sw)) * 0.48 * h, 0.04 * h));
         d = min(d, sdCap(p, sh, sh + vec2(sin(-sw * 0.8), -cos(sw * 0.8)) * 0.33 * h, 0.03 * h));
         d = min(d, sdCap(p, sh, sh + vec2(sin(sw * 0.8), -cos(sw * 0.8)) * 0.33 * h, 0.03 * h));
+        // El paraguas: la tela y el mango.
+        if (mod(vMeta.w, 2.0) > 0.5) {
+            vec2 c = p - vec2(0.0, 1.06 * h);
+            umbrella = max((length(c / vec2(0.34 * h, 0.17 * h)) - 1.0) * 0.17 * h, -c.y);
+            d = min(d, sdCap(p, vec2(0.02 * h, 0.78 * h), vec2(0.0, 1.06 * h), 0.012 * h));
+        }
     }
     vec3 sil = mix(SIL_DAY, SIL_NIGHT, uNight);
     float body = 1.0 - smoothstep(-0.5, 0.5, d);
     float wn = (1.0 - smoothstep(-0.5, 0.5, win)) * body;
     vec3 window = mix(WIN_DAY, kind > 0.5 && kind < 1.5 ? BUS_WIN_NIGHT : WIN_NIGHT, uNight);
     outColor = vec4(mix(sil, window, wn) * body, body);
+    // El paraguas, de su color; de Noche, más oscuro.
+    float canopy = 1.0 - smoothstep(-0.5, 0.5, umbrella);
+    outColor = mix(outColor, vec4(mix(vColor, vColor * 0.35, uNight), 1.0), canopy);
 }
 `;
