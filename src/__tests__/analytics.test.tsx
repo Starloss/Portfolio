@@ -35,6 +35,7 @@ const withUmami = () => {
 
 afterEach(() => {
     delete window.umami;
+    sessionStorage.clear();
 });
 
 describe('Visitas de prueba', () => {
@@ -43,7 +44,9 @@ describe('Visitas de prueba', () => {
         window.history.replaceState(null, '', '/?guacamayas=ya');
         trackContact('email');
         expect(track).not.toHaveBeenCalled();
+        // Una visita nueva, sin el parámetro, sí se cuenta.
         window.history.replaceState(null, '', '/');
+        sessionStorage.clear();
         trackContact('email');
         expect(track).toHaveBeenCalledOnce();
     });
@@ -103,5 +106,17 @@ describe('Señales de interés', () => {
             },
         };
         expect(() => trackContact('email')).not.toThrow();
+    });
+});
+
+describe('Visitas de prueba, al navegar', () => {
+    it('la marca dura toda la visita, aunque la siguiente página no lleve el parámetro', () => {
+        const track = withUmami();
+        window.history.replaceState(null, '', '/?dia=domingo');
+        trackContact('email');
+        window.history.replaceState(null, '', '/projects/superwallet');
+        trackContact('email');
+        expect(track).not.toHaveBeenCalled();
+        window.history.replaceState(null, '', '/');
     });
 });

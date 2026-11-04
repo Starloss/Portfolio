@@ -19,11 +19,18 @@ declare global {
 export type ContactChannel = 'email' | 'linkedin';
 
 // Las visitas con un parámetro de prueba de la Escena en movimiento son pruebas o demostraciones:
-// no se cuentan (spec #99).
+// no se cuentan (spec #99). Los enlaces del sitio no llevan la query, así que la marca dura toda la
+// visita; el script de index.html la usa también para las páginas vistas.
 const TEST_PARAMS = ['guacamayas', 'dia', 'trafico'];
+const TEST_VISIT_KEY = 'visita-de-prueba';
 const isTestVisit = () => {
     const params = new URLSearchParams(window.location.search);
-    return TEST_PARAMS.some((p) => params.has(p));
+    try {
+        if (TEST_PARAMS.some((p) => params.has(p))) sessionStorage.setItem(TEST_VISIT_KEY, '1');
+        return sessionStorage.getItem(TEST_VISIT_KEY) === '1';
+    } catch {
+        return TEST_PARAMS.some((p) => params.has(p));
+    }
 };
 
 const track = (event: string, data: Record<string, string>) => {
