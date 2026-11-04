@@ -67,6 +67,8 @@ npm i -g @colbymchenry/codegraph
 codegraph telemetry off   # optional
 ```
 
+A prompt hook also front-loads CodeGraph context into structural prompts; set `CODEGRAPH_NO_PROMPT_HOOK=1` to turn it off and keep only the MCP tool.
+
 ## Project structure
 
 ```
