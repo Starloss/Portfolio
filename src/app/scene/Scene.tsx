@@ -167,6 +167,7 @@ export const Scene: React.FC<{ height?: number }> = ({ height }) => {
     const estado = useClima()?.estado ?? null;
     const crowd = useAfluencia();
     const trafico = useTrafico();
+    const raining = estado === 'lluvia' || estado === 'tormenta';
     // El tamaño sale de la propia Escena (100vh): no cambia cuando el teléfono muestra u oculta la
     // barra del navegador, así el encuadre no salta mientras se hace scroll.
     const rootRef = useRef<HTMLDivElement>(null);
@@ -209,7 +210,8 @@ export const Scene: React.FC<{ height?: number }> = ({ height }) => {
                     twinkleGroups={mobile ? 2 : 3}
                 />
                 <ClimaTint night={night} />
-                {!night && !mobile && svg(<Macaws animate={animateDesktop} />)}
+                {/* Como en la WebGL, con lluvia no vuelan. */}
+                {!night && !mobile && !raining && svg(<Macaws animate={animateDesktop} />)}
             </div>
             {!mobile && (
                 <div

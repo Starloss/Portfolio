@@ -25,12 +25,14 @@
              tampoco sus páginas vistas: la marca dura la visita (src/lib/analytics.ts). -->
         <script>
             window.umamiAntesDeEnviar = function (type, payload) {
+                // Sin sessionStorage, la marca queda en memoria: al menos dura este documento.
+                if (/[?&](guacamayas|dia|trafico)=/.test(location.search))
+                    window.visitaDePrueba = true;
                 try {
-                    if (/[?&](guacamayas|dia|trafico)=/.test(location.search))
-                        sessionStorage.setItem('visita-de-prueba', '1');
+                    if (window.visitaDePrueba) sessionStorage.setItem('visita-de-prueba', '1');
                     return sessionStorage.getItem('visita-de-prueba') === '1' ? false : payload;
                 } catch (e) {
-                    return payload;
+                    return window.visitaDePrueba ? false : payload;
                 }
             };
         </script>
