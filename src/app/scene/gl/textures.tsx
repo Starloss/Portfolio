@@ -4,12 +4,11 @@ import React from 'react';
 import { flushSync } from 'react-dom';
 import { createRoot } from 'react-dom/client';
 
-import { CABIN_WIDTH, type SceneFrame, type Viewport } from '../camera';
+import type { SceneFrame, Viewport } from '../camera';
 import { DAY, NIGHT, type ScenePalette } from '../palette';
 import {
     Avenue,
     Avila,
-    CabinShape,
     City,
     FarRidge,
     HaloGradient,
@@ -52,7 +51,6 @@ export type LayerName =
     | 'city'
     | 'towers'
     | 'macaws'
-    | 'cabin'
     | 'cityLights'
     | 'towersLights'
     | 'street';
@@ -84,62 +82,41 @@ export async function themeLayers(
     const still = { night, animate: false };
     const H = streetHeight(viewport.height);
     const streetSize = { width: viewport.width, height: H * (1 + STREET_ABOVE) };
-    const [
-        far,
-        avilaBack,
-        avilaFront,
-        city,
-        towers,
-        macaws,
-        cabin,
-        cityLights,
-        towersLights,
-        street,
-    ] = await Promise.all([
-        full(<FarRidge c={c} />),
-        full(<Avila c={c} {...still} slice="back" />),
-        full(
-            <>
-                <HaloGradient />
-                <Avila c={c} {...still} slice="front" />
-            </>,
-        ),
-        // De Noche, las siluetas sin ventanas: las ventanas van en las texturas de luces.
-        full(<City c={c} night={false} animate={false} />),
-        full(<Towers c={c} night={false} animate={false} />),
-        night ? null : full(<Macaws animate={false} />),
-        markup(
-            <svg
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="-6 0 12 17"
-                width={Math.round(CABIN_WIDTH * frame.scale * dpr)}
-                height={Math.round(17 * frame.scale * dpr)}
-            >
-                <CabinShape c={c} />
-            </svg>,
-        ).then(rasterize),
-        night ? full(<City c={BLACK} night animate={false} />) : undefined,
-        night ? full(<Towers c={BLACK} night animate={false} />) : undefined,
-        // La calle sin gente ni vehículos: la WebGL los dibuja aparte, en movimiento.
-        markup(
-            <svg
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox={`0 0 ${streetSize.width} ${streetSize.height}`}
-                width={Math.round(streetSize.width * dpr)}
-                height={Math.round(streetSize.height * dpr)}
-            >
-                <LampGradient />
-                <Avenue c={c} width={viewport.width} height={H} night={night} agents={false} />
-            </svg>,
-        ).then(rasterize),
-    ]);
+    const [far, avilaBack, avilaFront, city, towers, macaws, cityLights, towersLights, street] =
+        await Promise.all([
+            full(<FarRidge c={c} />),
+            full(<Avila c={c} {...still} slice="back" />),
+            full(
+                <>
+                    <HaloGradient />
+                    <Avila c={c} {...still} slice="front" />
+                </>,
+            ),
+            // De Noche, las siluetas sin ventanas: las ventanas van en las texturas de luces.
+            full(<City c={c} night={false} animate={false} />),
+            full(<Towers c={c} night={false} animate={false} />),
+            night ? null : full(<Macaws animate={false} />),
+            night ? full(<City c={BLACK} night animate={false} />) : undefined,
+            night ? full(<Towers c={BLACK} night animate={false} />) : undefined,
+            // La calle sin gente ni vehículos: la WebGL los dibuja aparte, en movimiento.
+            markup(
+                <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox={`0 0 ${streetSize.width} ${streetSize.height}`}
+                    width={Math.round(streetSize.width * dpr)}
+                    height={Math.round(streetSize.height * dpr)}
+                >
+                    <LampGradient />
+                    <Avenue c={c} width={viewport.width} height={H} night={night} agents={false} />
+                </svg>,
+            ).then(rasterize),
+        ]);
     return {
         far,
         avilaBack,
         avilaFront,
         city,
         towers,
-        cabin,
         street,
         ...(night ? { cityLights, towersLights } : {}),
         ...(macaws ? { macaws } : {}),

@@ -128,9 +128,19 @@ describe('Escritorio y móvil', () => {
         expect(has('far-ridge')).toBe(true);
     });
 
-    it('en móvil solo se animan las cabinas y las estrellas', () => {
+    it('en móvil solo se animan las estrellas', () => {
         const { animations } = renderScene({ night: true, mobile: true });
-        expect([...animations()].sort()).toEqual(['cabin', 'twinkle']);
+        expect([...animations()]).toEqual(['twinkle']);
+    });
+});
+
+describe('Teleférico', () => {
+    it('tiene un cable de subida y otro de bajada, con cabinas quietas en los dos', () => {
+        const { scene, has } = renderScene();
+        expect(has('return-cable')).toBe(true);
+        const cabins = (line: string) => scene.querySelectorAll(`[data-cabin="${line}"]`).length;
+        expect(cabins('up')).toBe(4);
+        expect(cabins('down')).toBe(4);
     });
 });
 

@@ -1,7 +1,8 @@
-import { expect, test, type Page } from './test';
 import { DAY, NIGHT } from '../src/app/scene/palette';
 import { streetBand } from '../src/app/scene/street';
 import { contrastRatio } from '../src/lib/contrast';
+
+import { expect, test, type Page } from './test';
 
 for (const [hora, palette] of [
     ['12:00', DAY],
@@ -111,4 +112,11 @@ test('las Torres van detrás de la ciudad y llegan hasta el suelo', async ({ pag
         return { towers: layers.indexOf('towers'), city: layers.indexOf('city') };
     });
     expect(order.towers).toBeLessThan(order.city);
+});
+
+test('el Teleférico de la SVG tiene dos cables y cabinas quietas en los dos', async ({ page }) => {
+    await page.goto('/?escena=svg');
+    await expect(page.locator('[data-part="return-cable"]')).toHaveCount(1);
+    await expect(page.locator('[data-cabin="up"]')).toHaveCount(4);
+    await expect(page.locator('[data-cabin="down"]')).toHaveCount(4);
 });
