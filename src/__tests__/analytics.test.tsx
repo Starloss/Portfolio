@@ -80,6 +80,39 @@ describe('Script de Umami', () => {
         window.history.replaceState(null, '', '/');
     });
 
+    it('sin sessionStorage, el script y los eventos respetan la marca al navegar', () => {
+        const inline = html.match(/<script>([^<]*umamiAntesDeEnviar[^<]*)<\/script>/)?.[1] ?? '';
+        const track = withUmami();
+        const setItem = vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+            throw new Error('bloqueado');
+        });
+        const getItem = vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
+            throw new Error('bloqueado');
+        });
+
+        try {
+            expect(inline).not.toBe('');
+            Reflect.deleteProperty(window, 'umamiAntesDeEnviar');
+            window.history.replaceState(null, '', '/?dia=domingo');
+            new Function(inline)();
+            expect(setItem).toHaveBeenCalledWith('visita-de-prueba', '1');
+
+            window.history.replaceState(null, '', '/projects/superwallet');
+            const { umamiAntesDeEnviar } = window as unknown as {
+                umamiAntesDeEnviar: (type: string, payload: object) => unknown;
+            };
+            expect(umamiAntesDeEnviar('event', { url: '/projects/superwallet' })).toBe(false);
+            expect(getItem).toHaveBeenCalledWith('visita-de-prueba');
+            trackContact('email');
+            expect(track).not.toHaveBeenCalled();
+        } finally {
+            setItem.mockRestore();
+            getItem.mockRestore();
+            Reflect.deleteProperty(window, 'umamiAntesDeEnviar');
+            window.history.replaceState(null, '', '/');
+        }
+    });
+
     it('no se usan los atributos data-umami-event, que anulan el download del CV', () => {
         const { container } = renderAt('/');
         expect(container.querySelector('[data-umami-event]')).toBeNull();
