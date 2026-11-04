@@ -12,12 +12,15 @@ export interface FlightContext {
     forced: boolean;
 }
 
+// El Día de las guacamayas, en horas fijas: en Caracas el sol sale entre las 6 y las 6:45 y se pone
+// entre las 6 y las 6:45 de la tarde todo el año, así que no hace falta la posición real del sol.
+const SUNRISE = 5.5;
+const SUNSET = 18.75;
 // Las horas pico (Ritmos reales de Caracas, #88): del amanecer a las 8 y de las 4 a la puesta.
 const PEAKS: Array<[from: number, to: number]> = [
-    [5.5, 8],
-    [16, 18.75],
+    [SUNRISE, 8],
+    [16, SUNSET],
 ];
-const DAY = [5.5, 18.75];
 // Fuera de los picos, de Día, pasa alguna pareja suelta.
 const OFF_PEAK = 0.15;
 // Segundos entre vuelos en hora pico, en promedio.
@@ -25,12 +28,13 @@ const PEAK_INTERVAL = 12;
 
 /** Cuántos vuelos salen, de 0 (ninguno) a 1 (hora pico). */
 export function flightRate({ hour, raining }: Pick<FlightContext, 'hour' | 'raining'>): number {
-    if (raining || hour < DAY[0] || hour >= DAY[1]) return 0;
+    if (raining || hour < SUNRISE || hour >= SUNSET) return 0;
     return PEAKS.some(([from, to]) => hour >= from && hour < to) ? 1 : OFF_PEAK;
 }
 
-/** 0 azul y amarilla (Ara ararauna, la más común en Caracas), 1 roja, 2 roja y verde. */
-export type Species = 0 | 1 | 2;
+/** Las especies, con el número que usa el shader. La azul y amarilla es la más común en Caracas. */
+export const SPECIES = { ararauna: 0, macao: 1, chloropterus: 2 } as const;
+export type Species = (typeof SPECIES)[keyof typeof SPECIES];
 
 /** Un ave de un vuelo, en largos de ave respecto del que va adelante. */
 export interface FlightBird {
@@ -89,10 +93,10 @@ export class Flights {
 
     private species(): Species {
         const r = this.rand();
-        return r < 0.75 ? 0 : r < 0.9 ? 1 : 2;
+        return r < 0.75 ? SPECIES.ararauna : r < 0.9 ? SPECIES.macao : SPECIES.chloropterus;
     }
 
-    // Una pareja: casi tocándose las alas y casi siempre de la misma especie.
+    // Una pareja: casi tocándose las alas, y de la misma especie.
     private pair(dx: number, dy: number): FlightBird[] {
         const species = this.species();
         const phase = this.rand() * Math.PI * 2;
@@ -108,9 +112,10 @@ export class Flights {
         ];
     }
 
-    private launch(): Flight {
+    /** Fuera de la hora pico (`peak` falso) solo pasa una pareja suelta por encima del título. */
+    private launch(peak: boolean): Flight {
         const dir: 1 | -1 = this.rand() < 0.5 ? 1 : -1;
-        if (this.rand() < 0.3) {
+        if (peak && this.rand() < 0.3) {
             // Sale de detrás del Ávila, pequeña, y pasa grande cerca de la cámara.
             const from = 0.3 + this.rand() * 0.4;
             return {
@@ -131,14 +136,15 @@ export class Flights {
             };
         }
         // Por encima del título: una bandada de 3 a 6 parejas en fila suelta, o una pareja sola.
-        const pairs = this.rand() < 0.6 ? 3 + Math.floor(this.rand() * 4) : 1;
+        const pairs = peak && this.rand() < 0.6 ? 3 + Math.floor(this.rand() * 4) : 1;
         const birds: FlightBird[] = [];
         for (let i = 0; i < pairs; i++) {
-            const dy = i === 0 ? 0 : (i % 2 ? 1 : -1) * (0.3 + this.rand() * 0.6);
+            // Escalonadas, pero sin abrirse tanto que las de arriba se metan bajo la cabecera.
+            const dy = i === 0 ? 0 : (i % 2 ? 1 : -1) * (0.2 + this.rand() * 0.3);
             birds.push(...this.pair(-i * (1.1 + this.rand() * 0.8), dy));
         }
-        // Entre la cabecera y el título: de 0,1 a 0,16 del alto de la ventana.
-        const y0 = 0.1 + this.rand() * 0.05;
+        // Entre la cabecera y el título: de 0,11 a 0,15 del alto de la ventana.
+        const y0 = 0.11 + this.rand() * 0.03;
         return {
             kind: 'band',
             t: 0,
@@ -158,17 +164,17 @@ export class Flights {
         for (const f of this.flights) f.t += dt;
         // Se van cuando la última del grupo sale de la ventana.
         this.flights = this.flights.filter((f) => f.t < f.duration + 3);
-        if (context.raining) return;
-        if (context.forced && !this.forcedDone) {
-            this.forcedDone = true;
-            this.flights.push(this.launch());
-            return;
-        }
         const rate = flightRate(context);
         if (rate <= 0) return;
+        // Forzado, sale enseguida un vuelo de hora pico; de Noche o con lluvia, ni así.
+        if (context.forced && !this.forcedDone) {
+            this.forcedDone = true;
+            this.flights.push(this.launch(true));
+            return;
+        }
         this.wait -= dt * rate;
         if (this.wait <= 0) {
-            this.flights.push(this.launch());
+            this.flights.push(this.launch(rate >= 1));
             this.wait = PEAK_INTERVAL * (0.6 + this.rand() * 0.8);
         }
     }

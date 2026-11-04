@@ -39,9 +39,19 @@ describe('Flights', () => {
         expect(run(day(23), 600).seen.length).toBe(0);
     });
 
-    it('?guacamayas=ya hace salir un vuelo enseguida, aunque no sea hora pico, pero no con lluvia', () => {
+    it('?guacamayas=ya hace salir un vuelo enseguida, aunque no sea hora pico; de noche y con lluvia, no', () => {
         expect(run(day(12, { forced: true }), 1).seen.length).toBe(1);
         expect(run(day(12, { forced: true, raining: true }), 1).seen.length).toBe(0);
+        expect(run(day(22, { forced: true }), 1).seen.length).toBe(0);
+    });
+
+    it('fuera de la hora pico solo pasa alguna pareja suelta, por encima del título', () => {
+        const { seen } = run(day(12), 3600);
+        expect(seen.length).toBeGreaterThan(0);
+        for (const f of seen) {
+            expect(f.kind).toBe('band');
+            expect(f.birds.length).toBe(2);
+        }
     });
 
     it('vuelan en parejas casi ala con ala, cada pareja de una sola especie', () => {

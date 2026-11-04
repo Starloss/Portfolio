@@ -37,6 +37,18 @@ afterEach(() => {
     delete window.umami;
 });
 
+describe('Visitas de prueba', () => {
+    it('con un parámetro de prueba de la Escena no se envía nada', () => {
+        const track = withUmami();
+        window.history.replaceState(null, '', '/?guacamayas=ya');
+        trackContact('email');
+        expect(track).not.toHaveBeenCalled();
+        window.history.replaceState(null, '', '/');
+        trackContact('email');
+        expect(track).toHaveBeenCalledOnce();
+    });
+});
+
 describe('Script de Umami', () => {
     const html = fs.readFileSync('index.html', 'utf8');
 

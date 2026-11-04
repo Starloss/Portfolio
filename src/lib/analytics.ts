@@ -18,7 +18,16 @@ declare global {
 
 export type ContactChannel = 'email' | 'linkedin';
 
+// Las visitas con un parámetro de prueba de la Escena en movimiento son pruebas o demostraciones:
+// no se cuentan (spec #99).
+const TEST_PARAMS = ['guacamayas', 'dia', 'trafico'];
+const isTestVisit = () => {
+    const params = new URLSearchParams(window.location.search);
+    return TEST_PARAMS.some((p) => params.has(p));
+};
+
 const track = (event: string, data: Record<string, string>) => {
+    if (isTestVisit()) return;
     try {
         window.umami?.track(event, data);
     } catch {

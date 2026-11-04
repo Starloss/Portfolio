@@ -76,6 +76,15 @@ type Pass = (typeof ORDER)[number];
 // Las luces llevan mipmaps: un nivel chico es su resplandor.
 const MIPMAPPED: readonly LayerName[] = ['cityLights', 'towersLights'];
 const SOFTWARE_DPR = 0.5;
+
+/** Sube los atributos por instancia que cambiaron en este cuadro y cuántas instancias dibujar. */
+function uploadInstances(geometry: Geometry, count: number) {
+    for (const [name, attribute] of Object.entries(geometry.attributes)) {
+        if (name !== 'position') attribute.needsUpdate = true;
+    }
+    // ogl no dibuja con cero instancias: una con tamaño cero no se ve.
+    geometry.setInstancedCount(Math.max(1, count));
+}
 const RESIZE_SETTLE_MS = 250;
 
 // requestAnimationFrame existe en los Workers de Chrome, Firefox y Safari 17 con OffscreenCanvas.
@@ -730,10 +739,7 @@ export class EscenaGL {
                 night: this.night,
                 shiftX: parallax.street,
             });
-            for (const name of ['aAnchor', 'aSize', 'aMeta', 'aColor']) {
-                this.agentGeometry.attributes[name].needsUpdate = true;
-            }
-            this.agentGeometry.setInstancedCount(Math.max(1, this.instances.count));
+            uploadInstances(this.agentGeometry, this.instances.count);
         }
         writeCabins(this.cabins, circuitOnScreen(time, frame, f));
         // Con una GPU por software, quietas como el resto: no salen vuelos.
@@ -743,14 +749,8 @@ export class EscenaGL {
             this.flights.birds(viewport.width, viewport.height, time, frame.scale),
             parallax.sky,
         );
-        for (const name of ['aAnchor', 'aLength', 'aMeta']) {
-            this.birdGeometry.attributes[name].needsUpdate = true;
-        }
-        this.birdGeometry.setInstancedCount(Math.max(1, this.birdInstances.count));
-        for (const name of ['aAnchor', 'aScale', 'aMeta']) {
-            this.cabinGeometry.attributes[name].needsUpdate = true;
-        }
-        this.cabinGeometry.setInstancedCount(Math.max(1, this.cabins.count));
+        uploadInstances(this.birdGeometry, this.birdInstances.count);
+        uploadInstances(this.cabinGeometry, this.cabins.count);
         ORDER.forEach((pass, i) => {
             if (pass === 'cabins' && this.cabins.count === 0) return;
             // Sin vuelos en el aire, o de Noche, el pase de las aves no dibuja nada.
