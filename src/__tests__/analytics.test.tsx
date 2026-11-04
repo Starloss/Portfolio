@@ -33,9 +33,15 @@ const withUmami = () => {
     return track;
 };
 
+// Cada test es una visita nueva: sin marca de prueba, ni guardada ni en memoria.
+const newVisit = () => {
+    sessionStorage.clear();
+    delete window.visitaDePrueba;
+};
+
 afterEach(() => {
     delete window.umami;
-    sessionStorage.clear();
+    newVisit();
 });
 
 describe('Visitas de prueba', () => {
@@ -46,7 +52,7 @@ describe('Visitas de prueba', () => {
         expect(track).not.toHaveBeenCalled();
         // Una visita nueva, sin el parámetro, sí se cuenta.
         window.history.replaceState(null, '', '/');
-        sessionStorage.clear();
+        newVisit();
         trackContact('email');
         expect(track).toHaveBeenCalledOnce();
     });
@@ -118,5 +124,19 @@ describe('Visitas de prueba, al navegar', () => {
         trackContact('email');
         expect(track).not.toHaveBeenCalled();
         window.history.replaceState(null, '', '/');
+    });
+
+    it('sin sessionStorage, la marca dura mientras no se recargue la página', () => {
+        const track = withUmami();
+        vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
+            throw new Error('bloqueado');
+        });
+        window.history.replaceState(null, '', '/?trafico=tranca');
+        trackContact('email');
+        window.history.replaceState(null, '', '/projects/superwallet');
+        trackContact('email');
+        expect(track).not.toHaveBeenCalled();
+        window.history.replaceState(null, '', '/');
+        vi.restoreAllMocks();
     });
 });

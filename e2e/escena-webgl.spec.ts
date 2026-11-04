@@ -159,9 +159,17 @@ test('en un teléfono, la Escena WebGL entra y llena la pantalla', async ({ page
     expect(box.height).toBe(844);
 });
 
-test('con ?guacamayas=ya la Escena WebGL dibuja las guacamayas sin errores', async ({ page }) => {
+test('con ?guacamayas=ya la Escena WebGL arranca y compila sus shaders sin errores', async ({
+    page,
+}) => {
     const errors: string[] = [];
+    // ogl avisa de los shaders que no compilan con console.warn, desde el Worker.
+    const collect = (m: { type(): string; text(): string }) => {
+        if (m.type() === 'warning' || m.type() === 'error') errors.push(m.text());
+    };
     page.on('pageerror', (e) => errors.push(e.message));
+    page.on('console', collect);
+    page.on('worker', (w) => w.on('console', collect));
     await page.goto('/?escena=webgl&hora=17:00&clima=despejado&guacamayas=ya');
     await expect(page.locator('html')).toHaveAttribute('data-escena', 'webgl');
     expect(errors).toEqual([]);

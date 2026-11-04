@@ -13,6 +13,8 @@ import type { Locale } from '@/content';
 declare global {
     interface Window {
         umami?: { track: (event: string, data?: Record<string, string>) => unknown };
+        /** La marca de visita de prueba en memoria, por si sessionStorage falla (index.html). */
+        visitaDePrueba?: boolean;
     }
 }
 
@@ -25,11 +27,12 @@ const TEST_PARAMS = ['guacamayas', 'dia', 'trafico'];
 const TEST_VISIT_KEY = 'visita-de-prueba';
 const isTestVisit = () => {
     const params = new URLSearchParams(window.location.search);
+    if (TEST_PARAMS.some((p) => params.has(p))) window.visitaDePrueba = true;
     try {
-        if (TEST_PARAMS.some((p) => params.has(p))) sessionStorage.setItem(TEST_VISIT_KEY, '1');
+        if (window.visitaDePrueba) sessionStorage.setItem(TEST_VISIT_KEY, '1');
         return sessionStorage.getItem(TEST_VISIT_KEY) === '1';
     } catch {
-        return TEST_PARAMS.some((p) => params.has(p));
+        return window.visitaDePrueba === true;
     }
 };
 
