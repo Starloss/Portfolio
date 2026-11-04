@@ -30,3 +30,6 @@ Thumbs.db
 .lighthouseci-desktop
 playwright-report
 test-results
+
+# Índice local de CodeGraph (cada worktree construye el suyo)
+.codegraph/
