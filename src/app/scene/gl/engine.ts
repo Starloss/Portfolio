@@ -161,6 +161,8 @@ export class EscenaGL {
     private traffic = new Traffic();
     private nivelTrafico: NivelTrafico | null = null;
     private trafficChanged = false;
+    /** El ancho de la calle (en altos de calzada) con el que se pobló por última vez. */
+    private agentsSpan = 0;
     private instances = createInstances();
     private agentGeometry!: Geometry;
     // Las cabinas del circuito del Teleférico.
@@ -615,6 +617,12 @@ export class EscenaGL {
     }
 
     private updateAgents(dt: number, span: number, treeEvery: number) {
+        // Quieta, una calle que cambió de ancho tampoco se llena por los bordes: se vuelve a poblar.
+        if (this.onDemand && span !== this.agentsSpan) {
+            this.crowdChanged = true;
+            this.trafficChanged = true;
+        }
+        this.agentsSpan = span;
         if (this.crowdParams && this.crowdChanged) {
             this.crowdChanged = false;
             // La simulación quieta no incorpora gente nueva por los bordes: se vuelve a poblar.

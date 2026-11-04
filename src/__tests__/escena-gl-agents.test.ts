@@ -62,6 +62,18 @@ describe('La Avenida de la Escena WebGL al cambiar la Afluencia o el Tráfico', 
         expect(scene.traffic.vehicles.length).toBe(emptyTraffic);
     });
 
+    it('quieta, se vuelve a poblar si la calle cambia de ancho', () => {
+        const scene = engine(true);
+        scene.setCrowd({ afluencia: 1, lluvia: 'seca' });
+        scene.setTraffic('tranca');
+        scene.updateAgents(0.1, 800 / 150, 260 / 150);
+        const walkers = scene.crowd.walkers.length;
+        const vehicles = scene.traffic.vehicles.length;
+        scene.updateAgents(0.1, 1920 / 150, 260 / 150);
+        expect(scene.crowd.walkers.length).toBeGreaterThan(walkers);
+        expect(scene.traffic.vehicles.length).toBeGreaterThan(vehicles);
+    });
+
     it('en movimiento, sigue con la misma gente y los mismos vehículos, que avanzan', () => {
         const scene = engine(false);
         scene.setCrowd({ afluencia: 1, lluvia: 'seca' });
