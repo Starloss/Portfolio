@@ -49,11 +49,11 @@ interface PassSpec {
     fixed: Record<string, unknown>;
 }
 
-// Las capas, de atrás hacia adelante: las guacamayas vuelan detrás de las nubes y del Ávila.
+// Las capas, de atrás hacia adelante, en el mismo orden que las de la Escena SVG; las guacamayas
+// no: vuelan delante del Ávila y de la ciudad.
 const ORDER = [
     'sky',
     'moon',
-    'birds',
     'clouds',
     'bolt',
     'far',
@@ -66,6 +66,7 @@ const ORDER = [
     'towersLights',
     'city',
     'cityLights',
+    'birds',
     'street',
     'agents',
     'front',
