@@ -25,7 +25,9 @@ export function createCabinInstances(): CabinInstances {
 
 export function writeCabins(into: CabinInstances, cabins: readonly CabinOnScreen[]) {
     let n = 0;
-    for (const c of cabins) {
+    // Primero las del cable de bajada, que va atrás: al cruzarse, la de adelante queda encima.
+    const backToFront = [...cabins].sort((a, b) => b.line - a.line);
+    for (const c of backToFront) {
         // Dentro de una estación no se ve: no hace falta dibujarla.
         if (n >= MAX_CABINS || c.alpha <= 0) continue;
         into.anchor[n * 2] = c.x;

@@ -15,7 +15,7 @@ import {
     type Viewport,
 } from '../camera';
 import { circuitAt } from '../circuit';
-import { cableLinePoint } from '../geometry';
+import { cableLinePoint, RETURN_CABLE, type CableLine } from '../geometry';
 import { streetBand } from '../street';
 
 /** Una curva `cubic-bezier()` de CSS, como función del progreso. */
@@ -189,9 +189,6 @@ export function escenaFrame({ progress, sink, viewport, frame, clocks, pointer }
 
 export type EscenaFrame = ReturnType<typeof escenaFrame>;
 
-// La línea de bajada va más atrás: un poco más chica.
-const RETURN_SCALE = 0.9;
-
 /** Una cabina del circuito en pantalla: de dónde cuelga (px), su escala, su vaivén y su opacidad. */
 export interface CabinOnScreen {
     x: number;
@@ -199,7 +196,7 @@ export interface CabinOnScreen {
     scale: number;
     sway: number;
     alpha: number;
-    line: 0 | 1;
+    line: CableLine;
 }
 
 /**
@@ -217,7 +214,7 @@ export function circuitOnScreen(
         return {
             x: s.x + parallax.avila,
             y: s.y + shifts.avila,
-            scale: frame.scale * (line ? RETURN_SCALE : 1),
+            scale: frame.scale * (line ? RETURN_CABLE.scale : 1),
             sway,
             alpha,
             line,

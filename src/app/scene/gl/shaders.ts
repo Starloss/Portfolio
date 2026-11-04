@@ -2,6 +2,7 @@
 // orden que las capas de la Escena SVG, más los efectos que la SVG no tiene: nubes y niebla con
 // volumen, la luz del atardecer y el amanecer, la ciudad nocturna viva y el parallax con el mouse.
 // Todo sale en alfa premultiplicado; las luces suman (alfa 0).
+import { RETURN_CABLE } from '../geometry';
 import { DAY, NIGHT, NIGHT_LIGHTS } from '../palette';
 import { PIVOT } from '../vault';
 
@@ -359,13 +360,10 @@ void main() {
 `;
 
 /**
- * La gente y los vehículos de la Avenida Bolívar, y sus luces: una instancia por cada uno
- * (agents.ts). El quad se apoya en el suelo y crece hacia arriba; las luces se centran.
- */
-/**
  * Las cabinas del circuito del Teleférico: una instancia por cabina (cabins.ts). Cada una cuelga de
- * su punto del cable, como CabinShape en la SVG (viewBox de -6 a 6 en x y de 0 a 17 en y), y se
- * mece girando alrededor de ese punto.
+ * su punto del cable con la forma de CabinShape (viewBox de -6 a 6 en x y de 0 a 17 en y; el quad
+ * suma un margen arriba) y se mece girando alrededor de ese punto. Es la única silueta que no sale
+ * de una textura: el vaivén de cada cabina se gira en el shader (ADR 0003).
  */
 export const CABIN_VERTEX = /* glsl */ `#version 300 es
 in vec2 position;
@@ -414,13 +412,17 @@ void main() {
     float glass = cover(sdRound(p - vec2(0.0, 10.5), vec2(3.5, 1.5), 1.0)) * 0.9;
     vec3 color = mix(mix(BODY_DAY, BODY_NIGHT, uNight), mix(WINDOW_DAY, WINDOW_NIGHT, uNight), glass);
     // La línea de bajada va más atrás: un poco más oscura.
-    color *= mix(1.0, 0.82, vMeta.y);
+    color *= mix(1.0, ${RETURN_CABLE.shade}, vMeta.y);
     vec3 cable = mix(CABLE_DAY, CABLE_NIGHT, uNight);
     float a = max(hanger, body) * vMeta.z;
     outColor = vec4(mix(cable, color, body) * a, a);
 }
 `;
 
+/**
+ * La gente y los vehículos de la Avenida Bolívar, y sus luces: una instancia por cada uno
+ * (agents.ts). El quad se apoya en el suelo y crece hacia arriba; las luces se centran.
+ */
 export const AGENT_VERTEX = /* glsl */ `#version 300 es
 in vec2 position;
 in vec2 aAnchor;

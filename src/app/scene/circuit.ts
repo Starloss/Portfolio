@@ -2,7 +2,7 @@
 // bajan por otro, paralelo. En la línea van rápidas y parejas; en cada estación se sueltan del
 // cable y van despacio, así que se juntan al llegar. Función pura del tiempo: la Escena WebGL la
 // dibuja en movimiento.
-import { CABLE_TOWERS } from './geometry';
+import { CABLE_TOWERS, type CableLine } from './geometry';
 
 export const CIRCUIT = {
     // Impar: así las que suben y las que bajan no se cruzan siempre a la misma altura.
@@ -18,8 +18,7 @@ const STATION_TIME = 0.12;
 export interface CircuitCabin {
     /** Punto del cable, de 0 (estación de abajo) a 1 (Waraira Repano). */
     t: number;
-    /** 0 sube por el cable de adelante; 1 baja por el de atrás. */
-    line: 0 | 1;
+    line: CableLine;
     /** Cuánto se inclina (radianes) al mecerse. */
     sway: number;
     /** 0 dentro de una estación, donde se oculta; 1 en la línea. */
@@ -32,12 +31,19 @@ const SWAY_FROM_STATION = 0.14;
 const SWAY_FROM_TOWER = 0.07;
 const SWAY_DAMPING = 30;
 const SWAY_FREQUENCY = 70;
+// Pasado este tramo del cable (en t), el vaivén ya se apagó.
+const SWAY_REACH = 0.25;
+// Dentro de la estación se apaga en este tramo, y en el último se oculta del todo.
+const FADE_LENGTH = 0.025;
+const HIDDEN_LENGTH = 0.005;
 
 // Cuánto se mece una cabina que pasó hace `d` (en t) por donde la sacudió.
 const swing = (d: number, amplitude: number) =>
-    d >= 0 && d < 0.25 ? amplitude * Math.exp(-d * SWAY_DAMPING) * Math.sin(d * SWAY_FREQUENCY) : 0;
+    d >= 0 && d < SWAY_REACH
+        ? amplitude * Math.exp(-d * SWAY_DAMPING) * Math.sin(d * SWAY_FREQUENCY)
+        : 0;
 
-function swayAt(t: number, line: 0 | 1): number {
+function swayAt(t: number, line: CableLine): number {
     // Lo recorrido desde un punto, en el sentido de la marcha.
     const since = (x: number) => (line === 0 ? t - x : x - t);
     const leftStation = since(line === 0 ? STATION_LENGTH / 2 : 1 - STATION_LENGTH / 2);
@@ -47,7 +53,8 @@ function swayAt(t: number, line: 0 | 1): number {
 }
 
 // Se oculta en el último tramo de la estación.
-const alphaAt = (t: number) => Math.min(1, Math.max(0, (Math.min(t, 1 - t) - 0.005) / 0.025));
+const alphaAt = (t: number) =>
+    Math.min(1, Math.max(0, (Math.min(t, 1 - t) - HIDDEN_LENGTH) / FADE_LENGTH));
 
 // La vuelta en tramos, cada uno con su parte del tiempo y su parte del recorrido (0 a 2: sube de
 // 0 a 1 y baja de 1 a 2): media estación de abajo, subida, estación de arriba, bajada y la otra
@@ -79,9 +86,9 @@ export function circuitAt(time: number): CircuitCabin[] {
     const lap = CIRCUIT.tripSeconds * 2;
     const elapsed = (time % lap) / lap;
     return Array.from({ length: CIRCUIT.cabins }, (_, i) => {
-        const s = along((elapsed + i / CIRCUIT.cabins) % 1);
-        const line = s < 1 ? 0 : 1;
-        const t = line === 0 ? s : 2 - s;
+        const lapPosition = along((elapsed + i / CIRCUIT.cabins) % 1);
+        const line = lapPosition < 1 ? 0 : 1;
+        const t = line === 0 ? lapPosition : 2 - lapPosition;
         return { t, line, sway: swayAt(t, line), alpha: alphaAt(t) };
     });
 }

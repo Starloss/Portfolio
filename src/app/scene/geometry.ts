@@ -106,20 +106,23 @@ export function skyline(night: boolean): number[] {
 /** Las torres del Teleférico, en puntos del cable. */
 export const CABLE_TOWERS = [0.22, 0.45, 0.68];
 
-/**
- * El cable de bajada, paralelo al de subida: un poco más abajo, que en la Escena es más atrás.
- * Las cabinas suben por el de adelante y bajan por este.
- */
-export const RETURN_CABLE = { dx: 0, dy: 10 };
+/** El cable de cada cabina: 0 es el de subida, adelante; 1 el de bajada, atrás. */
+export type CableLine = 0 | 1;
 
-/** Punto de un cable para t de 0 a 1: 0 es el de subida y 1 el de bajada. */
-export function cableLinePoint(t: number, line: 0 | 1): { x: number; y: number } {
+/**
+ * El cable de bajada, paralelo al de subida: `drop` unidades SVG más abajo, que en la Escena es más
+ * atrás. Por eso sus cabinas se ven más chicas (`scale`) y más oscuras (`shade`).
+ */
+export const RETURN_CABLE = { drop: 10, scale: 0.9, shade: 0.82 };
+
+/** Punto de un cable para t de 0 (estación de abajo) a 1 (Waraira Repano). */
+export function cableLinePoint(t: number, line: CableLine): { x: number; y: number } {
     const p = cablePoint(t);
-    return line ? { x: p.x + RETURN_CABLE.dx, y: p.y + RETURN_CABLE.dy } : p;
+    return line ? { x: p.x, y: p.y + RETURN_CABLE.drop } : p;
 }
 
 /** Las cabinas quietas de la Escena SVG: una foto del circuito, en los dos cables. */
-export const STILL_CABINS: ReadonlyArray<{ t: number; line: 0 | 1 }> = [
+export const STILL_CABINS: ReadonlyArray<{ t: number; line: CableLine }> = [
     { t: 0.12, line: 0 },
     { t: 0.36, line: 0 },
     { t: 0.6, line: 0 },

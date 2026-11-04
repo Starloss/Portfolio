@@ -152,9 +152,6 @@ export const CabinShape: React.FC<{ c: ScenePalette }> = ({ c }) => (
     </>
 );
 
-// La línea de bajada va más atrás: un poco más chica.
-const RETURN_SCALE = 0.9;
-
 /**
  * El Teleférico: dos cables paralelos, uno de subida y otro de bajada, con sus torres y estaciones.
  * Con `cabins`, las cabinas quietas en los dos cables; la Escena WebGL las dibuja en movimiento.
@@ -179,10 +176,9 @@ const CableCar: React.FC<Omit<PartProps, 'animate'> & { cabins: boolean }> = ({
             <path
                 data-part="return-cable"
                 d={CABLE_PATH}
-                transform={`translate(${RETURN_CABLE.dx},${RETURN_CABLE.dy})`}
+                transform={`translate(0,${RETURN_CABLE.drop})`}
                 style={{ stroke: c.cable, fill: 'none' }}
-                strokeWidth={1.2}
-                opacity={0.8}
+                strokeWidth={1.1}
             />
             {/* Torres afinadas */}
             {CABLE_TOWERS.map((t) => {
@@ -198,12 +194,15 @@ const CableCar: React.FC<Omit<PartProps, 'animate'> & { cabins: boolean }> = ({
             {cabins &&
                 STILL_CABINS.map(({ t, line }) => {
                     const { x, y } = cableLinePoint(t, line);
-                    const scale = line ? ` scale(${RETURN_SCALE})` : '';
+                    const scale = line ? ` scale(${RETURN_CABLE.scale})` : '';
                     return (
                         <g
                             key={`${line}-${t}`}
                             data-cabin={line ? 'down' : 'up'}
                             transform={`translate(${x},${y})${scale}`}
+                            style={
+                                line ? { filter: `brightness(${RETURN_CABLE.shade})` } : undefined
+                            }
                         >
                             <CabinShape c={c} />
                         </g>
