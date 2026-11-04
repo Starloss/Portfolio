@@ -18,18 +18,18 @@ import {
     VIEW,
 } from './geometry';
 import { NIGHT_LIGHTS, type ScenePalette } from './palette';
-import type { AfluenciaParams } from './rhythm';
+import type { AfluenciaParams, NivelTrafico } from './rhythm';
 import {
     AGENT_SIZE,
-    agentX,
     crowdFormation,
     isBackSidewalk,
+    laneX,
     LIGHT_HEIGHT,
     POST_EVERY,
     type StillWalker,
     STREET_ABOVE,
-    streetAgents,
-    type AgentKind,
+    trafficFormation,
+    type VehicleKind,
 } from './street';
 
 interface PartProps {
@@ -430,7 +430,7 @@ const Stroke: React.FC<{
  * `h` en px. Son las mismas proporciones que dibuja la Escena WebGL.
  */
 export const StreetAgentShape: React.FC<{
-    kind: AgentKind;
+    kind: VehicleKind;
     w: number;
     h: number;
     c: ScenePalette;
@@ -548,11 +548,59 @@ export const StreetAgentShape: React.FC<{
     return null;
 };
 
+const VEHICLE_KINDS: readonly VehicleKind[] = ['car', 'bus', 'moto'];
+
+/**
+ * Los vehículos de la Escena SVG, quietos: trafficFormation en street.ts. En una tranca son casi
+ * setenta, y la SVG cuenta sus elementos: cada tipo se dibuja una vez y cada vehículo es un `use`.
+ */
+const StillTraffic: React.FC<{
+    c: ScenePalette;
+    nivel: NivelTrafico;
+    width: number;
+    H: number;
+    top: number;
+    night: boolean;
+}> = ({ c, nivel, width, H, top, night }) => {
+    const vehicles = trafficFormation(nivel, width / H).filter(
+        (v) => v.u * H > -H && v.u * H < width + H,
+    );
+    return (
+        <g data-vehicles={vehicles.length}>
+            <defs>
+                {VEHICLE_KINDS.map((kind) => (
+                    <g key={kind} id={`scene-${kind}`}>
+                        <StreetAgentShape
+                            kind={kind}
+                            w={AGENT_SIZE[kind][0] * H}
+                            h={AGENT_SIZE[kind][1] * H}
+                            c={c}
+                            night={night}
+                        />
+                    </g>
+                ))}
+            </defs>
+            {vehicles.map((v, i) => {
+                const x = laneX(v.dir, v.u, width, H);
+                return (
+                    <use
+                        // La formación es siempre la misma para el mismo nivel: el índice es estable.
+                        // eslint-disable-next-line @eslint-react/no-array-index-key
+                        key={i}
+                        href={`#scene-${v.kind}`}
+                        transform={`translate(${x},${top + v.s * H}) scale(${v.dir * v.scale},${v.scale})`}
+                    />
+                );
+            })}
+        </g>
+    );
+};
+
 /**
  * La Avenida Bolívar en una franja de `width` px de ancho: la calzada mide `height`, y los postes y
- * los árboles suben hasta 0,8 de eso por encima. Con `crowd`, la gente que corresponde a esa
- * Afluencia y los vehículos, quietos; la Escena WebGL los dibuja aparte, en movimiento. Con
- * `bleed`, la calle sigue esos px más allá de cada borde.
+ * los árboles suben hasta 0,8 de eso por encima. Con `crowd` y `trafico`, la gente y los vehículos
+ * que corresponden, quietos; la Escena WebGL los dibuja aparte, en movimiento. Con `bleed`, la
+ * calle sigue esos px más allá de cada borde.
  */
 export const Avenue: React.FC<{
     c: ScenePalette;
@@ -560,8 +608,9 @@ export const Avenue: React.FC<{
     height: number;
     night: boolean;
     crowd: AfluenciaParams | null;
+    trafico: NivelTrafico | null;
     bleed?: number;
-}> = ({ c, width, height: H, night, crowd, bleed = 0 }) => {
+}> = ({ c, width, height: H, night, crowd, trafico, bleed = 0 }) => {
     const top = STREET_ABOVE * H;
     const band = (from: number, to: number, fill: string) => (
         <rect
@@ -659,29 +708,9 @@ export const Avenue: React.FC<{
             {crowd && (
                 <StillCrowd c={c} crowd={crowd} width={width} H={H} top={top} night={night} back />
             )}
-            {crowd &&
-                streetAgents().map((a, i) => {
-                    const [fw, fh] = AGENT_SIZE[a.kind];
-                    const x = agentX(a, 0, width, H);
-                    // Solo los que caen en pantalla: en un teléfono son menos.
-                    if (x < -fw * H || x > width + fw * H) return null;
-                    return (
-                        <g
-                            // La formación es siempre la misma: el índice es una key estable.
-                            // eslint-disable-next-line @eslint-react/no-array-index-key
-                            key={i}
-                            transform={`translate(${x},${top + a.s * H}) scale(${a.dir},1)`}
-                        >
-                            <StreetAgentShape
-                                kind={a.kind}
-                                w={fw * H * a.scale}
-                                h={fh * H * a.scale}
-                                c={c}
-                                night={night}
-                            />
-                        </g>
-                    );
-                })}
+            {trafico && (
+                <StillTraffic c={c} nivel={trafico} width={width} H={H} top={top} night={night} />
+            )}
             {crowd && (
                 <StillCrowd
                     c={c}

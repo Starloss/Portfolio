@@ -2,7 +2,7 @@
 // cámara. Funciones puras que comparten la Escena SVG (quieta) y la WebGL (animada). Todo en px de
 // pantalla, relativo a la franja de la calle: alto H, y `s` de 0 (arriba) a 1 (abajo).
 
-import type { AfluenciaParams } from './rhythm';
+import type { AfluenciaParams, NivelTrafico } from './rhythm';
 
 const smoothstep = (t: number) => t * t * (3 - 2 * t);
 const clamp = (v: number, min: number, max: number) => Math.min(max, Math.max(min, v));
@@ -43,19 +43,8 @@ export const LIFT_SHARE = { farRidge: 0.75, avila: 0.75, city: 1, towers: 1 } as
 
 export type AgentKind = 'car' | 'bus' | 'moto' | 'walker';
 
-export interface StreetAgent {
-    kind: AgentKind;
-    /** Línea de apoyo, en fracciones de H. */
-    s: number;
-    dir: 1 | -1;
-    /** px/s con la calle de 200 px de alto; escala con H. */
-    speed: number;
-    scale: number;
-    /** Posición inicial, en fracciones del recorrido (el ancho más un margen a cada lado). */
-    x: number;
-    /** Fase propia: el paso de los peatones, el zigzag de los motorizados. */
-    phase: number;
-}
+/** Un vehículo de la calle. */
+export type VehicleKind = Exclude<AgentKind, 'walker'>;
 
 /** Ancho y alto de cada tipo, en fracciones de H, antes de la escala de su carril. */
 export const AGENT_SIZE: Record<AgentKind, [number, number]> = {
@@ -66,7 +55,7 @@ export const AGENT_SIZE: Record<AgentKind, [number, number]> = {
 };
 
 /** A qué alto (fracción del vehículo) van sus faros y luces traseras. */
-export const LIGHT_HEIGHT: Record<Exclude<AgentKind, 'walker'>, number> = {
+export const LIGHT_HEIGHT: Record<VehicleKind, number> = {
     car: 0.36,
     bus: 0.28,
     moto: 0.5,
@@ -74,6 +63,55 @@ export const LIGHT_HEIGHT: Record<Exclude<AgentKind, 'walker'>, number> = {
 
 // Carriles: los de atrás van hacia la izquierda y los de adelante hacia la derecha.
 export const STREET_LANES = { far: [0.47, 0.6], near: [0.76, 0.89] };
+
+/** Los carriles, de atrás hacia adelante: los de atrás van a la izquierda y un poco más chicos. */
+export const TRAFFIC_LANES = [
+    ...STREET_LANES.far.map((s) => ({ s, dir: -1 as const, scale: 0.88 })),
+    ...STREET_LANES.near.map((s) => ({ s, dir: 1 as const, scale: 1 })),
+];
+
+/** En la tranca, las motos van entre los dos carriles de su sentido (sobre la raya). */
+export const FILTER_LINES = { far: 0.535, near: 0.82 };
+export const filterLine = (dir: 1 | -1) => (dir < 0 ? FILTER_LINES.far : FILTER_LINES.near);
+
+/**
+ * Centro en px de un vehículo que va `u` H en su sentido desde que entró: los carriles de atrás van
+ * hacia la izquierda, así que entran por la derecha.
+ */
+export const laneX = (dir: 1 | -1, u: number, width: number, H: number) =>
+    dir > 0 ? u * H : width - u * H;
+
+/** Vehículos por H de carril en cada nivel: de alguno suelto a defensa con defensa. */
+export const VEHICLES_PER_SPAN: Record<NivelTrafico, number> = {
+    vacia: 0.09,
+    fluida: 0.24,
+    cargada: 0.45,
+    tranca: 1.45,
+};
+
+// La mezcla de la calle quieta, como la de la WebGL: casi un quinto camioneticas y un cuarto motos.
+const VEHICLE_MIX: readonly VehicleKind[] = [
+    'car',
+    'moto',
+    'car',
+    'bus',
+    'car',
+    'car',
+    'moto',
+    'car',
+    'bus',
+    'car',
+    'moto',
+];
+
+/** Un vehículo quieto de la Escena SVG: centro en H desde el borde izquierdo. */
+export interface StillVehicle {
+    kind: VehicleKind;
+    s: number;
+    dir: 1 | -1;
+    scale: number;
+    u: number;
+}
 /**
  * Las líneas de cada acera, de atrás hacia adelante: la de atrás tiene tres y la de adelante dos.
  * `perSpan` es cuánta gente camina por cada H de ancho con la acera llena.
@@ -184,37 +222,33 @@ export function crowdFormation(
     return out;
 }
 
-/** La formación de la calle, siempre la misma: un generador con semilla. */
-export function streetAgents(): StreetAgent[] {
-    let seed = 11;
-    const rand = () => {
-        seed = (seed * 16807) % 2147483647;
-        return seed / 2147483647;
-    };
-    const agents: StreetAgent[] = [];
-    // Cada carril va a una sola velocidad y con separación pareja, para que nadie se encime.
-    const lane = (s: number, dir: 1 | -1, scale: number, count: number) => {
-        const speed = 85 + rand() * 45;
-        for (let i = 0; i < count; i++) {
-            const r = rand();
-            const kind: AgentKind = r < 0.2 ? 'bus' : r < 0.45 ? 'moto' : 'car';
-            const x = (i + rand() * 0.35) / count;
-            agents.push({ kind, s, dir, speed, scale, x, phase: rand() * 6.28 });
-        }
-    };
-    STREET_LANES.far.forEach((s) => lane(s, -1, 0.88, 3));
-    STREET_LANES.near.forEach((s) => lane(s, 1, 1, 3));
-    // De atrás hacia adelante: así se dibujan en orden.
-    return agents.sort((a, b) => a.s - b.s);
-}
-
 /**
- * Centro (x en px) de alguien de la calle a los `time` s: avanza en su sentido y, al salir por un
- * borde, vuelve a entrar por el otro. Con `time` 0 es la calle quieta de la Escena SVG.
+ * Los vehículos de la Escena SVG, quietos: tantos como la Escena WebGL lleva en ese nivel,
+ * repartidos con una fórmula en una ventana de `span` H de ancho. En la tranca, las motos van entre
+ * los carriles.
  */
-export function agentX(agent: StreetAgent, time: number, width: number, H: number): number {
-    const span = width + 2 * H;
-    const travelled = (agent.dir * agent.speed * (H / 200) * time) / span;
-    const x = agent.x + travelled;
-    return (x - Math.floor(x)) * span - H;
+export function trafficFormation(nivel: NivelTrafico, span: number): StillVehicle[] {
+    const out: StillVehicle[] = [];
+    const tranca = nivel === 'tranca';
+    TRAFFIC_LANES.forEach(({ s, dir, scale }, lane) => {
+        const count = Math.round(VEHICLES_PER_SPAN[nivel] * (span + 2));
+        for (let k = 0; k < count; k++) {
+            const i = 500 + lane * 97 + k;
+            const kind = VEHICLE_MIX[(k + lane * 3) % VEHICLE_MIX.length];
+            const u = ((k + scatter(i + 0.5) * (tranca ? 0.1 : 0.6)) / count) * (span + 2) - 1;
+            if (kind === 'moto' && tranca) {
+                out.push({
+                    kind,
+                    s: filterLine(dir),
+                    dir,
+                    scale,
+                    u,
+                });
+            } else {
+                out.push({ kind, s, dir, scale, u });
+            }
+        }
+    });
+    // De atrás hacia adelante: así se dibujan en orden.
+    return out.sort((a, b) => a.s - b.s);
 }

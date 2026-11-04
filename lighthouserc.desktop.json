@@ -4,7 +4,10 @@
       "staticDistDir": "./dist",
       "isSinglePageApplication": true,
       "numberOfRuns": 3,
-      "url": ["http://localhost/?escena=webgl&hora=22:00&clima=tormenta"],
+      "url": [
+        "http://localhost/?escena=webgl&hora=22:00&clima=tormenta&trafico=tranca",
+        "http://localhost/?escena=webgl&hora=17:00&clima=despejado&trafico=tranca&guacamayas=ya"
+      ],
       "settings": {
         "preset": "desktop",
         "chromeFlags": "--use-angle=swiftshader --enable-unsafe-swiftshader"

@@ -5,7 +5,7 @@ import type { Estado } from '@lib/clima';
 
 import type { SceneFrame, Viewport } from '../camera';
 import type { FlightContext } from '../flights';
-import type { AfluenciaParams } from '../rhythm';
+import type { AfluenciaParams, NivelTrafico } from '../rhythm';
 import type { Sky } from '../sky';
 import type { SkyLayout } from '../vault';
 
@@ -34,6 +34,7 @@ export type ToWorker =
     | { type: 'scroll'; progress: number }
     | { type: 'flights'; context: FlightContext }
     | { type: 'crowd'; params: AfluenciaParams }
+    | { type: 'traffic'; nivel: NivelTrafico }
     | { type: 'pointer'; x: number }
     | { type: 'run'; running: boolean }
     | { type: 'textures'; id: number; images: Record<string, ImageBitmap> | null }

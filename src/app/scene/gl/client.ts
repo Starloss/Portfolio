@@ -4,7 +4,7 @@
 import type { Estado } from '@lib/clima';
 
 import type { FlightContext } from '../flights';
-import type { AfluenciaParams } from '../rhythm';
+import type { AfluenciaParams, NivelTrafico } from '../rhythm';
 import type { Sky } from '../sky';
 
 import type { FallbackReason, FromWorker, Layout, ToWorker } from './protocol';
@@ -103,6 +103,10 @@ export class EscenaClient {
 
     setClima(estado: Estado | null) {
         this.post({ type: 'clima', estado });
+    }
+
+    setTraffic(nivel: NivelTrafico) {
+        this.post({ type: 'traffic', nivel });
     }
 
     setCrowd(params: AfluenciaParams) {

@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { afluenciaAt, dayKind, readForcedDay } from '@app/scene/rhythm';
+import {
+    afluenciaAt,
+    dayKind,
+    readForcedDay,
+    readForcedTrafico,
+    traficoAt,
+} from '@app/scene/rhythm';
 
 // El ritmo de Caracas que mueve la calle: qué tipo de día es y cuánta gente camina a cada hora.
 
@@ -53,5 +59,59 @@ describe('afluenciaAt', () => {
         expect(afluenciaAt(12, 'habil', 'nublado')).toBeCloseTo(dry * 0.9);
         expect(afluenciaAt(12, 'habil', 'lluvia')).toBeCloseTo(dry * 0.3);
         expect(afluenciaAt(12, 'habil', 'tormenta')).toBeCloseTo(dry * 0.1);
+    });
+});
+
+describe('traficoAt', () => {
+    it('en un día hábil hay tranca de 7 a 9 AM y de 5 a 7 PM, y la calle vacía de madrugada', () => {
+        expect(traficoAt(7.5, 'habil', null)).toBe('tranca');
+        expect(traficoAt(17.5, 'habil', null)).toBe('tranca');
+        expect(traficoAt(11, 'habil', null)).toBe('cargada');
+        expect(traficoAt(19.5, 'habil', null)).toBe('fluida');
+        expect(traficoAt(3, 'habil', null)).toBe('vacia');
+    });
+
+    it('el fin de semana no hay trancas, y los feriados son como un domingo', () => {
+        for (let h = 0; h < 24; h += 0.5) {
+            expect(traficoAt(h, 'sabado', null)).not.toBe('tranca');
+            expect(traficoAt(h, 'feriado', null)).toBe(traficoAt(h, 'domingo', null));
+        }
+    });
+
+    it('con lluvia sube un nivel, con tormenta dos, y nunca pasa de tranca', () => {
+        expect(traficoAt(3, 'habil', 'lluvia')).toBe('fluida');
+        expect(traficoAt(3, 'habil', 'tormenta')).toBe('cargada');
+        expect(traficoAt(11, 'habil', 'tormenta')).toBe('tranca');
+        expect(traficoAt(3, 'habil', 'nublado')).toBe('vacia');
+    });
+
+    it('?trafico= fija el nivel', () => {
+        expect(readForcedTrafico('?trafico=tranca')).toBe('tranca');
+        expect(readForcedTrafico('?trafico=mucho')).toBeNull();
+    });
+});
+
+describe('traficoAt, en los bordes', () => {
+    it('cada nivel empieza y termina en la hora en punto que se decidió', () => {
+        const at = (h: number) => traficoAt(h, 'habil', null);
+        expect([at(6.99), at(7), at(8.99), at(9)]).toEqual([
+            'cargada',
+            'tranca',
+            'tranca',
+            'cargada',
+        ]);
+        expect([at(16.99), at(17), at(18.99), at(19)]).toEqual([
+            'cargada',
+            'tranca',
+            'tranca',
+            'fluida',
+        ]);
+        expect([at(20.99), at(21)]).toEqual(['fluida', 'vacia']);
+    });
+
+    it('dentro de una hora el nivel no salta, aunque la curva quede justo en un corte', () => {
+        const levels = new Set<string>();
+        for (let m = 0; m < 60; m++) levels.add(traficoAt(11 + m / 60, 'domingo', null));
+        expect(levels.size).toBe(1);
     });
 });

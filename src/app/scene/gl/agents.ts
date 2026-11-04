@@ -1,15 +1,17 @@
-// La gente y los vehículos de la Avenida Bolívar en la Escena WebGL: los vehículos, la misma
-// formación que la Escena SVG (street.ts) en movimiento; la gente, la que simula crowd.ts. Se dibujan
-// en un solo pase instanciado; de Noche suman faros y luces traseras (la luz de los postes ya viene
-// en la textura de la calle).
+// La gente y los vehículos de la Avenida Bolívar en la Escena WebGL: los vehículos, los que simula
+// traffic.ts; la gente, la que simula crowd.ts. Se dibujan en un solo pase instanciado. Un vehículo
+// que frena prende sus luces traseras también de Día; de Noche suman faros y su haz (la luz de los
+// postes ya viene en la textura de la calle).
 import type { Walker } from '../crowd';
-import { AGENT_SIZE, agentX, isBackSidewalk, LIGHT_HEIGHT, type StreetAgent } from '../street';
+import { AGENT_SIZE, isBackSidewalk, LIGHT_HEIGHT } from '../street';
+import { vehicleX, type Vehicle } from '../traffic';
 
 /** Qué dibuja cada instancia (aMeta.x en el shader). */
 export const KIND = { car: 0, bus: 1, moto: 2, walker: 3, beam: 4, dot: 5 } as const;
 
-// Una tranca de Noche con la acera llena, con faros y luces, llega a unas 330 (spec #99).
-export const MAX_INSTANCES = 384;
+// Una tranca de Noche, con faros y luces, son unas 300 instancias a 1280 px de ancho y unas 400 a
+// 1920 px; la acera llena suma más de 100. Solo se escribe lo que cae en pantalla.
+export const MAX_INSTANCES = 640;
 
 // El paso de cada peatón, como lo lee el shader: aMeta.w = paraguas + 2 × paso.
 const GAIT_CODE = { walk: 0, stand: 1, run: 2 } as const;
@@ -47,7 +49,7 @@ export function createInstances(): Instances {
  */
 export function writeInstances(
     into: Instances,
-    agents: readonly StreetAgent[],
+    vehicles: readonly Vehicle[],
     walkers: readonly Walker[],
     {
         time,
@@ -112,19 +114,24 @@ export function writeInstances(
     // De atrás hacia adelante: la acera de atrás, los carriles y la acera de adelante.
     const front = walkers.filter((w) => !isBackSidewalk(w.s));
     walkers.filter((w) => isBackSidewalk(w.s)).forEach(walk);
-    for (const a of agents) {
+    for (const a of vehicles) {
         const [fw, fh] = AGENT_SIZE[a.kind];
         const w = fw * H * a.scale;
         const h = fh * H * a.scale;
-        const x = agentX(a, time, width, H);
+        const x = vehicleX(a, width, H);
+        // Solo lo que cae en pantalla (más su haz de luz): la cola sigue más allá de los bordes.
+        if (x < -w - 1.1 * H || x > width + w + 1.1 * H) continue;
         // Los motorizados zigzaguean un poco entre carriles.
         const wobble = a.kind === 'moto' ? Math.sin(time * 0.9 + a.phase) * 0.035 * H : 0;
         const y = top + a.s * H + wobble;
         push(KIND[a.kind], x, y, w, h, a.dir, a.phase, 0);
-        if (night > 0.01 && a.kind !== 'walker') {
-            const front = x + (a.dir * w) / 2;
-            const back = x - (a.dir * w) / 2;
-            const lampY = y - h * LIGHT_HEIGHT[a.kind];
+        const front = x + (a.dir * w) / 2;
+        const back = x - (a.dir * w) / 2;
+        const lampY = y - h * LIGHT_HEIGHT[a.kind];
+        // Al frenar, la luz trasera se agranda y se prende entera, también de Día.
+        const tail = a.braking ? 0.12 : 0.07;
+        const tailOn = a.braking ? 1 : night;
+        if (night > 0.01) {
             const beam = 1.1 * H * a.scale;
             push(
                 KIND.beam,
@@ -138,8 +145,9 @@ export function writeInstances(
                 BEAM,
             );
             push(KIND.dot, front, lampY, 0.08 * H, 0.08 * H, a.dir, 0, night, HEADLIGHT);
-            push(KIND.dot, back, lampY, 0.07 * H, 0.07 * H, a.dir, 0, night, TAILLIGHT);
         }
+        if (tailOn > 0.01)
+            push(KIND.dot, back, lampY, tail * H, tail * H, a.dir, 0, tailOn, TAILLIGHT);
     }
     front.forEach(walk);
     into.size.fill(0, n * 2);

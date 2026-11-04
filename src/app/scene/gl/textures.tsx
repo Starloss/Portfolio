@@ -107,6 +107,7 @@ export async function themeLayers(
                         height={H}
                         night={night}
                         crowd={null}
+                        trafico={null}
                         bleed={STREET_BLEED}
                     />
                 </svg>,

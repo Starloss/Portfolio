@@ -8,6 +8,7 @@ import { progressForHeight, sceneFrame } from '../camera';
 import {
     useCaracasSky,
     useAfluencia,
+    useTrafico,
     useDocumentHidden,
     useElementViewport,
     useSceneCovered,
@@ -78,6 +79,12 @@ export const SceneGL: React.FC<{
         engineRef.current?.setClima(estado);
         // `watch` recrea el motor: el nuevo también necesita saber el Clima.
     }, [estado, watch]);
+
+    const trafico = useTrafico();
+    useEffect(() => {
+        engineRef.current?.setTraffic(trafico);
+        // `watch` recrea el motor: el nuevo también necesita su Tráfico.
+    }, [trafico, watch]);
 
     const crowd = useAfluencia();
     useEffect(() => {

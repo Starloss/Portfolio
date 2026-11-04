@@ -10,7 +10,16 @@ import {
 import { caracasNow, useCaracasClock, useClima } from '@lib/clima';
 
 import type { Viewport } from './camera';
-import { afluenciaAt, dayKind, lluviaDe, readForcedDay, type AfluenciaParams } from './rhythm';
+import {
+    afluenciaAt,
+    dayKind,
+    lluviaDe,
+    readForcedDay,
+    readForcedTrafico,
+    traficoAt,
+    type AfluenciaParams,
+    type NivelTrafico,
+} from './rhythm';
 import { sky, type Sky } from './sky';
 
 /** Tamaño de un elemento; hasta poder medirlo (o si mide 0, como en jsdom), el de la ventana. */
@@ -98,4 +107,18 @@ export function useAfluencia(): AfluenciaParams {
     const lluvia = lluviaDe(estado);
     // Un objeto nuevo solo si algo cambió: así los efectos que lo usan no se repiten en cada render.
     return useMemo(() => ({ afluencia, lluvia }), [afluencia, lluvia]);
+}
+
+/**
+ * El nivel de Tráfico de la Avenida ahora: por la hora, el tipo de día y el Clima de Caracas, o el
+ * que fije `?trafico=`. Cambia con el minuto y con el Clima.
+ */
+export function useTrafico(): NivelTrafico {
+    const { hour, minute } = useCaracasClock();
+    const estado = useClima()?.estado ?? null;
+    const search = window.location.search;
+    return (
+        readForcedTrafico(search) ??
+        traficoAt(hour + minute / 60, dayKind(caracasNow(), readForcedDay(search)), estado)
+    );
 }

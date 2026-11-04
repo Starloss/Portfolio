@@ -19,6 +19,7 @@ import {
 } from './camera';
 import {
     useAfluencia,
+    useTrafico,
     useDocumentHidden,
     useElementViewport,
     useSceneCovered,
@@ -165,6 +166,7 @@ export const Scene: React.FC<{ height?: number }> = ({ height }) => {
     const reduced = usePrefersReducedMotion();
     const estado = useClima()?.estado ?? null;
     const crowd = useAfluencia();
+    const trafico = useTrafico();
     const raining = estado === 'lluvia' || estado === 'tormenta';
     // El tamaño sale de la propia Escena (100vh): no cambia cuando el teléfono muestra u oculta la
     // barra del navegador, así el encuadre no salta mientras se hace scroll.
@@ -275,6 +277,7 @@ export const Scene: React.FC<{ height?: number }> = ({ height }) => {
                             height={H}
                             night={night}
                             crowd={crowd}
+                            trafico={trafico}
                         />
                     </svg>
                 </m.div>

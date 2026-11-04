@@ -8,8 +8,9 @@ import type { Estado } from '@lib/clima';
 import { sky as skyAt, type Sky } from '../sky';
 import { Crowd } from '../crowd';
 import { Flights, type FlightContext } from '../flights';
-import type { AfluenciaParams } from '../rhythm';
-import { POST_EVERY, STREET_ABOVE, streetAgents } from '../street';
+import type { AfluenciaParams, NivelTrafico } from '../rhythm';
+import { POST_EVERY, STREET_ABOVE } from '../street';
+import { Traffic } from '../traffic';
 import { arcPoint, BOVEDA_SECONDS, BovedaClock, moonRotation, restOf } from '../vault';
 import { ClimaClock } from '../climaFrame';
 
@@ -156,8 +157,12 @@ export class EscenaGL {
     private raf = 0;
     private running = false;
     private disposed = false;
-    // La Avenida Bolívar: la misma formación que la SVG, en movimiento.
-    private agents = streetAgents();
+    // El Tráfico de la Avenida Bolívar; como la gente, se ubica en el primer cuadro con medidas.
+    private traffic = new Traffic();
+    private nivelTrafico: NivelTrafico | null = null;
+    private trafficChanged = false;
+    /** El ancho de la calle (en altos de calzada) con el que se pobló por última vez. */
+    private agentsSpan = 0;
     private instances = createInstances();
     private agentGeometry!: Geometry;
     // Las cabinas del circuito del Teleférico.
@@ -419,7 +424,7 @@ export class EscenaGL {
         const pending = this.pending[theme];
         if (pending?.generation === generation) return pending.promise;
         // Sin pasar del tamaño máximo de textura de la GPU (pantallas 4K con dpr 2).
-        const longest = Math.max(layout.viewport.width, layout.viewport.height);
+        const longest = Math.max(layout.viewport.width + 2 * STREET_BLEED, layout.viewport.height);
         const dpr = Math.min(this.dpr, this.maxTexture / longest);
         const promise = this.options
             .requestTextures({
@@ -558,8 +563,20 @@ export class EscenaGL {
     }
 
     setCrowd(params: AfluenciaParams) {
+        if (
+            this.crowdParams?.afluencia === params.afluencia &&
+            this.crowdParams.lluvia === params.lluvia
+        )
+            return;
         this.crowdParams = params;
         this.crowdChanged = true;
+        this.dirty = true;
+    }
+
+    setTraffic(nivel: NivelTrafico) {
+        if (this.nivelTrafico === nivel) return;
+        this.nivelTrafico = nivel;
+        this.trafficChanged = true;
         this.dirty = true;
     }
 
@@ -597,6 +614,28 @@ export class EscenaGL {
         this.disposed = true;
         this.canvas.removeEventListener('webglcontextlost', this.onContextLost);
         this.gl.getExtension('WEBGL_lose_context')?.loseContext();
+    }
+
+    private updateAgents(dt: number, span: number, treeEvery: number) {
+        // Quieta, una calle que cambió de ancho tampoco se llena por los bordes: se vuelve a poblar.
+        if (this.onDemand && span !== this.agentsSpan) {
+            this.crowdChanged = true;
+            this.trafficChanged = true;
+        }
+        this.agentsSpan = span;
+        if (this.crowdParams && this.crowdChanged) {
+            this.crowdChanged = false;
+            // La simulación quieta no incorpora gente nueva por los bordes: se vuelve a poblar.
+            if (this.onDemand) this.crowd = new Crowd();
+            this.crowd.set(this.crowdParams, span, treeEvery);
+        }
+        if (this.crowdParams && !this.onDemand) this.crowd.step(dt, span, treeEvery);
+        if (this.nivelTrafico && this.trafficChanged) {
+            this.trafficChanged = false;
+            if (this.onDemand) this.traffic = new Traffic();
+            this.traffic.set(this.nivelTrafico, span);
+        }
+        if (this.nivelTrafico && !this.onDemand) this.traffic.step(dt, span);
     }
 
     private draw(now: number) {
@@ -728,13 +767,9 @@ export class EscenaGL {
         const streetVisible = f.street.layerTop < viewport.height;
         const span = viewport.width / f.street.height;
         const treeEvery = POST_EVERY / f.street.height;
-        if (this.crowdParams && this.crowdChanged) {
-            this.crowdChanged = false;
-            this.crowd.set(this.crowdParams, span, treeEvery);
-        }
-        if (this.crowdParams && !this.onDemand) this.crowd.step(dt, span, treeEvery);
+        this.updateAgents(dt, span, treeEvery);
         if (streetVisible) {
-            writeInstances(this.instances, this.agents, this.crowd.walkers, {
+            writeInstances(this.instances, this.traffic.vehicles, this.crowd.walkers, {
                 time,
                 top: f.street.top,
                 H: f.street.height,
