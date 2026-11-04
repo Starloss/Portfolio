@@ -1,6 +1,6 @@
-import { expect, OPEN_METEO as API, test, type Page } from './test';
-
 import { contrastRatio } from '../src/lib/contrast';
+
+import { expect, OPEN_METEO as API, test, type Page } from './test';
 
 // Open-Meteo con estado y temperatura fijos, para no depender de la red.
 const stubApi = (page: Page, code = 61, temperature = 22.4) =>

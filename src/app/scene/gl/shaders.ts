@@ -422,16 +422,16 @@ void main() {
     float t = max(along(p, pivot, mid) * 0.5, 0.5 + along(p, mid, tip) * 0.5 * step(0.0001, dot(p - mid, tip - mid)));
     color = mix(color, vec4(mix(wingIn, wingTip, t), 1.0), cover(wing));
 
-    float a = color.a * (1.0 - uNight);
-    outColor = vec4(color.rgb * a, a);
+    // color ya sale premultiplicado: cada forma se mezcla sobre vec4(0.0).
+    outColor = color * (1.0 - uNight);
 }
 `;
 
 /**
  * Las cabinas del circuito del Teleférico: una instancia por cabina (cabins.ts). Cada una cuelga de
  * su punto del cable con la forma de CabinShape (viewBox de -6 a 6 en x y de 0 a 17 en y; el quad
- * suma un margen arriba) y se mece girando alrededor de ese punto. Es la única silueta que no sale
- * de una textura: el vaivén de cada cabina se gira en el shader (ADR 0003).
+ * suma un margen arriba) y se mece girando alrededor de ese punto. Como las guacamayas, no sale de
+ * una textura: el vaivén de cada cabina se gira en el shader (ADR 0003).
  */
 export const CABIN_VERTEX = /* glsl */ `#version 300 es
 in vec2 position;
