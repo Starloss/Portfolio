@@ -1,8 +1,5 @@
 import { afterEach, describe, it, expect } from 'vitest';
 import {
-    CABIN_HEIGHT,
-    CABIN_WIDTH,
-    cabinPoint,
     cameraHeightAt,
     journeyAt,
     cloudsAt,
@@ -56,17 +53,6 @@ describe('escenaFrame', () => {
         }
         // En las muestras coincide con la curva exacta.
         expect(at(1).shifts.city).toBeCloseTo(layerShift('city', cameraHeightAt(1), 900, 30));
-    });
-
-    it('la cabina del visitante cuelga del cable donde la pone la SVG, y baja con el Ávila', () => {
-        const progress = 0.4;
-        const f = at(progress);
-        const svg = (valueAt: (h: number) => number) => journeyAt(progress, valueAt);
-        const point = (h: number) => toScreen(frame, cabinPoint(h).x, cabinPoint(h).y);
-        expect(f.visitor.x).toBeCloseTo(svg((h) => point(h).x) - (CABIN_WIDTH / 2) * frame.scale);
-        expect(f.visitor.y).toBeCloseTo(svg((h) => point(h).y + layerShift('avila', h, 900, 30)));
-        expect(f.visitor.width).toBeCloseTo(CABIN_WIDTH * frame.scale);
-        expect(f.visitor.height).toBeCloseTo(CABIN_HEIGHT * frame.scale);
     });
 
     it('las cabinas del circuito cuelgan de su cable y se mueven con el Ávila', () => {
@@ -159,8 +145,6 @@ describe('efectos', () => {
         expect(Math.abs(f.parallax.farRidge)).toBeLessThan(Math.abs(f.parallax.avila));
         expect(Math.abs(f.parallax.avila)).toBeLessThan(Math.abs(f.parallax.city));
         expect(Math.abs(f.parallax.city)).toBeLessThanOrEqual(PARALLAX_PX * 1.2);
-        // Las cabinas cuelgan del Ávila: se mueven con él.
-        expect(f.visitor.x - at(0.5).visitor.x).toBeCloseTo(f.parallax.avila);
         expect(at(0.5).parallax).toEqual({
             farRidge: 0,
             avila: 0,

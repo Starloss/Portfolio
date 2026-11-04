@@ -1,6 +1,6 @@
 // Viaje de cámara: la coreografía de la Escena como funciones puras.
 // La altura de la cámara va de 0 (ciudad) a 1 (sobre las nubes) y solo hay movimiento vertical.
-import { cablePoint, VIEW } from './geometry';
+import { VIEW } from './geometry';
 import { LIFT_SHARE, streetBand } from './street';
 
 /** Altura de la cámara en el Hero: arriba, con las cumbres del Ávila y cielo libre para el texto. */
@@ -180,17 +180,9 @@ export function mountainSink(
     return Math.max(0, needed - layerOffset('farRidge', HERO_HEIGHT, viewport.height));
 }
 
-/** Punto del cable (SVG) donde va la cabina del visitante: sube con la cámara. */
-export function cabinPoint(height: number): { x: number; y: number } {
-    return cablePoint(clamp(height, 0, 1));
-}
-
 // Cuánto se oscurece el cielo arriba de todo con la cámara sobre las nubes; poco, para que el
 // texto del Hero siga contrastando.
 export const SKY_DARKENING = 0.3;
-/** Cabina del visitante, en unidades SVG (viewBox -6 0 12 17). */
-export const CABIN_WIDTH = 12;
-export const CABIN_HEIGHT = 17;
 /** Las nubes son elipses de ancho / alto = 3,2. */
 export const CLOUD_ASPECT = 3.2;
 

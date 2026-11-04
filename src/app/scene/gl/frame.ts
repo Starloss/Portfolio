@@ -2,9 +2,6 @@
 // cámara que la Escena SVG (camera.ts) y repite sus animaciones de CSS con sus mismas curvas, sobre
 // el reloj de esas mismas animaciones: así el fundido cruzado entre las dos no salta.
 import {
-    CABIN_HEIGHT,
-    CABIN_WIDTH,
-    cabinPoint,
     journeyAt,
     cloudsAt,
     layerShift,
@@ -133,14 +130,6 @@ export function escenaFrame({ progress, sink, viewport, frame, clocks, pointer }
         towers: sway(PARALLAX_DEPTH.towers),
         street: sway(PARALLAX_DEPTH.street),
     };
-    // La cabina del visitante, como su transform en la SVG: punto del cable más el Ávila.
-    const visitorAt = (h: number) => toScreen(frame, cabinPoint(h).x, cabinPoint(h).y);
-    const visitor = {
-        x: sample((h) => visitorAt(h).x) - (CABIN_WIDTH / 2) * frame.scale + parallax.avila,
-        y: sample((h) => visitorAt(h).y + layerShift('avila', h, vh, sink)),
-        width: CABIN_WIDTH * frame.scale,
-        height: CABIN_HEIGHT * frame.scale,
-    };
     const macaws = twoStep(
         loopAt(clocks.macaws, MACAW_SECONDS, false),
         { x: 0, y: 0 },
@@ -162,8 +151,6 @@ export function escenaFrame({ progress, sink, viewport, frame, clocks, pointer }
         cloudsOpacity: clouds.opacity,
         /** Cuánto bajó la capa de nubes lejanas con la cámara (px). */
         cloudsShift: clouds.y,
-        /** La cabina del visitante, el rectángulo de su sprite. */
-        visitor,
         macaws: { x: macaws.x * frame.scale + parallax.sky, y: macaws.y * frame.scale },
         parallax,
         /** La franja de la Avenida Bolívar (street.ts): su borde de arriba y su alto, en px. */
@@ -201,7 +188,7 @@ export interface CabinOnScreen {
 
 /**
  * Las cabinas del circuito (circuit.ts) a los `time` s, colgadas de su cable y movidas con el
- * Ávila, igual que la cabina del visitante.
+ * Ávila.
  */
 export function circuitOnScreen(
     time: number,

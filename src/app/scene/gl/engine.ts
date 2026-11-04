@@ -36,8 +36,6 @@ import {
     MIST_FRAGMENT,
     MOON_FRAGMENT,
     SKY_FRAGMENT,
-    SPRITE_FRAGMENT,
-    SPRITE_VERTEX,
     CLIMA_FRAGMENT,
 } from './shaders';
 import type { LayerName } from './textures';
@@ -63,7 +61,6 @@ const ORDER = [
     'avilaBack',
     'cabins',
     'avilaFront',
-    'visitor',
     'avilaMist',
     'towers',
     'towersLights',
@@ -213,14 +210,11 @@ export class EscenaGL {
         return program;
     }
 
-    // Diez programas para veintiún pases: compilar shaders es lo más caro del arranque (con una
+    // Diez programas para diecinueve pases: compilar shaders es lo más caro del arranque (con una
     // GPU por software, cientos de ms). Cada pase fija sus uniforms justo antes de dibujarse.
     private build(): Record<Pass, PassSpec> {
         const gl = this.gl;
         const fullscreen = new Triangle(gl);
-        const quad = new Geometry(gl, {
-            position: { size: 2, data: new Float32Array([0, 0, 1, 0, 1, 1, 0, 0, 1, 1, 0, 1]) },
-        });
         const noise = new Texture(gl, {
             image: noiseData(),
             width: 256,
@@ -311,10 +305,6 @@ export class EscenaGL {
             aScale: { size: 1, instanced: 1, data: this.cabins.scale },
             aMeta: { size: 3, instanced: 1, data: this.cabins.meta },
         });
-        const sprite = this.program(SPRITE_VERTEX, SPRITE_FRAGMENT, {
-            ...textures,
-            uRect: { value: [0, 0, 0, 0] },
-        });
         const pass = (geometry: Geometry, program: Program, fixed: PassSpec['fixed'] = {}) => ({
             mesh: new Mesh(gl, { geometry, program, frustumCulled: false }),
             fixed,
@@ -356,7 +346,6 @@ export class EscenaGL {
             avilaBack: both('avilaBack', 1),
             cabins: pass(this.cabinGeometry, cabinProgram),
             avilaFront: both('avilaFront', 1),
-            visitor: pass(quad, sprite, tex('cabin:day', 'cabin:night')),
             avilaMist: mistOf({ scale: 1100, drift: -4, strength: 0.55 }),
             city: both('city'),
             cityLights: lightsOf('cityLights'),
@@ -617,12 +606,6 @@ export class EscenaGL {
         const shade = w.dark * 0.3;
         // Las nubes tapan el sol, la luna y las estrellas.
         const dim = 1 - w.cover * 0.75;
-        const rect = (r: { x: number; y: number; width: number; height: number }) => [
-            r.x,
-            r.y,
-            r.width,
-            r.height,
-        ];
         const values: Record<Pass, Record<string, unknown>> = {
             sky: {
                 uSkyHigh: f.skyHigh,
@@ -678,7 +661,6 @@ export class EscenaGL {
                 uSunSide: side,
                 uShade: shade,
             },
-            visitor: { uRect: rect(f.visitor) },
             avilaMist: {
                 uMist: [f.mist.avila, f.mist.halfHeight],
                 uDusk: dusk,
