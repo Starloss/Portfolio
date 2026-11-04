@@ -95,6 +95,10 @@ _Avoid_: modo clima, escena dinámica
 El estado del tiempo actual en Caracas que muestra la Escena: despejado, parcial, nublado, lluvia o tormenta. Nunca es el del lugar del visitante.
 _Avoid_: tiempo, weather
 
+**Tráfico**:
+El estado de la Avenida Bolívar en la Escena: vacía, fluida, cargada o tranca. Se estima por la hora, el tipo de día y el Clima de Caracas; nunca es un dato real, y ningún texto del sitio lo menciona.
+_Avoid_: tráfico real, congestión
+
 **Afluencia**:
 Cuánta gente camina por la Avenida Bolívar en la Escena, de nadie a la acera llena, según la hora, el tipo de día (hábil, fin de semana o feriado) y el Clima de Caracas. Es un modelo, no un conteo real.
 _Avoid_: tráfico peatonal, multitud

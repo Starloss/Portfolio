@@ -8,8 +8,9 @@ import type { Estado } from '@lib/clima';
 import { sky as skyAt, type Sky } from '../sky';
 import { Crowd } from '../crowd';
 import { Flights, type FlightContext } from '../flights';
-import type { AfluenciaParams } from '../rhythm';
-import { POST_EVERY, STREET_ABOVE, streetAgents } from '../street';
+import type { AfluenciaParams, NivelTrafico } from '../rhythm';
+import { POST_EVERY, STREET_ABOVE } from '../street';
+import { Traffic } from '../traffic';
 import { arcPoint, BOVEDA_SECONDS, BovedaClock, moonRotation, restOf } from '../vault';
 import { ClimaClock } from '../climaFrame';
 
@@ -158,8 +159,10 @@ export class EscenaGL {
     private raf = 0;
     private running = false;
     private disposed = false;
-    // La Avenida Bolívar: la misma formación que la SVG, en movimiento.
-    private agents = streetAgents();
+    // El Tráfico de la Avenida Bolívar; como la gente, se ubica en el primer cuadro con medidas.
+    private traffic = new Traffic();
+    private nivelTrafico: NivelTrafico | null = null;
+    private trafficChanged = false;
     private instances = createInstances();
     private agentGeometry!: Geometry;
     // Las cabinas del circuito del Teleférico.
@@ -573,6 +576,12 @@ export class EscenaGL {
         this.dirty = true;
     }
 
+    setTraffic(nivel: NivelTrafico) {
+        this.nivelTrafico = nivel;
+        this.trafficChanged = true;
+        this.dirty = true;
+    }
+
     setFlights(context: FlightContext) {
         this.flightContext = context;
     }
@@ -750,8 +759,13 @@ export class EscenaGL {
             this.crowd.set(this.crowdParams, span, treeEvery);
         }
         if (this.crowdParams && !this.onDemand) this.crowd.step(dt, span, treeEvery);
+        if (this.nivelTrafico && this.trafficChanged) {
+            this.trafficChanged = false;
+            this.traffic.set(this.nivelTrafico, span);
+        }
+        if (this.nivelTrafico && !this.onDemand) this.traffic.step(dt, span);
         if (streetVisible) {
-            writeInstances(this.instances, this.agents, this.crowd.walkers, {
+            writeInstances(this.instances, this.traffic.vehicles, this.crowd.walkers, {
                 time,
                 top: f.street.top,
                 H: f.street.height,

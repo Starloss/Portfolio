@@ -1,14 +1,13 @@
 import { describe, it, expect } from 'vitest';
 import { cameraHeightAt, HERO_HEIGHT, layerShift, layerOffset } from '@app/scene/camera';
 import {
-    agentX,
-    AGENT_SIZE,
     crowdFormation,
+    FILTER_LINES,
     LIFT_SHARE,
     SIDEWALK_LINES,
     standingCount,
-    streetAgents,
     streetBand,
+    trafficFormation,
 } from '@app/scene/street';
 
 // La Avenida Bolívar: la capa más cercana al final del Viaje de cámara. Al entrar, el paisaje sube
@@ -70,59 +69,31 @@ describe('el paisaje sube con la calle', () => {
     });
 });
 
-describe('streetAgents', () => {
-    const agents = streetAgents();
+describe('trafficFormation', () => {
+    const span = 1280 / 150;
+    const levels = ['vacia', 'fluida', 'cargada', 'tranca'] as const;
 
-    it('es siempre la misma formación: la Escena SVG y la WebGL muestran la misma calle', () => {
-        expect(streetAgents()).toEqual(agents);
+    it('cada nivel trae más vehículos que el anterior, y siempre los mismos', () => {
+        const counts = levels.map((n) => trafficFormation(n, span).length);
+        for (let i = 1; i < counts.length; i++) expect(counts[i]).toBeGreaterThan(counts[i - 1]);
+        expect(trafficFormation('cargada', span)).toEqual(trafficFormation('cargada', span));
     });
 
-    it('trae carros, camioneticas y motorizados; la gente la pone la Afluencia', () => {
-        const kinds = new Set(agents.map((a) => a.kind));
-        expect(kinds).toEqual(new Set(['car', 'bus', 'moto']));
-    });
-
-    it('los carriles de atrás van a la izquierda y los de adelante a la derecha', () => {
-        for (const a of agents.filter((a) => a.kind !== 'walker')) {
-            expect(a.dir).toBe(a.s < 0.7 ? -1 : 1);
-        }
+    it('trae carros, camioneticas y motorizados; los carriles de atrás van a la izquierda', () => {
+        const vehicles = trafficFormation('cargada', span);
+        expect(new Set(vehicles.map((v) => v.kind))).toEqual(new Set(['car', 'bus', 'moto']));
+        for (const v of vehicles) expect(v.dir).toBe(v.s < 0.7 ? -1 : 1);
     });
 
     it('se dibujan de atrás hacia adelante', () => {
-        const rows = agents.map((a) => a.s);
-        expect(rows).toEqual([...rows].sort((a, b) => a - b));
+        const s = trafficFormation('tranca', span).map((v) => v.s);
+        expect(s).toEqual([...s].sort((a, b) => a - b));
     });
 
-    it('en un mismo carril nadie se encima', () => {
-        const width = 1440;
-        const H = 126;
-        const lanes = new Map<number, number[]>();
-        for (const a of agents.filter((a) => a.kind !== 'walker')) {
-            lanes.set(a.s, [...(lanes.get(a.s) ?? []), agentX(a, 0, width, H)]);
-        }
-        for (const xs of lanes.values()) {
-            xs.sort((a, b) => a - b);
-            for (let i = 1; i < xs.length; i++) {
-                expect(xs[i] - xs[i - 1]).toBeGreaterThan(AGENT_SIZE.bus[0] * H);
-            }
-        }
-    });
-});
-
-describe('agentX', () => {
-    const [agent] = streetAgents().filter((a) => a.kind === 'car');
-
-    it('avanza en su sentido y vuelve a entrar por el otro lado', () => {
-        const width = 1440;
-        const H = 126;
-        const start = agentX(agent, 0, width, H);
-        const later = agentX(agent, 1, width, H);
-        expect(Math.sign(later - start)).toBe(agent.dir);
-        for (let t = 0; t < 120; t += 0.5) {
-            const x = agentX(agent, t, width, H);
-            expect(x).toBeGreaterThanOrEqual(-H);
-            expect(x).toBeLessThanOrEqual(width + H);
-        }
+    it('en la tranca, las motos van entre los carriles', () => {
+        const motos = trafficFormation('tranca', span).filter((v) => v.kind === 'moto');
+        expect(motos.length).toBeGreaterThan(0);
+        for (const m of motos) expect(Object.values(FILTER_LINES)).toContain(m.s);
     });
 });
 

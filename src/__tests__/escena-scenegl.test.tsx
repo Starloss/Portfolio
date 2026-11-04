@@ -24,6 +24,7 @@ vi.mock('@app/scene/gl/client', () => ({
         setClima = vi.fn();
         setFlights = vi.fn();
         setCrowd = vi.fn();
+        setTraffic = vi.fn();
         setFixedProgress = vi.fn();
         start = vi.fn();
         stop = vi.fn();

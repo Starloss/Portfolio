@@ -147,3 +147,19 @@ test('la Afluencia de la SVG sigue a la hora, al día y al Clima', async ({ page
     expect(await umbrellas()).toBeGreaterThan(0);
     expect(await walkers()).toBeLessThan(full);
 });
+
+test('el Tráfico de la SVG sigue al nivel, y ?trafico= lo fija', async ({ page }) => {
+    const vehicles = () =>
+        page.evaluate(() =>
+            Number(document.querySelector<HTMLElement>('[data-vehicles]')?.dataset.vehicles ?? 0),
+        );
+    const counts: number[] = [];
+    for (const nivel of ['vacia', 'fluida', 'cargada', 'tranca']) {
+        await page.goto(`/?escena=svg&trafico=${nivel}`);
+        counts.push(await vehicles());
+    }
+    for (let i = 1; i < counts.length; i++) expect(counts[i]).toBeGreaterThan(counts[i - 1]);
+    // Sin forzarlo, a las 3 AM de un día hábil la calle está casi vacía.
+    await page.goto('/?escena=svg&hora=03:00&dia=habil&clima=despejado');
+    expect(await vehicles()).toBe(counts[0]);
+});

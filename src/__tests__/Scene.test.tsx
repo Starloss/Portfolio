@@ -250,3 +250,19 @@ describe('Afluencia en la SVG', () => {
         expect(renderScene({ night: true, mobile: true }).svgElements()).toBeLessThanOrEqual(300);
     });
 });
+
+describe('Tráfico en la SVG', () => {
+    afterEach(() => delete document.documentElement.dataset.horaForzada);
+
+    it('con tranca y la acera llena (5:30 PM de un día hábil) no pasa del presupuesto', () => {
+        document.documentElement.dataset.horaForzada = String(
+            Date.parse('2026-11-04T17:30:00-04:00'),
+        );
+        const desktop = renderScene({ night: true });
+        const vehicles = desktop.scene.querySelector<HTMLElement>('[data-vehicles]');
+        expect(Number(vehicles?.dataset.vehicles)).toBeGreaterThan(40);
+        expect(desktop.svgElements()).toBeLessThanOrEqual(600);
+        cleanupScene();
+        expect(renderScene({ night: true, mobile: true }).svgElements()).toBeLessThanOrEqual(300);
+    });
+});
