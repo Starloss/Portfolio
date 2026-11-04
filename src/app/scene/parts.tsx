@@ -23,6 +23,7 @@ import {
     AGENT_SIZE,
     crowdFormation,
     isBackSidewalk,
+    laneX,
     LIGHT_HEIGHT,
     POST_EVERY,
     type StillWalker,
@@ -568,7 +569,7 @@ const StillTraffic: React.FC<{
         <g data-vehicles={vehicles.length}>
             <defs>
                 {VEHICLE_KINDS.map((kind) => (
-                    <g key={kind} id={`escena-${kind}`}>
+                    <g key={kind} id={`scene-${kind}`}>
                         <StreetAgentShape
                             kind={kind}
                             w={AGENT_SIZE[kind][0] * H}
@@ -580,13 +581,13 @@ const StillTraffic: React.FC<{
                 ))}
             </defs>
             {vehicles.map((v, i) => {
-                const x = v.dir > 0 ? v.u * H : width - v.u * H;
+                const x = laneX(v.dir, v.u, width, H);
                 return (
                     <use
                         // La formación es siempre la misma para el mismo nivel: el índice es estable.
                         // eslint-disable-next-line @eslint-react/no-array-index-key
                         key={i}
-                        href={`#escena-${v.kind}`}
+                        href={`#scene-${v.kind}`}
                         transform={`translate(${x},${top + v.s * H}) scale(${v.dir * v.scale},${v.scale})`}
                     />
                 );

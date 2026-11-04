@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { createInstances, MAX_INSTANCES, writeInstances } from '@app/scene/gl/agents';
 import { Traffic } from '@app/scene/traffic';
 import type { NivelTrafico } from '@app/scene/rhythm';
 
@@ -72,5 +73,39 @@ describe('Traffic', () => {
         expect(speed(filtering)).toBeGreaterThan(speed(queue));
         // Fuera de la tranca, nadie filtra.
         expect(settle('fluida').vehicles.some((v) => v.filtering)).toBe(false);
+    });
+});
+
+describe('Traffic, en la tranca', () => {
+    it('las motos que filtran nunca van encimadas', () => {
+        const traffic = settle('tranca', 240);
+        for (const dir of [1, -1]) {
+            const motos = traffic.vehicles
+                .filter((v) => v.filtering && v.dir === dir)
+                .map((v) => v.u)
+                .sort((a, b) => a - b);
+            for (let i = 1; i < motos.length; i++)
+                expect(motos[i] - motos[i - 1]).toBeGreaterThan(1);
+        }
+    });
+
+    it('se dibujan de atrás hacia adelante, las motos que filtran incluidas', () => {
+        const s = settle('tranca').vehicles.map((v) => v.s);
+        expect(s).toEqual([...s].sort((a, b) => a - b));
+    });
+
+    it('una tranca de Noche en una pantalla de 1920 px cabe en el tope de instancias', () => {
+        const traffic = new Traffic();
+        const span = 1920 / 150;
+        traffic.set('tranca', span);
+        const into = writeInstances(createInstances(), traffic.vehicles, [], {
+            top: 900,
+            H: 150,
+            width: 1920,
+            time: 0,
+            night: 1,
+        });
+        // Y queda lugar para la acera llena, que suma más de 100.
+        expect(into.count).toBeLessThan(MAX_INSTANCES - 150);
     });
 });

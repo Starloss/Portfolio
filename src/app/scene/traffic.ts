@@ -4,7 +4,7 @@
 // lo que crea ondas. En la tranca, las motos filtran entre los carriles. Los vehículos solo entran
 // y salen por los bordes. Todo en altos de calzada (H), como street.ts.
 import type { NivelTrafico } from './rhythm';
-import { AGENT_SIZE, FILTER_LINES, TRAFFIC_LANES, type VehicleKind } from './street';
+import { AGENT_SIZE, filterLine, laneX, TRAFFIC_LANES, type VehicleKind } from './street';
 
 export interface Vehicle {
     kind: VehicleKind;
@@ -33,11 +33,11 @@ const ACCEL = 0.55;
 const BRAKE = 1.1;
 const MIN_GAP = 0.09;
 const HEADWAY = 0.7;
-// Las motos que filtran van entre los dos carriles de su sentido (FILTER_LINES), a paso firme.
+// Las motos que filtran van entre los dos carriles de su sentido (filterLine), a paso firme.
 const FILTER_SPEED = 0.28;
-// Desde qué nivel es tranca, y cuántas motos por segundo entran filtrando en cada sentido.
-const TRANCA = 0.85;
+// Cuántas motos por segundo entran filtrando en cada sentido, y a qué distancia (en H) de la anterior.
 const MOTOS_FILTERING = 0.2;
+const MOTO_SPACING = 1.2;
 
 interface Lane {
     s: number;
@@ -62,6 +62,7 @@ export class Traffic {
     private lanes: Lane[];
     private filtering: Vehicle[] = [];
     private level = 0;
+    private nivel: NivelTrafico = 'vacia';
     private seed = 7;
     private t = 0;
     private started = false;
@@ -79,14 +80,17 @@ export class Traffic {
         return { s, dir, scale, free: 0.5 + this.rand() * 0.2, phase: i * 5.3, vehicles: [] };
     }
 
-    /** Todos los vehículos: los de los carriles y las motos que filtran. */
+    /** Todos los vehículos, de atrás hacia adelante: así se dibujan en orden. */
     get vehicles(): Vehicle[] {
-        return [...this.lanes.flatMap((l) => l.vehicles), ...this.filtering];
+        return [...this.lanes.flatMap((l) => l.vehicles), ...this.filtering].sort(
+            (a, b) => a.s - b.s,
+        );
     }
 
     /** Cambia el nivel. La primera vez la calle ya arranca con su tráfico, no vacía. */
     set(nivel: NivelTrafico, span: number) {
         this.level = LEVEL[nivel];
+        this.nivel = nivel;
         if (this.started) return;
         this.started = true;
         for (let i = 0; i < 90 * 20; i++) this.step(0.05, span);
@@ -98,7 +102,7 @@ export class Traffic {
             lane.free * (kind === 'moto' ? 1.15 : kind === 'bus' ? 0.85 : 0.9 + this.rand() * 0.2);
         return {
             kind,
-            s: filtering ? (lane.dir < 0 ? FILTER_LINES.far : FILTER_LINES.near) : lane.s,
+            s: filtering ? filterLine(lane.dir) : lane.s,
             dir: lane.dir,
             scale: lane.scale,
             u: -1 - length / 2,
@@ -114,7 +118,7 @@ export class Traffic {
     private spawn(lane: Lane, v: number) {
         const r = this.rand();
         // En la tranca, las motos no hacen la cola: entran por su cuenta, entre los carriles.
-        const moto = this.level < TRANCA && r < 0.42 && r >= 0.18;
+        const moto = this.nivel !== 'tranca' && r < 0.42 && r >= 0.18;
         const kind: VehicleKind = r < 0.18 ? 'bus' : moto ? 'moto' : 'car';
         lane.vehicles.push(this.vehicle(lane, kind, v, false));
     }
@@ -128,9 +132,12 @@ export class Traffic {
             lane.vehicles = lane.vehicles.filter((v) => v.u - v.length / 2 < exit);
         }
         // En la tranca, por cada sentido, cada tanto entra una moto entre los carriles.
-        if (this.level >= TRANCA) {
+        if (this.nivel === 'tranca') {
             for (const lane of [this.lanes[0], this.lanes[2]]) {
-                if (this.rand() < dt * MOTOS_FILTERING) {
+                // Una detrás de otra, nunca encimadas.
+                const last = [...this.filtering].reverse().find((m) => m.dir === lane.dir);
+                const room = !last || last.u > -1 + MOTO_SPACING;
+                if (room && this.rand() < dt * MOTOS_FILTERING) {
                     this.filtering.push(this.vehicle(lane, 'moto', FILTER_SPEED, true));
                 }
             }
@@ -177,6 +184,5 @@ export class Traffic {
     }
 }
 
-/** Centro en px de un vehículo: los carriles de atrás van hacia la izquierda. */
-export const vehicleX = (v: Vehicle, width: number, H: number) =>
-    v.dir > 0 ? v.u * H : width - v.u * H;
+/** Centro en px de un vehículo. */
+export const vehicleX = (v: Vehicle, width: number, H: number) => laneX(v.dir, v.u, width, H);

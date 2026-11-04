@@ -1,6 +1,7 @@
-// El ritmo de Caracas que mueve la Avenida Bolívar: qué tipo de día es y cuánta gente camina a cada
-// hora (la Afluencia). Lo usan las dos Escenas: la SVG coloca la gente con una fórmula y la WebGL la
-// simula. Las curvas vienen de «Ritmos reales de Caracas» (#88): la forma tiene fuente, las cifras no.
+// El ritmo de Caracas que mueve la Avenida Bolívar: qué tipo de día es, cuánta gente camina a cada
+// hora (la Afluencia) y cuánto Tráfico hay. Lo usan las dos Escenas: la SVG coloca la calle con una
+// fórmula y la WebGL la simula. Las curvas vienen de «Ritmos reales de Caracas» (#88): la forma tiene
+// fuente, las cifras no.
 import type { Estado } from '@lib/clima';
 
 export type DayKind = 'habil' | 'sabado' | 'domingo' | 'feriado';
@@ -89,6 +90,8 @@ export const NIVELES_TRAFICO = ['vacia', 'fluida', 'cargada', 'tranca'] as const
 export type NivelTrafico = (typeof NIVELES_TRAFICO)[number];
 
 // Tráfico por hora (0 a 23), de 0 (vacía) a 1 (el máximo). Los feriados usan la curva del domingo.
+// Cada hora vale entera, sin interpolar: así la tranca de un día hábil va de 7 a 9 y de 5 a 7, como
+// se decidió (#93), y un valor justo en un corte no hace saltar el nivel dentro de la hora.
 const TRAFICO: Record<'habil' | 'sabado' | 'domingo', readonly number[]> = {
     habil: [
         0.05, 0.03, 0.02, 0.02, 0.05, 0.25, 0.7, 1, 0.9, 0.6, 0.5, 0.55, 0.75, 0.6, 0.5, 0.55, 0.75,
@@ -110,7 +113,7 @@ const TRAFICO_POR_LLUVIA: Record<Lluvia, number> = { seca: 0, lluvia: 1, torment
 
 /** El nivel de Tráfico a una hora decimal de Caracas, en ese tipo de día y con ese Clima. */
 export function traficoAt(hour: number, day: DayKind, estado: Estado | null): NivelTrafico {
-    const value = hourly(TRAFICO[day === 'feriado' ? 'domingo' : day], hour);
+    const value = TRAFICO[day === 'feriado' ? 'domingo' : day][Math.floor(hour) % 24];
     const base = TRAFICO_CORTES.filter((cut) => value >= cut).length;
     const level = Math.min(NIVELES_TRAFICO.length - 1, base + TRAFICO_POR_LLUVIA[lluviaDe(estado)]);
     return NIVELES_TRAFICO[level];

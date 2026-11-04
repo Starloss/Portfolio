@@ -90,3 +90,28 @@ describe('traficoAt', () => {
         expect(readForcedTrafico('?trafico=mucho')).toBeNull();
     });
 });
+
+describe('traficoAt, en los bordes', () => {
+    it('cada nivel empieza y termina en la hora en punto que se decidió', () => {
+        const at = (h: number) => traficoAt(h, 'habil', null);
+        expect([at(6.99), at(7), at(8.99), at(9)]).toEqual([
+            'cargada',
+            'tranca',
+            'tranca',
+            'cargada',
+        ]);
+        expect([at(16.99), at(17), at(18.99), at(19)]).toEqual([
+            'cargada',
+            'tranca',
+            'tranca',
+            'fluida',
+        ]);
+        expect([at(20.99), at(21)]).toEqual(['fluida', 'vacia']);
+    });
+
+    it('dentro de una hora el nivel no salta, aunque la curva quede justo en un corte', () => {
+        const levels = new Set<string>();
+        for (let m = 0; m < 60; m++) levels.add(traficoAt(11 + m / 60, 'domingo', null));
+        expect(levels.size).toBe(1);
+    });
+});

@@ -72,6 +72,14 @@ export const TRAFFIC_LANES = [
 
 /** En la tranca, las motos van entre los dos carriles de su sentido (sobre la raya). */
 export const FILTER_LINES = { far: 0.535, near: 0.82 };
+export const filterLine = (dir: 1 | -1) => (dir < 0 ? FILTER_LINES.far : FILTER_LINES.near);
+
+/**
+ * Centro en px de un vehículo que va `u` H en su sentido desde que entró: los carriles de atrás van
+ * hacia la izquierda, así que entran por la derecha.
+ */
+export const laneX = (dir: 1 | -1, u: number, width: number, H: number) =>
+    dir > 0 ? u * H : width - u * H;
 
 /** Vehículos por H de carril en cada nivel: de alguno suelto a defensa con defensa. */
 export const VEHICLES_PER_SPAN: Record<NivelTrafico, number> = {
@@ -231,7 +239,7 @@ export function trafficFormation(nivel: NivelTrafico, span: number): StillVehicl
             if (kind === 'moto' && tranca) {
                 out.push({
                     kind,
-                    s: dir < 0 ? FILTER_LINES.far : FILTER_LINES.near,
+                    s: filterLine(dir),
                     dir,
                     scale,
                     u,

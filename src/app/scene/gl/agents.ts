@@ -9,8 +9,9 @@ import { vehicleX, type Vehicle } from '../traffic';
 /** Qué dibuja cada instancia (aMeta.x en el shader). */
 export const KIND = { car: 0, bus: 1, moto: 2, walker: 3, beam: 4, dot: 5 } as const;
 
-// Una tranca de Noche con la acera llena, con faros y luces, llega a unas 330 (spec #99).
-export const MAX_INSTANCES = 384;
+// Una tranca de Noche, con faros y luces, son unas 300 instancias a 1280 px de ancho y unas 400 a
+// 1920 px; la acera llena suma más de 100. Solo se escribe lo que cae en pantalla.
+export const MAX_INSTANCES = 640;
 
 // El paso de cada peatón, como lo lee el shader: aMeta.w = paraguas + 2 × paso.
 const GAIT_CODE = { walk: 0, stand: 1, run: 2 } as const;
@@ -118,7 +119,8 @@ export function writeInstances(
         const w = fw * H * a.scale;
         const h = fh * H * a.scale;
         const x = vehicleX(a, width, H);
-        if (x < -w - H || x > width + w + H) continue;
+        // Solo lo que cae en pantalla (más su haz de luz): la cola sigue más allá de los bordes.
+        if (x < -w - 1.1 * H || x > width + w + 1.1 * H) continue;
         // Los motorizados zigzaguean un poco entre carriles.
         const wobble = a.kind === 'moto' ? Math.sin(time * 0.9 + a.phase) * 0.035 * H : 0;
         const y = top + a.s * H + wobble;
