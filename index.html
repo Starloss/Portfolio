@@ -20,9 +20,23 @@
     <body>
         <div id="root" class="min-h-screen"></div>
         <script type="module" src="/src/main.tsx"></script>
-        <!-- Umami (docs/adr/0002): sin cookies; solo cuenta en el dominio de producción. -->
+        <!-- Umami (docs/adr/0002): sin cookies; solo cuenta en el dominio de producción. Una visita
+             con un parámetro de prueba de la Escena (?guacamayas=, ?dia=, ?trafico=) no se cuenta,
+             tampoco sus páginas vistas: la marca dura la visita (src/lib/analytics.ts). -->
+        <script>
+            window.umamiAntesDeEnviar = function (type, payload) {
+                try {
+                    if (/[?&](guacamayas|dia|trafico)=/.test(location.search))
+                        sessionStorage.setItem('visita-de-prueba', '1');
+                    return sessionStorage.getItem('visita-de-prueba') === '1' ? false : payload;
+                } catch (e) {
+                    return payload;
+                }
+            };
+        </script>
         <script
             defer
+            data-before-send="umamiAntesDeEnviar"
             src="https://cloud.umami.is/script.js"
             data-website-id="b76f28fd-a425-4d9c-95f1-26dc246fef0d"
             data-domains="www.diegorangel.dev"
