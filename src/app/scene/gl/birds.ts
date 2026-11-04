@@ -1,5 +1,5 @@
 // Las guacamayas en vuelo en la Escena WebGL: una instancia por ave (flights.ts), en un solo pase
-// delante del Ávila y de la ciudad.
+// detrás de las nubes y del Ávila.
 import type { Bird } from '../flights';
 
 export const MAX_BIRDS = 48;
