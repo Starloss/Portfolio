@@ -158,3 +158,11 @@ test('en un teléfono, la Escena WebGL entra y llena la pantalla', async ({ page
     expect(box.width).toBe(390);
     expect(box.height).toBe(844);
 });
+
+test('con ?guacamayas=ya la Escena WebGL dibuja las guacamayas sin errores', async ({ page }) => {
+    const errors: string[] = [];
+    page.on('pageerror', (e) => errors.push(e.message));
+    await page.goto('/?escena=webgl&hora=17:00&clima=despejado&guacamayas=ya');
+    await expect(page.locator('html')).toHaveAttribute('data-escena', 'webgl');
+    expect(errors).toEqual([]);
+});

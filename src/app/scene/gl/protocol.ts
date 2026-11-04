@@ -4,10 +4,9 @@
 import type { Estado } from '@lib/clima';
 
 import type { SceneFrame, Viewport } from '../camera';
+import type { FlightContext } from '../flights';
 import type { Sky } from '../sky';
 import type { SkyLayout } from '../vault';
-
-import type { ClockAnchor } from './frame';
 
 export type FallbackReason = 'slow' | 'context-lost' | 'init-failed';
 
@@ -32,7 +31,7 @@ export type ToWorker =
     | { type: 'sky'; sky: Sky }
     | { type: 'clima'; estado: Estado | null }
     | { type: 'scroll'; progress: number }
-    | { type: 'clocks'; anchor: ClockAnchor }
+    | { type: 'flights'; context: FlightContext }
     | { type: 'pointer'; x: number }
     | { type: 'run'; running: boolean }
     | { type: 'textures'; id: number; images: Record<string, ImageBitmap> | null }

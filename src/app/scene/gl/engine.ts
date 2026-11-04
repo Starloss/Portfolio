@@ -6,26 +6,23 @@ import { Geometry, Mesh, Program, Renderer, Texture, Triangle } from 'ogl';
 import type { Estado } from '@lib/clima';
 
 import { sky as skyAt, type Sky } from '../sky';
+import { Flights, type FlightContext } from '../flights';
 import { STREET_ABOVE, streetAgents } from '../street';
 import { arcPoint, BOVEDA_SECONDS, BovedaClock, moonRotation, restOf } from '../vault';
 import { ClimaClock } from '../climaFrame';
 
 import { isSoftwareGpu, rendererName } from './detect';
-import {
-    advanceClocks,
-    circuitOnScreen,
-    escenaFrame,
-    followPointer,
-    type ClockAnchor,
-    type Clocks,
-} from './frame';
+import { circuitOnScreen, escenaFrame, followPointer } from './frame';
 import { noiseData } from './noise';
 import type { FallbackReason, Layout, TextureRequest } from './protocol';
 import { createInstances, writeInstances } from './agents';
+import { createBirdInstances, writeBirds } from './birds';
 import { createCabinInstances, writeCabins } from './cabins';
 import {
     AGENT_FRAGMENT,
     AGENT_VERTEX,
+    BIRD_FRAGMENT,
+    BIRD_VERTEX,
     CABIN_FRAGMENT,
     CABIN_VERTEX,
     CLOUDS_FRAGMENT,
@@ -55,7 +52,7 @@ interface PassSpec {
 const ORDER = [
     'sky',
     'moon',
-    'macaws',
+    'birds',
     'clouds',
     'bolt',
     'far',
@@ -78,7 +75,6 @@ type Pass = (typeof ORDER)[number];
 
 // Las luces llevan mipmaps: un nivel chico es su resplandor.
 const MIPMAPPED: readonly LayerName[] = ['cityLights', 'towersLights'];
-const STILL: Clocks = { macaws: 0 };
 const SOFTWARE_DPR = 0.5;
 const RESIZE_SETTLE_MS = 250;
 
@@ -89,7 +85,6 @@ const nextFrame = (run: (now: number) => void): number =>
         : (setTimeout(() => run(performance.now()), 16) as unknown as number);
 const cancelFrame = (id: number) =>
     typeof cancelAnimationFrame === 'function' ? cancelAnimationFrame(id) : clearTimeout(id);
-const epoch = () => performance.timeOrigin + performance.now();
 
 export interface EngineOptions {
     dpr: number;
@@ -139,7 +134,11 @@ export class EscenaGL {
     private pointer = 0;
     private pointerTarget = 0;
     private lastFrame = 0;
-    private clocks: ClockAnchor = { at: epoch(), clocks: STILL };
+    // Las guacamayas en vuelo.
+    private flights = new Flights();
+    private flightContext: FlightContext = { hour: 12, raining: false, forced: false };
+    private birdInstances = createBirdInstances();
+    private birdGeometry!: Geometry;
     private raf = 0;
     private running = false;
     private disposed = false;
@@ -311,6 +310,14 @@ export class EscenaGL {
             aScale: { size: 1, instanced: 1, data: this.cabins.scale },
             aMeta: { size: 3, instanced: 1, data: this.cabins.meta },
         });
+        // Las guacamayas: un quad por ave (birds.ts).
+        const birdProgram = this.program(BIRD_VERTEX, BIRD_FRAGMENT);
+        this.birdGeometry = new Geometry(gl, {
+            position: { size: 2, data: new Float32Array([0, 0, 1, 0, 1, 1, 0, 0, 1, 1, 0, 1]) },
+            aAnchor: { size: 2, instanced: 1, data: this.birdInstances.anchor },
+            aLength: { size: 1, instanced: 1, data: this.birdInstances.length },
+            aMeta: { size: 3, instanced: 1, data: this.birdInstances.meta },
+        });
         const sprite = this.program(SPRITE_VERTEX, SPRITE_FRAGMENT, {
             ...textures,
             uRect: { value: [0, 0, 0, 0] },
@@ -347,7 +354,7 @@ export class EscenaGL {
         return {
             sky: pass(fullscreen, sky),
             moon: pass(fullscreen, moon),
-            macaws: pass(fullscreen, layer, { ...still, ...tex('macaws:day', 'macaws:day') }),
+            birds: pass(this.birdGeometry, birdProgram),
             clouds: pass(fullscreen, clouds),
             bolt: pass(fullscreen, clima),
             rain: pass(fullscreen, clima),
@@ -544,8 +551,8 @@ export class EscenaGL {
         this.dirty = true;
     }
 
-    setClocks(anchor: ClockAnchor) {
-        this.clocks = anchor;
+    setFlights(context: FlightContext) {
+        this.flightContext = context;
     }
 
     /** Dónde quiere ir el puntero en x (-1 a 1); el parallax lo sigue con suavidad. */
@@ -600,7 +607,6 @@ export class EscenaGL {
             sink,
             viewport,
             frame,
-            clocks: this.onDemand ? STILL : advanceClocks(this.clocks, epoch()),
             pointer: this.pointer,
         });
         const dusk = b.dusk;
@@ -644,7 +650,7 @@ export class EscenaGL {
                 uRotation: (moonRotation(b.moon.tilt) * Math.PI) / 180,
                 uAlpha: b.moon.alpha * dim,
             },
-            macaws: { uOffset: [f.macaws.x, f.macaws.y], uOpacity: 1 - this.night },
+            birds: {},
             clouds: {
                 uClouds: [f.cloudsShift, f.cloudsOpacity],
                 uCloudW: [w.cover, w.dark, flash],
@@ -730,12 +736,25 @@ export class EscenaGL {
             this.agentGeometry.setInstancedCount(Math.max(1, this.instances.count));
         }
         writeCabins(this.cabins, circuitOnScreen(time, frame, f));
+        // Con una GPU por software, quietas como el resto: no salen vuelos.
+        if (!this.onDemand) this.flights.step(dt, this.flightContext);
+        writeBirds(
+            this.birdInstances,
+            this.flights.birds(viewport.width, viewport.height, time, frame.scale),
+            parallax.sky,
+        );
+        for (const name of ['aAnchor', 'aLength', 'aMeta']) {
+            this.birdGeometry.attributes[name].needsUpdate = true;
+        }
+        this.birdGeometry.setInstancedCount(Math.max(1, this.birdInstances.count));
         for (const name of ['aAnchor', 'aScale', 'aMeta']) {
             this.cabinGeometry.attributes[name].needsUpdate = true;
         }
         this.cabinGeometry.setInstancedCount(Math.max(1, this.cabins.count));
         ORDER.forEach((pass, i) => {
             if (pass === 'cabins' && this.cabins.count === 0) return;
+            // Sin vuelos en el aire, o de Noche, el pase de las aves no dibuja nada.
+            if (pass === 'birds' && (this.birdInstances.count === 0 || this.night > 0.999)) return;
             if ((pass === 'street' || pass === 'agents') && !streetVisible) return;
             // Sin lluvia ni rayo, esos pases no dibujan nada: se ahorran.
             if (pass === 'rain' && w.rain < 0.001) return;
