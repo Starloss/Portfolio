@@ -560,12 +560,18 @@ export class EscenaGL {
     }
 
     setCrowd(params: AfluenciaParams) {
+        if (
+            this.crowdParams?.afluencia === params.afluencia &&
+            this.crowdParams.lluvia === params.lluvia
+        )
+            return;
         this.crowdParams = params;
         this.crowdChanged = true;
         this.dirty = true;
     }
 
     setTraffic(nivel: NivelTrafico) {
+        if (this.nivelTrafico === nivel) return;
         this.nivelTrafico = nivel;
         this.trafficChanged = true;
         this.dirty = true;
@@ -605,6 +611,22 @@ export class EscenaGL {
         this.disposed = true;
         this.canvas.removeEventListener('webglcontextlost', this.onContextLost);
         this.gl.getExtension('WEBGL_lose_context')?.loseContext();
+    }
+
+    private updateAgents(dt: number, span: number, treeEvery: number) {
+        if (this.crowdParams && this.crowdChanged) {
+            this.crowdChanged = false;
+            // La simulación quieta no incorpora gente nueva por los bordes: se vuelve a poblar.
+            if (this.onDemand) this.crowd = new Crowd();
+            this.crowd.set(this.crowdParams, span, treeEvery);
+        }
+        if (this.crowdParams && !this.onDemand) this.crowd.step(dt, span, treeEvery);
+        if (this.nivelTrafico && this.trafficChanged) {
+            this.trafficChanged = false;
+            if (this.onDemand) this.traffic = new Traffic();
+            this.traffic.set(this.nivelTrafico, span);
+        }
+        if (this.nivelTrafico && !this.onDemand) this.traffic.step(dt, span);
     }
 
     private draw(now: number) {
@@ -736,16 +758,7 @@ export class EscenaGL {
         const streetVisible = f.street.layerTop < viewport.height;
         const span = viewport.width / f.street.height;
         const treeEvery = POST_EVERY / f.street.height;
-        if (this.crowdParams && this.crowdChanged) {
-            this.crowdChanged = false;
-            this.crowd.set(this.crowdParams, span, treeEvery);
-        }
-        if (this.crowdParams && !this.onDemand) this.crowd.step(dt, span, treeEvery);
-        if (this.nivelTrafico && this.trafficChanged) {
-            this.trafficChanged = false;
-            this.traffic.set(this.nivelTrafico, span);
-        }
-        if (this.nivelTrafico && !this.onDemand) this.traffic.step(dt, span);
+        this.updateAgents(dt, span, treeEvery);
         if (streetVisible) {
             writeInstances(this.instances, this.traffic.vehicles, this.crowd.walkers, {
                 time,
