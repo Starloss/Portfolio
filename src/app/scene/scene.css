@@ -127,16 +127,6 @@
     display: block;
 }
 
-.scene-cabin {
-    position: absolute;
-    top: 0;
-    left: 0;
-}
-
-.scene-cabin > svg {
-    display: block;
-}
-
 /* Lo exclusivo de Día o de Noche aparece con el mismo fundido que el cambio de colores. */
 .scene-fade-in {
     animation: scene-fade-in 0.6s ease both;

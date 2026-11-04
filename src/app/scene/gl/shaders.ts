@@ -334,31 +334,6 @@ void main() {
 }
 `;
 
-/** Un sprite en un rectángulo de pantalla (px): la cabina del visitante. */
-export const SPRITE_VERTEX = /* glsl */ `#version 300 es
-in vec2 position;
-uniform vec2 uRes;
-uniform vec4 uRect;
-out vec2 vUv;
-void main() {
-    vUv = position;
-    vec2 px = uRect.xy + position * uRect.zw;
-    gl_Position = vec4(px.x / uRes.x * 2.0 - 1.0, 1.0 - px.y / uRes.y * 2.0, 0.0, 1.0);
-}
-`;
-
-export const SPRITE_FRAGMENT = /* glsl */ `#version 300 es
-precision highp float;
-in vec2 vUv;
-out vec4 outColor;
-uniform sampler2D tDay;
-uniform sampler2D tNight;
-uniform float uNight;
-void main() {
-    outColor = mix(texture(tDay, vUv), texture(tNight, vUv), uNight);
-}
-`;
-
 /**
  * Las guacamayas en vuelo: una instancia por ave (birds.ts), de perfil, con la silueta y el aleteo
  * hechos en el shader (cada ave aletea a su ritmo). vP va en largos de ave, con x hacia adelante y
