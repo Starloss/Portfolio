@@ -116,7 +116,7 @@ export class Flights {
     private launch(peak: boolean): Flight {
         const dir: 1 | -1 = this.rand() < 0.5 ? 1 : -1;
         if (peak && this.rand() < 0.3) {
-            // Sale de detrás del Ávila, pequeña, y pasa grande cerca de la cámara.
+            // Sale pequeña del Ávila y pasa grande cerca de la cámara.
             const from = 0.3 + this.rand() * 0.4;
             return {
                 kind: 'avila',
