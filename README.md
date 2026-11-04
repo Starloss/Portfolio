@@ -58,6 +58,15 @@ pnpm dev          # dev server at http://127.0.0.1:3000
 | `pnpm images`                   | Regenerates the WebP screenshots (640, 960 and 1280 px) from `images/projects/`                                               |
 | `pnpm scene:avila <tile>`       | Regenerates El Ávila's profile from the SRTM tile `N10W067.hgt(.gz)`; see `scripts/avila-profile.ts` for where to download it |
 
+### CodeGraph for coding agents
+
+The repo ships a [CodeGraph](https://github.com/colbymchenry/codegraph) setup for Claude Code: `.mcp.json` registers its MCP server, and `.claude/settings.json` allows its tools and builds the index when a session starts. The index lives in `.codegraph/` (gitignored), so each worktree has its own. It needs the CLI on your `PATH`:
+
+```bash
+npm i -g @colbymchenry/codegraph
+codegraph telemetry off   # optional
+```
+
 ## Project structure
 
 ```
