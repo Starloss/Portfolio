@@ -4,18 +4,9 @@ import React from 'react';
 import { flushSync } from 'react-dom';
 import { createRoot } from 'react-dom/client';
 
-import { CABIN_WIDTH, type SceneFrame, type Viewport } from '../camera';
+import type { SceneFrame, Viewport } from '../camera';
 import { DAY, NIGHT, type ScenePalette } from '../palette';
-import {
-    Avenue,
-    Avila,
-    CabinShape,
-    City,
-    FarRidge,
-    HaloGradient,
-    LampGradient,
-    Towers,
-} from '../parts';
+import { Avenue, Avila, City, FarRidge, HaloGradient, LampGradient, Towers } from '../parts';
 import { STREET_ABOVE, streetHeight } from '../street';
 
 // Fuera del ciclo de React (un efecto no puede usar flushSync), por eso cede un turno antes.
@@ -50,7 +41,6 @@ export type LayerName =
     | 'avilaFront'
     | 'city'
     | 'towers'
-    | 'cabin'
     | 'cityLights'
     | 'towersLights'
     | 'street';
@@ -82,7 +72,7 @@ export async function themeLayers(
     const still = { night, animate: false };
     const H = streetHeight(viewport.height);
     const streetSize = { width: viewport.width, height: H * (1 + STREET_ABOVE) };
-    const [far, avilaBack, avilaFront, city, towers, cabin, cityLights, towersLights, street] =
+    const [far, avilaBack, avilaFront, city, towers, cityLights, towersLights, street] =
         await Promise.all([
             full(<FarRidge c={c} />),
             full(<Avila c={c} {...still} slice="back" />),
@@ -95,16 +85,6 @@ export async function themeLayers(
             // De Noche, las siluetas sin ventanas: las ventanas van en las texturas de luces.
             full(<City c={c} night={false} animate={false} />),
             full(<Towers c={c} night={false} animate={false} />),
-            markup(
-                <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    viewBox="-6 0 12 17"
-                    width={Math.round(CABIN_WIDTH * frame.scale * dpr)}
-                    height={Math.round(17 * frame.scale * dpr)}
-                >
-                    <CabinShape c={c} />
-                </svg>,
-            ).then(rasterize),
             night ? full(<City c={BLACK} night animate={false} />) : undefined,
             night ? full(<Towers c={BLACK} night animate={false} />) : undefined,
             // La calle sin gente ni vehículos: la WebGL los dibuja aparte, en movimiento.
@@ -126,7 +106,6 @@ export async function themeLayers(
         avilaFront,
         city,
         towers,
-        cabin,
         street,
         ...(night ? { cityLights, towersLights } : {}),
     };

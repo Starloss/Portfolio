@@ -5,9 +5,6 @@ import { useMediaQuery, usePrefersReducedMotion } from '@lib/motion';
 import { useTheme } from '@lib/theme';
 
 import {
-    CABIN_HEIGHT,
-    CABIN_WIDTH,
-    cabinPoint,
     CAMERA_JOURNEY,
     CLOUD_ASPECT,
     CLOUDS,
@@ -17,8 +14,6 @@ import {
     mountainSink,
     sceneFrame,
     SKY_DARKENING,
-    toScreen,
-    type SceneFrame,
     type TextColumn,
     type Viewport,
 } from './camera';
@@ -27,43 +22,23 @@ import { skyline } from './geometry';
 import { DAY, NIGHT, paletteVars, VARS } from './palette';
 import { BovedaCeleste } from './BovedaCeleste';
 import { ClimaTint, cloudsOpacity } from './ClimaTint';
-import {
-    Avenue,
-    Avila,
-    CabinShape,
-    City,
-    FarRidge,
-    HaloGradient,
-    LampGradient,
-    Macaws,
-    Towers,
-} from './parts';
+import { Avenue, Avila, City, FarRidge, HaloGradient, LampGradient, Macaws, Towers } from './parts';
 import { STREET_ABOVE, streetBand, streetHeight } from './street';
 import { skyLayout } from './vault';
 import './scene.css';
 
 const MOBILE_QUERY = '(max-width: 767px)';
 
-type StyledPart =
-    | 'farRidge'
-    | 'avila'
-    | 'city'
-    | 'towers'
-    | 'clouds'
-    | 'skyHigh'
-    | 'cabin'
-    | 'street';
+type StyledPart = 'farRidge' | 'avila' | 'city' | 'towers' | 'clouds' | 'skyHigh' | 'street';
 type PartStyles = Record<StyledPart, MotionStyle>;
 
 const px = (n: number) => `${n.toFixed(1)}px`;
 
 /** Estilos de cada capa con la cámara a una altura dada, como valores de CSS. */
-function stylesAt(height: number, sink: number, viewport: Viewport, frame: SceneFrame) {
+function stylesAt(height: number, sink: number, viewport: Viewport) {
     const shift = (layer: 'farRidge' | 'avila' | 'city' | 'towers') =>
         `translateY(${px(layerShift(layer, height, viewport.height, sink))})`;
     const clouds = cloudsAt(height, viewport.height);
-    const cabin = cabinPoint(height);
-    const cabinOnScreen = toScreen(frame, cabin.x, cabin.y);
     const street = streetBand(height, viewport.height);
     return {
         farRidge: shift('farRidge'),
@@ -73,7 +48,6 @@ function stylesAt(height: number, sink: number, viewport: Viewport, frame: Scene
         clouds: `translateY(${px(clouds.y)})`,
         cloudsOpacity: clouds.opacity,
         skyHigh: height * SKY_DARKENING,
-        cabin: `translate(${px(cabinOnScreen.x - (CABIN_WIDTH / 2) * frame.scale)}, ${px(cabinOnScreen.y)})`,
         // La Avenida Bolívar entra desde abajo al final del Viaje (su franja empieza 0,8 H más arriba,
         // por los postes y los árboles).
         street: `translateY(${px(street.layerTop)})`,
@@ -90,7 +64,6 @@ function toPartStyles(s: {
         towers: { transform: s.towers },
         clouds: { transform: s.clouds, opacity: s.cloudsOpacity },
         skyHigh: { opacity: s.skyHigh },
-        cabin: { transform: s.cabin },
         street: { transform: s.street },
     };
 }
@@ -103,11 +76,10 @@ const journey = CAMERA_JOURNEY;
 const JourneyStyles: React.FC<{
     sink: number;
     viewport: Viewport;
-    frame: SceneFrame;
     children: (styles: PartStyles) => React.ReactNode;
-}> = ({ sink, viewport, frame, children }) => {
+}> = ({ sink, viewport, children }) => {
     const { scrollYProgress } = useScroll();
-    const frames = journey.height.map((h) => stylesAt(h, sink, viewport, frame));
+    const frames = journey.height.map((h) => stylesAt(h, sink, viewport));
     const values = <K extends keyof (typeof frames)[number]>(key: K) => frames.map((f) => f[key]);
     const styles = toPartStyles({
         farRidge: useTransform(scrollYProgress, journey.progress, values('farRidge')),
@@ -117,7 +89,6 @@ const JourneyStyles: React.FC<{
         clouds: useTransform(scrollYProgress, journey.progress, values('clouds')),
         cloudsOpacity: useTransform(scrollYProgress, journey.progress, values('cloudsOpacity')),
         skyHigh: useTransform(scrollYProgress, journey.progress, values('skyHigh')),
-        cabin: useTransform(scrollYProgress, journey.progress, values('cabin')),
         street: useTransform(scrollYProgress, journey.progress, values('street')),
     });
     return <>{children(styles)}</>;
@@ -271,15 +242,6 @@ export const Scene: React.FC<{ height?: number }> = ({ height }) => {
                         <Avila c={VARS} night={night} withFarRidge={mobile} />
                     </>,
                 )}
-                <m.div className="scene-cabin" data-part="visitor-cabin" style={styles.cabin}>
-                    <svg
-                        viewBox="-6 0 12 17"
-                        width={CABIN_WIDTH * frame.scale}
-                        height={CABIN_HEIGHT * frame.scale}
-                    >
-                        <CabinShape c={VARS} />
-                    </svg>
-                </m.div>
             </m.div>
             {!mobile && (
                 <m.div className="scene-layer" data-layer="towers" style={styles.towers}>
@@ -319,12 +281,11 @@ export const Scene: React.FC<{ height?: number }> = ({ height }) => {
                     key={`${sink}|${viewport.width}x${viewport.height}`}
                     sink={sink}
                     viewport={viewport}
-                    frame={frame}
                 >
                     {layers}
                 </JourneyStyles>
             ) : (
-                layers(toPartStyles(stylesAt(height ?? HERO_HEIGHT, sink, viewport, frame)))
+                layers(toPartStyles(stylesAt(height ?? HERO_HEIGHT, sink, viewport)))
             )}
         </div>
     );

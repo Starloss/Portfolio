@@ -1,9 +1,6 @@
 // Lo que la Escena WebGL dibuja en cada cuadro, como funciones puras. Sale del mismo Viaje de
 // cámara que la Escena SVG (camera.ts): así el fundido cruzado entre las dos no salta.
 import {
-    CABIN_HEIGHT,
-    CABIN_WIDTH,
-    cabinPoint,
     journeyAt,
     cloudsAt,
     layerShift,
@@ -72,14 +69,6 @@ export function escenaFrame({ progress, sink, viewport, frame, pointer }: Escena
         towers: sway(PARALLAX_DEPTH.towers),
         street: sway(PARALLAX_DEPTH.street),
     };
-    // La cabina del visitante, como su transform en la SVG: punto del cable más el Ávila.
-    const visitorAt = (h: number) => toScreen(frame, cabinPoint(h).x, cabinPoint(h).y);
-    const visitor = {
-        x: sample((h) => visitorAt(h).x) - (CABIN_WIDTH / 2) * frame.scale + parallax.avila,
-        y: sample((h) => visitorAt(h).y + layerShift('avila', h, vh, sink)),
-        width: CABIN_WIDTH * frame.scale,
-        height: CABIN_HEIGHT * frame.scale,
-    };
     const clouds = {
         y: sample((h) => cloudsAt(h, vh).y),
         opacity: sample((h) => cloudsAt(h, vh).opacity),
@@ -92,8 +81,6 @@ export function escenaFrame({ progress, sink, viewport, frame, pointer }: Escena
         cloudsOpacity: clouds.opacity,
         /** Cuánto bajó la capa de nubes lejanas con la cámara (px). */
         cloudsShift: clouds.y,
-        /** La cabina del visitante, el rectángulo de su sprite. */
-        visitor,
         parallax,
         /** La franja de la Avenida Bolívar (street.ts): su borde de arriba y su alto, en px. */
         street: {
@@ -130,7 +117,7 @@ export interface CabinOnScreen {
 
 /**
  * Las cabinas del circuito (circuit.ts) a los `time` s, colgadas de su cable y movidas con el
- * Ávila, igual que la cabina del visitante.
+ * Ávila.
  */
 export function circuitOnScreen(
     time: number,

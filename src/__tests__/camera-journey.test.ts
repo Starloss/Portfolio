@@ -1,7 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import {
     progressForHeight,
-    cabinPoint,
     CAMERA_JOURNEY,
     cameraHeightAt,
     cloudsAt,
@@ -15,7 +14,6 @@ import {
     journeyAt,
 } from '@app/scene/camera';
 import { LIFT_SHARE, streetBand } from '@app/scene/street';
-import { STATIONS } from '@app/scene/geometry';
 
 describe('Viaje de cámara: baja del Hero a la ciudad', () => {
     it('empieza arriba en el Hero, con las cumbres del Ávila y cielo libre', () => {
@@ -159,22 +157,6 @@ describe('Hundimiento del paisaje según el alto del Hero', () => {
         const viewport = { width: 1366, height: 700 };
         const column = { left: 400, right: 966, top: 100, bottom: 330 };
         expect(heroSink(viewport, column, skyline)).toBeCloseTo(158.25, 3);
-    });
-});
-
-describe('Cabina del Teleférico atada a la altura de la cámara', () => {
-    it('sale de la estación de abajo y llega a Waraira Repano, colgada del cable', () => {
-        const start = cabinPoint(0);
-        const end = cabinPoint(1);
-        expect(start.x).toBeCloseTo(STATIONS.lower.x, 5);
-        expect(end.x).toBeCloseTo(STATIONS.upper.x, 5);
-        expect(end.y).toBeLessThan(start.y);
-    });
-
-    it('a mitad de camino va por debajo de la línea recta entre estaciones, por la comba', () => {
-        const start = cabinPoint(0);
-        const end = cabinPoint(1);
-        expect(cabinPoint(0.5).y).toBeGreaterThan((start.y + end.y) / 2);
     });
 });
 
