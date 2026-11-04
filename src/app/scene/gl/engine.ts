@@ -421,7 +421,7 @@ export class EscenaGL {
         const pending = this.pending[theme];
         if (pending?.generation === generation) return pending.promise;
         // Sin pasar del tamaño máximo de textura de la GPU (pantallas 4K con dpr 2).
-        const longest = Math.max(layout.viewport.width, layout.viewport.height);
+        const longest = Math.max(layout.viewport.width + 2 * STREET_BLEED, layout.viewport.height);
         const dpr = Math.min(this.dpr, this.maxTexture / longest);
         const promise = this.options
             .requestTextures({
