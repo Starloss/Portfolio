@@ -203,7 +203,8 @@ export const Scene: React.FC<{ height?: number }> = ({ height }) => {
     const travels = journeyMode && !reduced;
     const H = streetHeight(viewport.height);
 
-    // Animan siempre las cabinas y las estrellas; nubes, guacamayas y ventanas solo en escritorio.
+    // Animan siempre las estrellas; nubes, guacamayas y ventanas solo en escritorio. Las cabinas del
+    // Teleférico quedan quietas: solo la Escena WebGL las mueve.
     const animate = !reduced;
     const animateDesktop = animate && !mobile;
     const svg = (children: React.ReactNode) => (
@@ -267,7 +268,7 @@ export const Scene: React.FC<{ height?: number }> = ({ height }) => {
                 {svg(
                     <>
                         <HaloGradient />
-                        <Avila c={VARS} night={night} animate={animate} withFarRidge={mobile} />
+                        <Avila c={VARS} night={night} withFarRidge={mobile} />
                     </>,
                 )}
                 <m.div className="scene-cabin" data-part="visitor-cabin" style={styles.cabin}>

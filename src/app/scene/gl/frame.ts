@@ -14,7 +14,8 @@ import {
     type SceneFrame,
     type Viewport,
 } from '../camera';
-import { cablePoint, MOVING_CABINS } from '../geometry';
+import { circuitAt } from '../circuit';
+import { cableLinePoint } from '../geometry';
 import { streetBand } from '../street';
 
 /** Una curva `cubic-bezier()` de CSS, como función del progreso. */
@@ -57,13 +58,11 @@ interface Point {
     y: number;
 }
 
-const CABIN_SECONDS = 26;
 const MACAW_SECONDS = 16;
 const MACAW_SWING = { x: -40, y: -12 };
 
 /** Segundos de cada animación de CSS de la Escena SVG (su `currentTime`). */
 export interface Clocks {
-    cabins: number;
     macaws: number;
 }
 
@@ -75,10 +74,7 @@ export interface ClockAnchor {
 
 export function advanceClocks({ at, clocks }: ClockAnchor, now: number): Clocks {
     const elapsed = (now - at) / 1000;
-    return {
-        cabins: clocks.cabins + elapsed,
-        macaws: clocks.macaws + elapsed,
-    };
+    return { macaws: clocks.macaws + elapsed };
 }
 
 /** El puntero en x, de -1 (izquierda) a 1, seguido con suavidad: nunca salta ni se pasa. */
@@ -137,21 +133,6 @@ export function escenaFrame({ progress, sink, viewport, frame, clocks, pointer }
         towers: sway(PARALLAX_DEPTH.towers),
         street: sway(PARALLAX_DEPTH.street),
     };
-    // Una cabina cuelga del cable desde su centro arriba; en pantalla, el rectángulo de su sprite.
-    const cabinRect = (x: number, y: number) => {
-        const p = toScreen(frame, x, y);
-        return {
-            x: p.x - (CABIN_WIDTH / 2) * frame.scale + parallax.avila,
-            y: p.y + shifts.avila,
-            width: CABIN_WIDTH * frame.scale,
-            height: CABIN_HEIGHT * frame.scale,
-        };
-    };
-    const cabinT = loopAt(clocks.cabins, CABIN_SECONDS, true);
-    const moving = MOVING_CABINS.map(({ from, to }) => {
-        const p = twoStep(cabinT, cablePoint(from), cablePoint((from + to) / 2), cablePoint(to));
-        return cabinRect(p.x, p.y);
-    });
     // La cabina del visitante, como su transform en la SVG: punto del cable más el Ávila.
     const visitorAt = (h: number) => toScreen(frame, cabinPoint(h).x, cabinPoint(h).y);
     const visitor = {
@@ -181,8 +162,8 @@ export function escenaFrame({ progress, sink, viewport, frame, clocks, pointer }
         cloudsOpacity: clouds.opacity,
         /** Cuánto bajó la capa de nubes lejanas con la cámara (px). */
         cloudsShift: clouds.y,
-        /** Las dos cabinas que van y vienen y, al final, la del visitante. */
-        cabins: [...moving, visitor],
+        /** La cabina del visitante, el rectángulo de su sprite. */
+        visitor,
         macaws: { x: macaws.x * frame.scale + parallax.sky, y: macaws.y * frame.scale },
         parallax,
         /** La franja de la Avenida Bolívar (street.ts): su borde de arriba y su alto, en px. */
@@ -207,3 +188,39 @@ export function escenaFrame({ progress, sink, viewport, frame, clocks, pointer }
 }
 
 export type EscenaFrame = ReturnType<typeof escenaFrame>;
+
+// La línea de bajada va más atrás: un poco más chica.
+const RETURN_SCALE = 0.9;
+
+/** Una cabina del circuito en pantalla: de dónde cuelga (px), su escala, su vaivén y su opacidad. */
+export interface CabinOnScreen {
+    x: number;
+    y: number;
+    scale: number;
+    sway: number;
+    alpha: number;
+    line: 0 | 1;
+}
+
+/**
+ * Las cabinas del circuito (circuit.ts) a los `time` s, colgadas de su cable y movidas con el
+ * Ávila, igual que la cabina del visitante.
+ */
+export function circuitOnScreen(
+    time: number,
+    frame: SceneFrame,
+    { parallax, shifts }: { parallax: { avila: number }; shifts: { avila: number } },
+): CabinOnScreen[] {
+    return circuitAt(time).map(({ t, line, sway, alpha }) => {
+        const p = cableLinePoint(t, line);
+        const s = toScreen(frame, p.x, p.y);
+        return {
+            x: s.x + parallax.avila,
+            y: s.y + shifts.avila,
+            scale: frame.scale * (line ? RETURN_SCALE : 1),
+            sway,
+            alpha,
+            line,
+        };
+    });
+}

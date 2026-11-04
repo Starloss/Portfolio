@@ -115,7 +115,7 @@ export function ogSvg(card: OgCard): string {
                 sink,
                 <>
                     <FarRidge c={DAY} />
-                    <Avila c={DAY} night={false} animate={false} stillCabins />
+                    <Avila c={DAY} night={false} />
                     <City c={DAY} night={false} animate={false} />
                     <Towers c={DAY} night={false} animate={false} />
                 </>,

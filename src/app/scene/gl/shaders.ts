@@ -333,7 +333,7 @@ void main() {
 }
 `;
 
-/** Un sprite en un rectángulo de pantalla (px): las cabinas del Teleférico. */
+/** Un sprite en un rectángulo de pantalla (px): la cabina del visitante. */
 export const SPRITE_VERTEX = /* glsl */ `#version 300 es
 in vec2 position;
 uniform vec2 uRes;
@@ -362,6 +362,65 @@ void main() {
  * La gente y los vehículos de la Avenida Bolívar, y sus luces: una instancia por cada uno
  * (agents.ts). El quad se apoya en el suelo y crece hacia arriba; las luces se centran.
  */
+/**
+ * Las cabinas del circuito del Teleférico: una instancia por cabina (cabins.ts). Cada una cuelga de
+ * su punto del cable, como CabinShape en la SVG (viewBox de -6 a 6 en x y de 0 a 17 en y), y se
+ * mece girando alrededor de ese punto.
+ */
+export const CABIN_VERTEX = /* glsl */ `#version 300 es
+in vec2 position;
+in vec2 aAnchor;
+in float aScale;
+in vec3 aMeta;
+uniform vec2 uRes;
+out vec2 vP;
+out vec3 vMeta;
+out float vScale;
+void main() {
+    vec2 local = vec2(mix(-6.0, 6.0, position.x), mix(-1.0, 17.0, position.y));
+    float c = cos(aMeta.x);
+    float s = sin(aMeta.x);
+    vec2 px = aAnchor + vec2(local.x * c - local.y * s, local.x * s + local.y * c) * aScale;
+    gl_Position = vec4(px.x / uRes.x * 2.0 - 1.0, 1.0 - px.y / uRes.y * 2.0, 0.0, 1.0);
+    vP = local;
+    vMeta = aMeta;
+    vScale = aScale;
+}
+`;
+
+export const CABIN_FRAGMENT = /* glsl */ `#version 300 es
+precision highp float;
+in vec2 vP;
+in vec3 vMeta;
+in float vScale;
+uniform float uNight;
+out vec4 outColor;
+const vec3 BODY_DAY = ${vec(DAY.cabin, 3)};
+const vec3 BODY_NIGHT = ${vec(NIGHT.cabin, 3)};
+const vec3 WINDOW_DAY = ${vec(DAY.cabinWindow, 3)};
+const vec3 WINDOW_NIGHT = ${vec(NIGHT.cabinWindow, 3)};
+const vec3 CABLE_DAY = ${vec(DAY.cable, 3)};
+const vec3 CABLE_NIGHT = ${vec(NIGHT.cable, 3)};
+float sdRound(vec2 p, vec2 halfSize, float r) {
+    vec2 d = abs(p) - halfSize + r;
+    return length(max(d, 0.0)) + min(max(d.x, d.y), 0.0) - r;
+}
+// Cubre en px de pantalla: el borde queda suave a cualquier escala.
+float cover(float d) { return 1.0 - smoothstep(-0.5, 0.5, d * vScale); }
+void main() {
+    vec2 p = vP;
+    float hanger = cover(max(abs(p.x) - 0.5, max(-p.y, p.y - 7.0)));
+    float body = cover(sdRound(p - vec2(0.0, 11.5), vec2(5.0, 4.5), 2.5));
+    float glass = cover(sdRound(p - vec2(0.0, 10.5), vec2(3.5, 1.5), 1.0)) * 0.9;
+    vec3 color = mix(mix(BODY_DAY, BODY_NIGHT, uNight), mix(WINDOW_DAY, WINDOW_NIGHT, uNight), glass);
+    // La línea de bajada va más atrás: un poco más oscura.
+    color *= mix(1.0, 0.82, vMeta.y);
+    vec3 cable = mix(CABLE_DAY, CABLE_NIGHT, uNight);
+    float a = max(hanger, body) * vMeta.z;
+    outColor = vec4(mix(cable, color, body) * a, a);
+}
+`;
+
 export const AGENT_VERTEX = /* glsl */ `#version 300 es
 in vec2 position;
 in vec2 aAnchor;

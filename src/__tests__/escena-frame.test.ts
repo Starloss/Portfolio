@@ -11,10 +11,12 @@ import {
     SKY_DARKENING,
     toScreen,
 } from '@app/scene/camera';
-import { cablePoint, MOVING_CABINS } from '@app/scene/geometry';
+import { circuitAt } from '@app/scene/circuit';
+import { cableLinePoint } from '@app/scene/geometry';
 import {
     cssEaseInOut,
     advanceClocks,
+    circuitOnScreen,
     cubicBezier,
     escenaFrame,
     followPointer,
@@ -29,7 +31,7 @@ import { readClocks } from '@app/scene/gl/clocks';
 
 const viewport = { width: 1440, height: 900 };
 const frame = sceneFrame(viewport);
-const still: Clocks = { cabins: 0, macaws: 0 };
+const still: Clocks = { macaws: 0 };
 const at = (progress: number, clocks: Partial<Clocks> = {}, pointer = 0) =>
     escenaFrame({
         progress,
@@ -61,25 +63,28 @@ describe('escenaFrame', () => {
         const f = at(progress);
         const svg = (valueAt: (h: number) => number) => journeyAt(progress, valueAt);
         const point = (h: number) => toScreen(frame, cabinPoint(h).x, cabinPoint(h).y);
-        expect(f.cabins[2].x).toBeCloseTo(svg((h) => point(h).x) - (CABIN_WIDTH / 2) * frame.scale);
-        expect(f.cabins[2].y).toBeCloseTo(svg((h) => point(h).y + layerShift('avila', h, 900, 30)));
-        expect(f.cabins[2].width).toBeCloseTo(CABIN_WIDTH * frame.scale);
-        expect(f.cabins[2].height).toBeCloseTo(CABIN_HEIGHT * frame.scale);
+        expect(f.visitor.x).toBeCloseTo(svg((h) => point(h).x) - (CABIN_WIDTH / 2) * frame.scale);
+        expect(f.visitor.y).toBeCloseTo(svg((h) => point(h).y + layerShift('avila', h, 900, 30)));
+        expect(f.visitor.width).toBeCloseTo(CABIN_WIDTH * frame.scale);
+        expect(f.visitor.height).toBeCloseTo(CABIN_HEIGHT * frame.scale);
     });
 
-    it('las cabinas que se mueven arrancan en su punto del cable y llegan al otro a los 26 s', () => {
-        const start = at(0.5);
-        const end = at(0.5, { cabins: 26 });
-        MOVING_CABINS.forEach(({ from, to }, i) => {
-            const a = toScreen(frame, cablePoint(from).x, cablePoint(from).y);
-            const b = toScreen(frame, cablePoint(to).x, cablePoint(to).y);
-            expect(start.cabins[i].x).toBeCloseTo(a.x - (CABIN_WIDTH / 2) * frame.scale);
-            expect(start.cabins[i].y).toBeCloseTo(a.y + start.shifts.avila);
-            expect(end.cabins[i].x).toBeCloseTo(b.x - (CABIN_WIDTH / 2) * frame.scale);
-            expect(end.cabins[i].y).toBeCloseTo(b.y + end.shifts.avila);
+    it('las cabinas del circuito cuelgan de su cable y se mueven con el Ávila', () => {
+        const f = at(0.5, {}, 1);
+        const onScreen = circuitOnScreen(12, frame, f);
+        circuitAt(12).forEach((cabin, i) => {
+            const p = cableLinePoint(cabin.t, cabin.line);
+            const s = toScreen(frame, p.x, p.y);
+            expect(onScreen[i].x).toBeCloseTo(s.x + f.parallax.avila);
+            expect(onScreen[i].y).toBeCloseTo(s.y + f.shifts.avila);
+            expect(onScreen[i].sway).toBe(cabin.sway);
+            expect(onScreen[i].alpha).toBe(cabin.alpha);
         });
-        // `alternate`: a los 52 s vuelven al principio.
-        expect(at(0.5, { cabins: 52 }).cabins[0].x).toBeCloseTo(start.cabins[0].x);
+        // La de bajada va más atrás: un poco más chica.
+        const down = onScreen.find((c) => c.line === 1)!;
+        const up = onScreen.find((c) => c.line === 0)!;
+        expect(down.scale).toBeLessThan(up.scale);
+        expect(up.scale).toBeCloseTo(frame.scale);
     });
 
     it('las guacamayas van y vuelven cada 16 s, con el mismo recorrido que en CSS', () => {
@@ -120,8 +125,8 @@ describe('curvas de CSS y loopAt', () => {
 
 describe('advanceClocks', () => {
     it('el Worker avanza los relojes de CSS con el tiempo que pasó desde el ancla', () => {
-        const anchor = { at: 10_000, clocks: { cabins: 1, macaws: 2 } };
-        expect(advanceClocks(anchor, 12_500)).toEqual({ cabins: 3.5, macaws: 4.5 });
+        const anchor = { at: 10_000, clocks: { macaws: 2 } };
+        expect(advanceClocks(anchor, 12_500)).toEqual({ macaws: 4.5 });
     });
 });
 
@@ -129,14 +134,14 @@ describe('readClocks', () => {
     afterEach(() => document.body.replaceChildren());
 
     it('toma la hora de cada animación de CSS de la Escena SVG', () => {
-        document.body.innerHTML = `<div class="scene"><g data-anim="cabin"></g></div>`;
-        const cabin = document.querySelector<HTMLElement>('[data-anim="cabin"]')!;
-        cabin.getAnimations = () => [{ currentTime: 12_500 } as Animation];
-        expect(readClocks(3)).toEqual({ cabins: 12.5, macaws: 3 });
+        document.body.innerHTML = `<div class="scene"><g data-anim="macaws"></g></div>`;
+        const macaws = document.querySelector<HTMLElement>('[data-anim="macaws"]')!;
+        macaws.getAnimations = () => [{ currentTime: 12_500 } as Animation];
+        expect(readClocks(3)).toEqual({ macaws: 12.5 });
     });
 
     it('si una animación no está montada, usa el reloj de respaldo', () => {
-        expect(readClocks(7)).toEqual({ cabins: 7, macaws: 7 });
+        expect(readClocks(7)).toEqual({ macaws: 7 });
     });
 });
 
@@ -155,7 +160,7 @@ describe('efectos', () => {
         expect(Math.abs(f.parallax.avila)).toBeLessThan(Math.abs(f.parallax.city));
         expect(Math.abs(f.parallax.city)).toBeLessThanOrEqual(PARALLAX_PX * 1.2);
         // Las cabinas cuelgan del Ávila: se mueven con él.
-        expect(f.cabins[2].x - at(0.5).cabins[2].x).toBeCloseTo(f.parallax.avila);
+        expect(f.visitor.x - at(0.5).visitor.x).toBeCloseTo(f.parallax.avila);
         expect(at(0.5).parallax).toEqual({
             farRidge: 0,
             avila: 0,

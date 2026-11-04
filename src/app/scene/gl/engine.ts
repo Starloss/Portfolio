@@ -11,13 +11,23 @@ import { arcPoint, BOVEDA_SECONDS, BovedaClock, moonRotation, restOf } from '../
 import { ClimaClock } from '../climaFrame';
 
 import { isSoftwareGpu, rendererName } from './detect';
-import { advanceClocks, escenaFrame, followPointer, type ClockAnchor, type Clocks } from './frame';
+import {
+    advanceClocks,
+    circuitOnScreen,
+    escenaFrame,
+    followPointer,
+    type ClockAnchor,
+    type Clocks,
+} from './frame';
 import { noiseData } from './noise';
 import type { FallbackReason, Layout, TextureRequest } from './protocol';
 import { createInstances, writeInstances } from './agents';
+import { createCabinInstances, writeCabins } from './cabins';
 import {
     AGENT_FRAGMENT,
     AGENT_VERTEX,
+    CABIN_FRAGMENT,
+    CABIN_VERTEX,
     CLOUDS_FRAGMENT,
     FRONT_FRAGMENT,
     FULLSCREEN_VERTEX,
@@ -51,8 +61,7 @@ const ORDER = [
     'far',
     'farMist',
     'avilaBack',
-    'cabin0',
-    'cabin1',
+    'cabins',
     'avilaFront',
     'visitor',
     'avilaMist',
@@ -69,7 +78,7 @@ type Pass = (typeof ORDER)[number];
 
 // Las luces llevan mipmaps: un nivel chico es su resplandor.
 const MIPMAPPED: readonly LayerName[] = ['cityLights', 'towersLights'];
-const STILL: Clocks = { cabins: 0, macaws: 0 };
+const STILL: Clocks = { macaws: 0 };
 const SOFTWARE_DPR = 0.5;
 const RESIZE_SETTLE_MS = 250;
 
@@ -138,6 +147,9 @@ export class EscenaGL {
     private agents = streetAgents();
     private instances = createInstances();
     private agentGeometry!: Geometry;
+    // Las cabinas del circuito del Teleférico.
+    private cabins = createCabinInstances();
+    private cabinGeometry!: Geometry;
     private failed = false;
     private drawn = false;
     private watchdog: ReturnType<typeof createWatchdog> | null;
@@ -291,6 +303,14 @@ export class EscenaGL {
             aMeta: { size: 4, instanced: 1, data: i.meta },
             aColor: { size: 3, instanced: 1, data: i.color },
         });
+        // Las cabinas del Teleférico: un quad por cabina (cabins.ts).
+        const cabinProgram = this.program(CABIN_VERTEX, CABIN_FRAGMENT);
+        this.cabinGeometry = new Geometry(gl, {
+            position: { size: 2, data: new Float32Array([0, 0, 1, 0, 1, 1, 0, 0, 1, 1, 0, 1]) },
+            aAnchor: { size: 2, instanced: 1, data: this.cabins.anchor },
+            aScale: { size: 1, instanced: 1, data: this.cabins.scale },
+            aMeta: { size: 3, instanced: 1, data: this.cabins.meta },
+        });
         const sprite = this.program(SPRITE_VERTEX, SPRITE_FRAGMENT, {
             ...textures,
             uRect: { value: [0, 0, 0, 0] },
@@ -324,7 +344,6 @@ export class EscenaGL {
         }) => pass(fullscreen, mist, { uFlow: [scale, drift, strength] });
         const lightsOf = (name: 'cityLights' | 'towersLights') =>
             pass(fullscreen, lights, { tLights: this.texture(`${name}:night`) });
-        const cabin = () => pass(quad, sprite, tex('cabin:day', 'cabin:night'));
         return {
             sky: pass(fullscreen, sky),
             moon: pass(fullscreen, moon),
@@ -335,10 +354,9 @@ export class EscenaGL {
             far: both('far', 0.8),
             farMist: mistOf({ scale: 1300, drift: 5, strength: 0.4 }),
             avilaBack: both('avilaBack', 1),
-            cabin0: cabin(),
-            cabin1: cabin(),
+            cabins: pass(this.cabinGeometry, cabinProgram),
             avilaFront: both('avilaFront', 1),
-            visitor: cabin(),
+            visitor: pass(quad, sprite, tex('cabin:day', 'cabin:night')),
             avilaMist: mistOf({ scale: 1100, drift: -4, strength: 0.55 }),
             city: both('city'),
             cityLights: lightsOf('cityLights'),
@@ -653,15 +671,14 @@ export class EscenaGL {
                 uSunSide: side,
                 uShade: shade,
             },
-            cabin0: { uRect: rect(f.cabins[0]) },
-            cabin1: { uRect: rect(f.cabins[1]) },
+            cabins: {},
             avilaFront: {
                 uOffset: [parallax.avila, f.shifts.avila],
                 uDusk: dusk,
                 uSunSide: side,
                 uShade: shade,
             },
-            visitor: { uRect: rect(f.cabins[2]) },
+            visitor: { uRect: rect(f.visitor) },
             avilaMist: {
                 uMist: [f.mist.avila, f.mist.halfHeight],
                 uDusk: dusk,
@@ -712,7 +729,13 @@ export class EscenaGL {
             }
             this.agentGeometry.setInstancedCount(Math.max(1, this.instances.count));
         }
+        writeCabins(this.cabins, circuitOnScreen(time, frame, f));
+        for (const name of ['aAnchor', 'aScale', 'aMeta']) {
+            this.cabinGeometry.attributes[name].needsUpdate = true;
+        }
+        this.cabinGeometry.setInstancedCount(Math.max(1, this.cabins.count));
         ORDER.forEach((pass, i) => {
+            if (pass === 'cabins' && this.cabins.count === 0) return;
             if ((pass === 'street' || pass === 'agents') && !streetVisible) return;
             // Sin lluvia ni rayo, esos pases no dibujan nada: se ahorran.
             if (pass === 'rain' && w.rain < 0.001) return;

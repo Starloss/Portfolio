@@ -157,10 +157,6 @@
     animation: scene-flicker 9s linear infinite;
 }
 
-.scene [data-anim='cabin'] {
-    animation: scene-cabin 26s ease-in-out infinite alternate;
-}
-
 .scene [data-anim='drift'] {
     animation: scene-drift 48s ease-in-out infinite alternate;
 }
@@ -196,18 +192,6 @@
     }
     70% {
         opacity: 0.6;
-    }
-}
-
-@keyframes scene-cabin {
-    from {
-        transform: translate(0, 0);
-    }
-    50% {
-        transform: translate(var(--mx), var(--my));
-    }
-    to {
-        transform: translate(var(--dx), var(--dy));
     }
 }
 

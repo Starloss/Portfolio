@@ -10,8 +10,5 @@ function cssClock(anim: string): number | null {
 
 /** Segundos de cada animación; si no está montada (p. ej. las guacamayas de Noche), `fallback`. */
 export function readClocks(fallback: number): Clocks {
-    return {
-        cabins: cssClock('cabin') ?? fallback,
-        macaws: cssClock('macaws') ?? fallback,
-    };
+    return { macaws: cssClock('macaws') ?? fallback };
 }

@@ -103,8 +103,29 @@ export function skyline(night: boolean): number[] {
     });
 }
 
-// Cabinas que avanzan solas por un tramo del cable, ida y vuelta.
-export const MOVING_CABINS = [
-    { from: 0.56, to: 0.7 },
-    { from: 0.86, to: 0.74 },
+/** Las torres del Teleférico, en puntos del cable. */
+export const CABLE_TOWERS = [0.22, 0.45, 0.68];
+
+/**
+ * El cable de bajada, paralelo al de subida: un poco más abajo, que en la Escena es más atrás.
+ * Las cabinas suben por el de adelante y bajan por este.
+ */
+export const RETURN_CABLE = { dx: 0, dy: 10 };
+
+/** Punto de un cable para t de 0 a 1: 0 es el de subida y 1 el de bajada. */
+export function cableLinePoint(t: number, line: 0 | 1): { x: number; y: number } {
+    const p = cablePoint(t);
+    return line ? { x: p.x + RETURN_CABLE.dx, y: p.y + RETURN_CABLE.dy } : p;
+}
+
+/** Las cabinas quietas de la Escena SVG: una foto del circuito, en los dos cables. */
+export const STILL_CABINS: ReadonlyArray<{ t: number; line: 0 | 1 }> = [
+    { t: 0.12, line: 0 },
+    { t: 0.36, line: 0 },
+    { t: 0.6, line: 0 },
+    { t: 0.84, line: 0 },
+    { t: 0.24, line: 1 },
+    { t: 0.48, line: 1 },
+    { t: 0.72, line: 1 },
+    { t: 0.94, line: 1 },
 ];
