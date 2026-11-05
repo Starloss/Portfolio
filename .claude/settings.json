@@ -1,6 +1,13 @@
 {
+    "env": {
+        "IMPECCABLE_NO_TELEMETRY": "1",
+        "IMPECCABLE_NO_UPDATE_CHECK": "1",
+        "DO_NOT_TRACK": "1"
+    },
     "permissions": {
-        "allow": ["mcp__codegraph__*"]
+        "allow": [
+            "mcp__codegraph__*"
+        ]
     },
     "hooks": {
         "SessionStart": [
