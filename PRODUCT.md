@@ -40,6 +40,7 @@ Un Lead que sigue construyendo. Lidera más de 10 devs con 100% de entregas a ti
 - Los Hitos reales (El Ávila con el Hotel Humboldt, las Torres de Parque Central, el Teleférico y las guacamayas) se pueden re-escenificar, pero no reemplazar por otros.
 - El Cielo vivo se queda: el sol, la luna, su posición, la fase lunar y el Clima reales de Caracas, y el Día o la Noche según la hora de Caracas.
 - El nombre público es Diego Rangel y el rol, Full-Stack Lead Developer.
+- La UI es el estándar de la categoría ejecutado con oficio, sobria, directa y profesional, sin mundos temáticos. La ambición visual va a la Escena. La vara de oficio son las páginas de producto de Apple, Linear y el portafolio de Paco Coursey (decisión de Diego, 2026-11-06).
 
 ## Evidence on Hand
 

@@ -5,8 +5,10 @@ import { useSearchParams } from 'react-router-dom';
 // main: la rama de research no se mergea.
 
 export const DIRECCIONES = [
-    { key: 'sintesis', name: 'Síntesis de las Artes' },
-    { key: 'cabre', name: 'El Ávila de Cabré' },
+    { key: 'producto', name: 'UI sobria · Producto' },
+    { key: 'panel', name: 'UI sobria · Panel' },
+    { key: 'sintesis', name: 'Ronda 2 · Síntesis de las Artes' },
+    { key: 'cabre', name: 'Ronda 2 · El Ávila de Cabré' },
     { key: 'actual', name: 'Actual (main)' },
     { key: 'linea', name: 'Ronda 1 · Línea Ávila–Bolívar' },
     { key: 'cromo', name: 'Ronda 1 · Cromosaturación' },
@@ -17,7 +19,7 @@ export type Direccion = (typeof DIRECCIONES)[number]['key'];
 export function useDireccion(): Direccion {
     const [params] = useSearchParams();
     const value = params.get('direccion');
-    return DIRECCIONES.find((d) => d.key === value)?.key ?? 'sintesis';
+    return DIRECCIONES.find((d) => d.key === value)?.key ?? 'producto';
 }
 
 /** ?escena=relieve (el Ávila en 3D, ticket "Prototipo de la nueva Escena") o actual (la de main). */

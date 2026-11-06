@@ -20,6 +20,8 @@ import {
     useDireccion,
     useEscena,
 } from '../prototype/direcciones/PrototypeSwitcher';
+import { UiPanel } from '../prototype/direcciones/UiPanel';
+import { UiProducto } from '../prototype/direcciones/UiProducto';
 import { SintesisDeLasArtes } from '../prototype/direcciones/SintesisDeLasArtes';
 
 /**
@@ -31,6 +33,8 @@ export const Home: React.FC = () => {
     const direccion = useDireccion();
     const escena = useEscena() === 'relieve' ? <EscenaRelieve /> : <Scene />;
     const Prototipo = {
+        producto: UiProducto,
+        panel: UiPanel,
         sintesis: SintesisDeLasArtes,
         cabre: AvilaDeCabre,
         linea: LineaAvilaBolivar,
