@@ -22,10 +22,13 @@ export function useDireccion(): Direccion {
     return DIRECCIONES.find((d) => d.key === value)?.key ?? 'producto';
 }
 
-/** ?escena=relieve (el Ávila en 3D, ticket "Prototipo de la nueva Escena") o actual (la de main). */
-export function useEscena(): 'relieve' | 'actual' {
+/** ?escena=3d (three.js, ticket "Prototipo de la Caracas 3D"), relieve (el primer corte en ogl) o actual (main). */
+export const ESCENAS = ['3d', 'relieve', 'actual'] as const;
+export type Escena = (typeof ESCENAS)[number];
+export function useEscena(): Escena {
     const [params] = useSearchParams();
-    return params.get('escena') === 'actual' ? 'actual' : 'relieve';
+    const value = params.get('escena');
+    return ESCENAS.find((e) => e === value) ?? '3d';
 }
 
 const isTyping = (el: Element | null) =>
@@ -86,11 +89,11 @@ export const PrototypeSwitcher: React.FC = () => {
                 className="ml-1 rounded-full bg-white/15 px-3 py-1.5 hover:bg-white/25"
                 onClick={() => {
                     const p = new URLSearchParams(params);
-                    p.set('escena', escena === 'relieve' ? 'actual' : 'relieve');
+                    p.set('escena', ESCENAS[(ESCENAS.indexOf(escena) + 1) % ESCENAS.length]);
                     setParams(p, { replace: true });
                 }}
             >
-                Escena: {escena === 'relieve' ? 'relieve 3D' : 'actual'}
+                Escena: {{ '3d': 'three.js', relieve: 'relieve', actual: 'main' }[escena]}
             </button>
         </div>
     );

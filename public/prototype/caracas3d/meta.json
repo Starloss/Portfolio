@@ -1,0 +1,20 @@
+{
+    "cols": 936,
+    "rows": 648,
+    "x0": -10945.59363100132,
+    "z0": -13268.879999999914,
+    "x1": 17512.94980960429,
+    "z1": 6634.440000000055,
+    "origin": {
+        "lat": 10.5,
+        "lon": -66.9
+    },
+    "max": 2749.858642578125,
+    "edificios": 64018,
+    "faroles": 79215,
+    "fuentes": [
+        "Copernicus GLO-30: © DLR e.V. 2010-2014 y © Airbus Defence and Space GmbH 2014-2018, provisto bajo COPERNICUS por la Unión Europea y la ESA",
+        "ESA WorldCover 10 m 2021 v200 (CC BY 4.0)",
+        "© OpenStreetMap contributors (ODbL)"
+    ]
+}

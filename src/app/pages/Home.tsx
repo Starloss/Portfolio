@@ -24,6 +24,11 @@ import { UiPanel } from '../prototype/direcciones/UiPanel';
 import { UiProducto } from '../prototype/direcciones/UiProducto';
 import { SintesisDeLasArtes } from '../prototype/direcciones/SintesisDeLasArtes';
 
+// La Escena en three.js va en su propio chunk: three pesa ~180 kB gzip.
+const Caracas3D = React.lazy(() =>
+    import('../prototype/escena/Caracas3D').then((m) => ({ default: m.Caracas3D })),
+);
+
 /**
  * Home · Layout B: el Hero en el cielo y un bloque por sección, con un respiro de paisaje entre
  * bloques para que se vea el Viaje de cámara.
@@ -31,7 +36,17 @@ import { SintesisDeLasArtes } from '../prototype/direcciones/SintesisDeLasArtes'
 export const Home: React.FC = () => {
     // PROTOTIPO (research/impeccable): ?direccion= elige la dirección visual del rework.
     const direccion = useDireccion();
-    const escena = useEscena() === 'relieve' ? <EscenaRelieve /> : <Scene />;
+    const cual = useEscena();
+    const escena =
+        cual === '3d' ? (
+            <React.Suspense fallback={null}>
+                <Caracas3D />
+            </React.Suspense>
+        ) : cual === 'relieve' ? (
+            <EscenaRelieve />
+        ) : (
+            <Scene />
+        );
     const Prototipo = {
         producto: UiProducto,
         panel: UiPanel,
