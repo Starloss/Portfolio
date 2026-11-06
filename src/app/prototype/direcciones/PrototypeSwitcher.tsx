@@ -20,12 +20,19 @@ export function useDireccion(): Direccion {
     return DIRECCIONES.find((d) => d.key === value)?.key ?? 'sintesis';
 }
 
+/** ?escena=relieve (el Ávila en 3D, ticket "Prototipo de la nueva Escena") o actual (la de main). */
+export function useEscena(): 'relieve' | 'actual' {
+    const [params] = useSearchParams();
+    return params.get('escena') === 'actual' ? 'actual' : 'relieve';
+}
+
 const isTyping = (el: Element | null) =>
     !!el && (el.matches('input, textarea, select') || (el as HTMLElement).isContentEditable);
 
 export const PrototypeSwitcher: React.FC = () => {
     const [params, setParams] = useSearchParams();
     const current = useDireccion();
+    const escena = useEscena();
     const index = DIRECCIONES.findIndex((d) => d.key === current);
 
     const go = (step: number) => {
@@ -71,6 +78,17 @@ export const PrototypeSwitcher: React.FC = () => {
                 <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">
                     <path d="m6 3 5 5-5 5" fill="none" stroke="currentColor" strokeWidth="2" />
                 </svg>
+            </button>
+            <button
+                type="button"
+                className="ml-1 rounded-full bg-white/15 px-3 py-1.5 hover:bg-white/25"
+                onClick={() => {
+                    const p = new URLSearchParams(params);
+                    p.set('escena', escena === 'relieve' ? 'actual' : 'relieve');
+                    setParams(p, { replace: true });
+                }}
+            >
+                Escena: {escena === 'relieve' ? 'relieve 3D' : 'actual'}
             </button>
         </div>
     );

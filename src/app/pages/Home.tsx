@@ -14,7 +14,12 @@ import { Scene } from '../scene/Scene';
 import { AvilaDeCabre } from '../prototype/direcciones/AvilaDeCabre';
 import { Cromosaturacion } from '../prototype/direcciones/Cromosaturacion';
 import { LineaAvilaBolivar } from '../prototype/direcciones/LineaAvilaBolivar';
-import { PrototypeSwitcher, useDireccion } from '../prototype/direcciones/PrototypeSwitcher';
+import { EscenaRelieve } from '../prototype/escena/EscenaRelieve';
+import {
+    PrototypeSwitcher,
+    useDireccion,
+    useEscena,
+} from '../prototype/direcciones/PrototypeSwitcher';
 import { SintesisDeLasArtes } from '../prototype/direcciones/SintesisDeLasArtes';
 
 /**
@@ -24,6 +29,7 @@ import { SintesisDeLasArtes } from '../prototype/direcciones/SintesisDeLasArtes'
 export const Home: React.FC = () => {
     // PROTOTIPO (research/impeccable): ?direccion= elige la dirección visual del rework.
     const direccion = useDireccion();
+    const escena = useEscena() === 'relieve' ? <EscenaRelieve /> : <Scene />;
     const Prototipo = {
         sintesis: SintesisDeLasArtes,
         cabre: AvilaDeCabre,
@@ -34,15 +40,15 @@ export const Home: React.FC = () => {
     if (Prototipo)
         return (
             <>
-                <Scene />
+                {escena}
                 <Prototipo />
                 <PrototypeSwitcher />
             </>
         );
-    return <HomeActual />;
+    return <HomeActual escena={escena} />;
 };
 
-const HomeActual: React.FC = () => {
+const HomeActual: React.FC<{ escena: React.ReactNode }> = ({ escena }) => {
     // Ninguna sección marcada hasta que una cruce la parte de arriba de la pantalla.
     const [activeId, setActiveId] = useState<string>();
 
@@ -89,7 +95,7 @@ const HomeActual: React.FC = () => {
 
     return (
         <>
-            <Scene />
+            {escena}
             <MainHeader activeId={activeId} isHome />
             <main className="mx-auto max-w-[892px] space-y-[20vh] px-4 pb-[20vh] md:space-y-[35vh]">
                 <Hero />
