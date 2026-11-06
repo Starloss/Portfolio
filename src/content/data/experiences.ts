@@ -15,8 +15,8 @@ export const EXPERIENCES: Experience[] = [
         achievements: [
             {
                 text: {
-                    es: 'Desarrollé integraciones con APIs externas para el booking de hoteles y actividades en SuperWallet, reduciendo de forma drástica los tiempos de procesamiento.',
-                    en: 'Built external API integrations for hotel and activity booking in SuperWallet, drastically cutting processing times.',
+                    es: 'Desarrollé integraciones con APIs externas para el booking de hoteles y actividades en SuperWallet, reduciendo en 80% el tiempo de procesamiento del booking hotelero.',
+                    en: 'Built external API integrations for hotel and activity booking in SuperWallet, cutting hotel booking processing time by 80%.',
                 },
             },
             {
@@ -39,40 +39,63 @@ export const EXPERIENCES: Experience[] = [
         company: 'CORE Care and Health Systems',
         role: { es: 'Lead Developer', en: 'Lead Developer' },
         location: CARACAS,
-        start: '2022-10',
+        start: '2023-10',
         achievements: [
             {
                 text: {
-                    es: 'Lidero y mentoreo a un equipo de más de 10 devs, aumentando su productividad en 60%.',
-                    en: 'I lead and mentor a team of 10+ developers, increasing their productivity by 60%.',
+                    es: 'Lidero y mentoreo a más de 10 devs que me reportan: contratación y entrevistas técnicas, one-on-ones, planes de crecimiento, evaluaciones de desempeño y manejo de bajo rendimiento. La productividad del equipo subió 60%.',
+                    en: 'Lead and mentor 10+ developers who report to me: hiring and technical interviews, one-on-ones, growth plans, performance reviews and managing underperformance. Team productivity rose 60%.',
                 },
             },
             {
                 text: {
-                    es: 'Facilité workshops logrando 100% entregas a tiempo y satisfacción del cliente.',
-                    en: 'Facilitated workshops achieving 100% on-time delivery and client satisfaction.',
+                    es: 'Subí la vara de calidad con una meta de 80%+ de cobertura y pruebas unitarias, de integración, E2E, de contrato y de mutación: los errores críticos del día 1 por release bajaron de unos 5 a 0, y los menores de más de 20 a unos 5.',
+                    en: 'Raised the quality bar with an 80%+ code coverage target and unit, integration, E2E, contract and mutation testing: critical day-1 production errors per release fell from about 5 to 0, and minor ones from 20+ to about 5.',
                 },
             },
             {
                 text: {
-                    es: 'Diseñé e implementé una solución innovadora para sistemas médicos en EE.UU.',
-                    en: 'Designed and implemented an innovative solution for US medical systems.',
+                    es: 'Construí flujos de orquestación de agentes especializados por tarea para automatizar trabajo, y lidero la adopción de las skills de Matt Pocock para Claude Code en el equipo.',
+                    en: 'Built orchestration flows of task-specialized agents for automation and lead the team’s adoption of Matt Pocock’s skills for Claude Code.',
                 },
             },
             {
                 text: {
-                    es: 'Gestioné ciclo completo: planificación, diseño, pruebas y despliegues.',
-                    en: 'Managed full cycle: planning, design, testing and deployments.',
+                    es: 'Soy el Scrum Master del equipo (dailies, sprint planning, sprint reviews, brainstorming), dirijo sus reuniones y planifico todo el trabajo, del frontend a DevOps.',
+                    en: 'Act as the team’s Scrum Master (dailies, sprint planning, sprint reviews, brainstorming), run team meetings and plan all work from frontend to DevOps.',
                 },
             },
             {
                 text: {
-                    es: 'Lideré mejoras full-stack transformando ideas en features productivas.',
-                    en: 'Led full-stack improvements turning ideas into productive features.',
+                    es: 'Trabajo a diario con el product manager en prioridades y trade-offs, y me reúno con clientes y stakeholders; facilité workshops logrando 100% de entregas a tiempo y satisfacción del cliente.',
+                    en: 'Partner daily with the product manager on priorities and trade-offs and meet clients and stakeholders regularly; facilitated workshops achieving 100% on-time delivery and client satisfaction.',
+                },
+            },
+            {
+                text: {
+                    es: 'Diseñé e implementé una solución para sistemas médicos en EE.UU., con el ciclo completo: planificación, diseño, pruebas y despliegue.',
+                    en: 'Designed and implemented a solution for US medical systems, owning the full cycle from planning and design to testing and deployment.',
                 },
             },
         ],
         tech: ['React', 'Node.js', 'TypeScript'],
+    },
+    {
+        id: 'core-fullstack',
+        company: 'CORE Care and Health Systems',
+        role: { es: 'Full-stack Developer', en: 'Full-stack Developer' },
+        location: CARACAS,
+        start: '2022-10',
+        end: '2023-10',
+        achievements: [
+            {
+                text: {
+                    es: 'Implementé funcionalidades de la plataforma con Python, Django, React y TypeScript, y probé y depuré el sistema junto al lead developer; me ascendieron a Lead Developer en octubre de 2023.',
+                    en: 'Implemented platform features with Python, Django, React and TypeScript, and tested and debugged the system alongside the lead developer; promoted to Lead Developer in October 2023.',
+                },
+            },
+        ],
+        tech: ['Python', 'Django', 'React', 'TypeScript'],
     },
     {
         id: 'wocoon',
@@ -90,26 +113,20 @@ export const EXPERIENCES: Experience[] = [
             },
             {
                 text: {
-                    es: 'Desarrollé app móvil híbrida (Ionic + Angular + Firebase) aumentando engagement.',
-                    en: 'Developed hybrid mobile app (Ionic + Angular + Firebase) increasing engagement.',
+                    es: 'Lideré un equipo multidisciplinario de hasta 5 personas (devs y una diseñadora), tomando las decisiones técnicas clave, de la arquitectura del sistema a las buenas prácticas de desarrollo.',
+                    en: 'Led a multidisciplinary team of up to 5 (developers and a designer), making key technical decisions from system architecture to development best practices.',
                 },
             },
             {
                 text: {
-                    es: 'Dirigí equipo multifuncional acelerando entregas y colaboración.',
-                    en: 'Led cross-functional team accelerating delivery and collaboration.',
+                    es: 'Desarrollé una app móvil híbrida (Ionic + Angular + Firebase) que aumentó el engagement, y diseñé un modo offline que asegura alta disponibilidad.',
+                    en: 'Developed a hybrid mobile app (Ionic + Angular + Firebase), increasing engagement, and designed an offline mode ensuring high availability.',
                 },
             },
             {
                 text: {
-                    es: 'Diseñé modo offline asegurando alta disponibilidad.',
-                    en: 'Designed offline mode ensuring high availability.',
-                },
-            },
-            {
-                text: {
-                    es: 'Facilité sprints alineando roadmap y aprobaciones de entregables.',
-                    en: 'Facilitated sprints aligning roadmap and deliverable approvals.',
+                    es: 'Facilité sprints alineando el roadmap y las aprobaciones de entregables, con comunicación regular con los stakeholders.',
+                    en: 'Facilitated sprints aligning roadmap and deliverable approvals, with regular stakeholder communication.',
                 },
             },
         ],
@@ -125,20 +142,14 @@ export const EXPERIENCES: Experience[] = [
         achievements: [
             {
                 text: {
-                    es: 'Desarrollé aplicaciones full-stack con Node.js, React, Angular e Ionic.',
-                    en: 'Built full-stack applications with Node.js, React, Angular and Ionic.',
+                    es: 'Desarrollé aplicaciones full-stack con Node.js, React, Angular e Ionic como único desarrollador en varios proyectos simultáneos.',
+                    en: 'Built full-stack applications with Node.js, React, Angular and Ionic as the sole developer on multiple simultaneous projects.',
                 },
             },
             {
                 text: {
                     es: 'Entregué proyectos a tiempo con enfoque en calidad y mantenibilidad.',
-                    en: 'Delivered projects on time focusing on quality and maintainability.',
-                },
-            },
-            {
-                text: {
-                    es: 'Fortalecí habilidades frontend profundizando en React, Angular y Vue.',
-                    en: 'Strengthened frontend skills deepening in React, Angular and Vue.',
+                    en: 'Delivered projects on time, focusing on quality and maintainability.',
                 },
             },
         ],
@@ -160,14 +171,8 @@ export const EXPERIENCES: Experience[] = [
             },
             {
                 text: {
-                    es: 'Desarrollé soluciones para clientes internacionales (Embajada de Francia, bancos coreanos).',
-                    en: 'Developed solutions for international clients (French Embassy, Korean banks).',
-                },
-            },
-            {
-                text: {
-                    es: 'Impulsé creatividad, resolución de problemas y trabajo en equipo en entorno ágil.',
-                    en: 'Boosted creativity, problem-solving and teamwork in agile environment.',
+                    es: 'Desarrollé soluciones para clientes internacionales (Embajada de Francia, bancos coreanos) en un entorno ágil.',
+                    en: 'Developed solutions for international clients (French Embassy, Korean banks) in an agile environment.',
                 },
             },
         ],

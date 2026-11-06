@@ -26,7 +26,7 @@ describe('Datos del CV', () => {
 
     it('abre con el resumen con los años calculados', () => {
         expect(cvData('es', TODAY, SITE).summary).toMatch(
-            /^Full-Stack Lead Developer con 8\+ años de experiencia\./,
+            /^Full-Stack Lead Developer con 8\+ años construyendo productos web y móviles/,
         );
     });
 
@@ -35,14 +35,16 @@ describe('Datos del CV', () => {
         expect(experiences.map((e) => e.company)).toEqual([
             'XHype',
             'CORE Care and Health Systems',
+            'CORE Care and Health Systems',
             'Wocoon',
             'Daxos',
             '300 Dev',
         ]);
-        expect(experiences[1].achievements).toHaveLength(5);
+        expect(experiences[1].achievements).toHaveLength(6);
         expect(experiences[0].projects).toEqual(['SuperWallet']);
         expect(experiences[1].projects).toEqual(['BE - Booking Engine']);
         expect(experiences[2].projects).toEqual([]);
+        expect(experiences[3].projects).toEqual([]);
     });
 
     it('enlaza cada Proyecto destacado a su Caso de estudio en el mismo idioma, etiquetado como visita desde el CV', () => {
@@ -76,12 +78,14 @@ describe('Datos del CV', () => {
         expect(cv.education).toEqual([
             {
                 institution: 'Universidad Central de Venezuela',
-                title: 'Computación',
+                title: 'Licenciatura en Computación',
                 location: 'Caracas, Venezuela',
                 period: '2016 – 2021',
             },
         ]);
-        expect(cv.skills.map((s) => s.name)).toContain('Habilidades blandas');
+        expect(cv.skills.map((s) => s.name)).toEqual(
+            expect.arrayContaining(['Certificaciones', 'Idiomas']),
+        );
         expect(cv.headings.education).toBe('Formación');
         expect(cvData('en', TODAY, SITE).headings.education).toBe('Education');
     });

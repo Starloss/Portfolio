@@ -11,7 +11,7 @@ describe('Contenido resuelto por idioma', () => {
 
     it('ordena las Experiencias de la más reciente a la más antigua', () => {
         const ids = resolveContent('es', TODAY).experiences.map((e) => e.id);
-        expect(ids).toEqual(['xhype', 'core', 'wocoon', 'daxos', '300-dev']);
+        expect(ids).toEqual(['xhype', 'core', 'core-fullstack', 'wocoon', 'daxos', '300-dev']);
     });
 
     it('arma el período de cada Experiencia en el idioma pedido', () => {
@@ -19,8 +19,9 @@ describe('Contenido resuelto por idioma', () => {
         const en = resolveContent('en', TODAY).experiences;
         expect(es.find((e) => e.id === '300-dev')?.period).toBe('Sep 2018 – Ago 2020');
         expect(en.find((e) => e.id === '300-dev')?.period).toBe('Sep 2018 – Aug 2020');
-        expect(es.find((e) => e.id === 'core')?.period).toBe('Oct 2022 – Presente');
-        expect(en.find((e) => e.id === 'core')?.period).toBe('Oct 2022 – Present');
+        expect(es.find((e) => e.id === 'core')?.period).toBe('Oct 2023 – Presente');
+        expect(en.find((e) => e.id === 'core')?.period).toBe('Oct 2023 – Present');
+        expect(en.find((e) => e.id === 'core-fullstack')?.period).toBe('Oct 2022 – Oct 2023');
     });
 
     it('traduce rol, ubicación y Logros de cada Experiencia', () => {
@@ -30,10 +31,8 @@ describe('Contenido resuelto por idioma', () => {
         expect(xhypeEn.location).toBe('Remote');
         const core = resolveContent('en', TODAY).experiences[1];
         expect(core.company).toBe('CORE Care and Health Systems');
-        expect(core.achievements[0]).toBe(
-            'I lead and mentor a team of 10+ developers, increasing their productivity by 60%.',
-        );
-        expect(core.achievements[1]).toMatch(/100% on-time delivery/);
+        expect(core.achievements[0]).toMatch(/^Lead and mentor 10\+ developers who report to me/);
+        expect(core.achievements[1]).toMatch(/from about 5 to 0/);
     });
 
     it('un Proyecto de trabajo hereda la Empresa de su Experiencia y uno personal no tiene', () => {
@@ -67,7 +66,7 @@ describe('Contenido resuelto por idioma', () => {
 
     it('resuelve las Cifras clave con su valor y su respaldo', () => {
         const figures = resolveContent('es', TODAY).keyFigures;
-        expect(figures.map((f) => f.value)).toEqual(['8+', '10+', '−80%', '100%']);
+        expect(figures.map((f) => f.value)).toEqual(['8+', '10+', '−80%', '5 → 0']);
         expect(figures.map((f) => f.backing)).toEqual([
             { kind: 'trajectory', label: 'Trayectoria' },
             { kind: 'experience', id: 'core', label: 'CORE Care and Health Systems' },
@@ -87,18 +86,21 @@ describe('Contenido resuelto por idioma', () => {
         );
         expect(en.education[0]).toMatchObject({
             institution: 'Universidad Central de Venezuela',
-            title: 'Computer Science',
+            title: 'Bachelor’s degree in Computer Science',
             period: '2016 – 2021',
         });
-        const soft = resolveContent('es', TODAY).skills.at(-1);
-        expect(soft?.name).toBe('Habilidades blandas');
-        expect(soft?.items).toContain('Liderazgo');
-        expect(resolveContent('es', TODAY).skills[0].items).toContain('React');
+        const skills = resolveContent('es', TODAY).skills;
+        expect(skills[0].name).toBe('Liderazgo técnico y personas');
+        expect(skills.find((s) => s.name === 'Frontend')?.items).toContain('React');
+        expect(skills.at(-1)).toEqual({
+            name: 'Idiomas',
+            items: ['Español (nativo)', 'Inglés (fluido, C1/C2)'],
+        });
     });
 
     it('arma el resumen del CV con los años calculados', () => {
         expect(resolveContent('en', TODAY).profile.cvSummary).toMatch(
-            /^Full-Stack Lead Developer with 8\+ years of experience\./,
+            /^Full-Stack Lead Developer with 8\+ years building web and mobile products/,
         );
     });
 });

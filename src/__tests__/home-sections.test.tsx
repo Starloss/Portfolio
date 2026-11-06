@@ -47,7 +47,7 @@ describe('Franja de Impacto', () => {
         expect(links[2]).toHaveTextContent('−80%tiempo de booking hoteleroVer en SuperWallet →');
         expect(links[2]).toHaveAttribute('href', '/projects/superwallet');
         expect(links[3]).toHaveTextContent(
-            '100%entregas a tiempoVer en CORE Care and Health Systems →',
+            '5 → 0errores críticos del día 1 por releaseVer en CORE Care and Health Systems →',
         );
         expect(links[3]).toHaveAttribute('href', '#experience-core');
     });
@@ -71,13 +71,14 @@ describe('Experiencia', () => {
         expect(items.map((li) => li.id)).toEqual([
             'experience-xhype',
             'experience-core',
+            'experience-core-fullstack',
             'experience-wocoon',
             'experience-daxos',
             'experience-300-dev',
         ]);
     });
 
-    it('cada Experiencia muestra sus 2 Logros más importantes', () => {
+    it('cada Experiencia muestra sus Logros más importantes, hasta 2', () => {
         const { container } = renderAt('/');
         const core = container.querySelector('#experience-core') as HTMLElement;
         expect(
@@ -89,12 +90,14 @@ describe('Experiencia', () => {
                 .getAllByRole('listitem')
                 .map((li) => li.textContent),
         ).toEqual([
-            'Lidero y mentoreo a un equipo de más de 10 devs, aumentando su productividad en 60%.',
-            'Facilité workshops logrando 100% entregas a tiempo y satisfacción del cliente.',
+            'Lidero y mentoreo a más de 10 devs que me reportan: contratación y entrevistas técnicas, one-on-ones, planes de crecimiento, evaluaciones de desempeño y manejo de bajo rendimiento. La productividad del equipo subió 60%.',
+            'Subí la vara de calidad con una meta de 80%+ de cobertura y pruebas unitarias, de integración, E2E, de contrato y de mutación: los errores críticos del día 1 por release bajaron de unos 5 a 0, y los menores de más de 20 a unos 5.',
         ]);
         for (const li of container.querySelectorAll('#experience li[id^="experience-"]')) {
             const list = within(li as HTMLElement).getByRole('list', { name: 'Logros' });
-            expect(within(list).getAllByRole('listitem')).toHaveLength(2);
+            const shown = within(list).getAllByRole('listitem').length;
+            expect(shown).toBeGreaterThan(0);
+            expect(shown).toBeLessThanOrEqual(2);
         }
     });
 
@@ -151,7 +154,12 @@ describe('Skills', () => {
     it('agrupa los chips por categoría', () => {
         renderAt('/');
         const skills = section(/Habilidades/);
-        for (const name of ['Front', 'Back', 'DevOps', 'Habilidades blandas']) {
+        for (const name of [
+            'Liderazgo técnico y personas',
+            'Frontend',
+            'Certificaciones',
+            'Idiomas',
+        ]) {
             expect(within(skills).getByRole('heading', { name })).toBeInTheDocument();
         }
     });
