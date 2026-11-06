@@ -348,7 +348,11 @@ export const Caracas3D: React.FC<{ calidad?: Calidad }> = ({ calidad }) => {
 
             const night = { value: 0 };
             const city = new THREE.Mesh(
-                buildCity(new DataView(edificios), terrain.heightAt, nivel === 'bajo' ? 9 : nivel === 'medio' ? 5 : 0),
+                buildCity(
+                    new DataView(edificios),
+                    terrain.heightAt,
+                    nivel === 'bajo' ? 9 : nivel === 'medio' ? 5 : 0,
+                ),
                 windowsMaterial(night),
             );
             city.castShadow = nivel === 'alto';
