@@ -90,8 +90,14 @@ export const EXPERIENCES: Experience[] = [
         achievements: [
             {
                 text: {
-                    es: 'Implementé funcionalidades de la plataforma con Python, Django, React y TypeScript, y probé y depuré el sistema junto al lead developer; me ascendieron a Lead Developer en octubre de 2023.',
-                    en: 'Implemented platform features with Python, Django, React and TypeScript, and tested and debugged the system alongside the lead developer; promoted to Lead Developer in October 2023.',
+                    es: 'Implementé funcionalidades de la plataforma con Python, Django, React y TypeScript.',
+                    en: 'Implemented platform features with Python, Django, React and TypeScript.',
+                },
+            },
+            {
+                text: {
+                    es: 'Probé y depuré el sistema junto al lead developer; me ascendieron a Lead Developer en octubre de 2023.',
+                    en: 'Tested and debugged the system alongside the lead developer; promoted to Lead Developer in October 2023.',
                 },
             },
         ],

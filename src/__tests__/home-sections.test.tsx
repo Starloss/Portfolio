@@ -78,7 +78,7 @@ describe('Experiencia', () => {
         ]);
     });
 
-    it('cada Experiencia muestra sus Logros más importantes, hasta 2', () => {
+    it('cada Experiencia muestra sus 2 Logros más importantes', () => {
         const { container } = renderAt('/');
         const core = container.querySelector('#experience-core') as HTMLElement;
         expect(
@@ -95,9 +95,7 @@ describe('Experiencia', () => {
         ]);
         for (const li of container.querySelectorAll('#experience li[id^="experience-"]')) {
             const list = within(li as HTMLElement).getByRole('list', { name: 'Logros' });
-            const shown = within(list).getAllByRole('listitem').length;
-            expect(shown).toBeGreaterThan(0);
-            expect(shown).toBeLessThanOrEqual(2);
+            expect(within(list).getAllByRole('listitem')).toHaveLength(2);
         }
     });
 
