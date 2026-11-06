@@ -11,9 +11,11 @@ import { FeaturedProjects } from '../features/projects/FeaturedProjects';
 import { SkillsSection } from '../features/skills/SkillsSection';
 import { ClimaCredit } from '../components/ClimaCredit';
 import { Scene } from '../scene/Scene';
+import { AvilaDeCabre } from '../prototype/direcciones/AvilaDeCabre';
 import { Cromosaturacion } from '../prototype/direcciones/Cromosaturacion';
 import { LineaAvilaBolivar } from '../prototype/direcciones/LineaAvilaBolivar';
 import { PrototypeSwitcher, useDireccion } from '../prototype/direcciones/PrototypeSwitcher';
+import { SintesisDeLasArtes } from '../prototype/direcciones/SintesisDeLasArtes';
 
 /**
  * Home · Layout B: el Hero en el cielo y un bloque por sección, con un respiro de paisaje entre
@@ -22,11 +24,18 @@ import { PrototypeSwitcher, useDireccion } from '../prototype/direcciones/Protot
 export const Home: React.FC = () => {
     // PROTOTIPO (research/impeccable): ?direccion= elige la dirección visual del rework.
     const direccion = useDireccion();
-    if (direccion === 'linea' || direccion === 'cromo')
+    const Prototipo = {
+        sintesis: SintesisDeLasArtes,
+        cabre: AvilaDeCabre,
+        linea: LineaAvilaBolivar,
+        cromo: Cromosaturacion,
+        actual: null,
+    }[direccion];
+    if (Prototipo)
         return (
             <>
                 <Scene />
-                {direccion === 'linea' ? <LineaAvilaBolivar /> : <Cromosaturacion />}
+                <Prototipo />
                 <PrototypeSwitcher />
             </>
         );

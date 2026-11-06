@@ -167,7 +167,10 @@ export const Cromosaturacion: React.FC = () => {
     const clima = useClima();
 
     return (
-        <div style={{ fontFamily: FONT }} className="selection:bg-[#ffd400] selection:text-black [&_:is(h1,h2,h3)]:[font-family:inherit]">
+        <div
+            style={{ fontFamily: FONT }}
+            className="selection:bg-[#ffd400] selection:text-black [&_:is(h1,h2,h3)]:[font-family:inherit]"
+        >
             <InductionField />
             <TopBar />
             <main className="relative">

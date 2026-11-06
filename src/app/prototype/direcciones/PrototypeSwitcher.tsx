@@ -5,9 +5,11 @@ import { useSearchParams } from 'react-router-dom';
 // main: la rama de research no se mergea.
 
 export const DIRECCIONES = [
-    { key: 'linea', name: 'Línea Ávila–Bolívar' },
-    { key: 'cromo', name: 'Cromosaturación' },
+    { key: 'sintesis', name: 'Síntesis de las Artes' },
+    { key: 'cabre', name: 'El Ávila de Cabré' },
     { key: 'actual', name: 'Actual (main)' },
+    { key: 'linea', name: 'Ronda 1 · Línea Ávila–Bolívar' },
+    { key: 'cromo', name: 'Ronda 1 · Cromosaturación' },
 ] as const;
 
 export type Direccion = (typeof DIRECCIONES)[number]['key'];
@@ -15,7 +17,7 @@ export type Direccion = (typeof DIRECCIONES)[number]['key'];
 export function useDireccion(): Direccion {
     const [params] = useSearchParams();
     const value = params.get('direccion');
-    return DIRECCIONES.find((d) => d.key === value)?.key ?? 'linea';
+    return DIRECCIONES.find((d) => d.key === value)?.key ?? 'sintesis';
 }
 
 const isTyping = (el: Element | null) =>
