@@ -11,12 +11,29 @@ import { FeaturedProjects } from '../features/projects/FeaturedProjects';
 import { SkillsSection } from '../features/skills/SkillsSection';
 import { ClimaCredit } from '../components/ClimaCredit';
 import { Scene } from '../scene/Scene';
+import { Cromosaturacion } from '../prototype/direcciones/Cromosaturacion';
+import { LineaAvilaBolivar } from '../prototype/direcciones/LineaAvilaBolivar';
+import { PrototypeSwitcher, useDireccion } from '../prototype/direcciones/PrototypeSwitcher';
 
 /**
  * Home · Layout B: el Hero en el cielo y un bloque por sección, con un respiro de paisaje entre
  * bloques para que se vea el Viaje de cámara.
  */
 export const Home: React.FC = () => {
+    // PROTOTIPO (research/impeccable): ?direccion= elige la dirección visual del rework.
+    const direccion = useDireccion();
+    if (direccion === 'linea' || direccion === 'cromo')
+        return (
+            <>
+                <Scene />
+                {direccion === 'linea' ? <LineaAvilaBolivar /> : <Cromosaturacion />}
+                <PrototypeSwitcher />
+            </>
+        );
+    return <HomeActual />;
+};
+
+const HomeActual: React.FC = () => {
     // Ninguna sección marcada hasta que una cruce la parte de arriba de la pantalla.
     const [activeId, setActiveId] = useState<string>();
 
@@ -79,6 +96,7 @@ export const Home: React.FC = () => {
                     © {currentYear()} · <ClimaCredit />
                 </span>
             </footer>
+            <PrototypeSwitcher />
         </>
     );
 };
