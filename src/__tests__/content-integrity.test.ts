@@ -129,9 +129,10 @@ describe('validateContent', () => {
 
     it('falla si una Experiencia tiene menos de 2 Logros', () => {
         const c = clone();
-        c.experiences[3].achievements = c.experiences[3].achievements.slice(0, 1);
+        const i = c.experiences.findIndex((e) => e.id === 'daxos');
+        c.experiences[i].achievements = c.experiences[i].achievements.slice(0, 1);
         expect(validateContent(c, { fileExists: ok, imageSize: sized })).toEqual([
-            'experiences[3] ("daxos") tiene menos de 2 Logros',
+            `experiences[${i}] ("daxos") tiene menos de 2 Logros`,
         ]);
     });
 });

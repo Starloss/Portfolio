@@ -1,5 +1,5 @@
 ---
-status: accepted
+status: superseded by [ADR 0007](0007-presupuesto-de-script-de-165-kb.md)
 ---
 
 # El presupuesto de script sube a 160 kB por la Escena en movimiento
